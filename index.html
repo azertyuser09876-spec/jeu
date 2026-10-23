@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Étoiles filantes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <canvas id="game" width="480" height="640"></canvas>
+
+    <div id="hud">
+      <span>Score <b id="score">0</b></span>
+      <span id="lives">❤❤❤</span>
+      <span>Record <b id="best">0</b></span>
+    </div>
+
+    <div id="overlay">
+      <h1>Étoiles filantes</h1>
+      <p id="msg">Attrape les ⭐ et évite les ☄️</p>
+      <button id="play">Jouer</button>
+      <small>Souris, doigt ou flèches ← →</small>
+    </div>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
