@@ -52,6 +52,38 @@
     const speed = Math.hypot(s.vx, s.vy);
     const dirX = speed > 1 ? s.vx / speed : Math.cos(s.phase);
     const dirY = speed > 1 ? s.vy / speed : Math.sin(s.phase);
+    // Signes de chaque nature : des cornes pour la bélière, des épines pour la cracheuse, une traînée de poussière
+    // sombre derrière la fouisseuse.
+    if (k.id === 'beliere') {
+      ctx.globalAlpha = 0.95;
+      ctx.strokeStyle = '#1a0830';
+      ctx.lineWidth = R * 0.28;
+      ctx.lineCap = 'round';
+      for (const side of [-1, 1]) {
+        const bx = s.x + dirX * R * 0.6 - dirY * side * R * 0.5, by = s.y + dirY * R * 0.6 + dirX * side * R * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + dirX * R * 0.9, by + dirY * R * 0.9, bx + (dirX * 0.6 - dirY * side) * R * 0.9, by + (dirY * 0.6 + dirX * side) * R * 0.9);
+        ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+    } else if (k.id === 'cracheuse') {
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = '#120420';
+      ctx.lineWidth = 2 / r.camera.scale;
+      ctx.beginPath();
+      for (let i = 0; i < 7; i++) {
+        const a = s.phase + t * 0.6 + (i / 7) * Math.PI * 2;
+        ctx.moveTo(s.x + Math.cos(a) * R * 0.8, s.y + Math.sin(a) * R * 0.8);
+        ctx.lineTo(s.x + Math.cos(a) * R * 1.6, s.y + Math.sin(a) * R * 1.6);
+      }
+      ctx.stroke();
+    } else if (k.id === 'fouisseuse') {
+      for (let i = 1; i <= 4; i++) {
+        ctx.globalAlpha = 0.5 - i * 0.1;
+        ctx.drawImage(sp.dark, s.x - dirX * R * i * 0.9 - R * 0.6, s.y - dirY * R * i * 0.9 - R * 0.6, R * 1.2, R * 1.2);
+      }
+    }
     const blink = Math.sin(t * 0.9 + s.phase * 7) > 0.97 ? 0.1 : 1;
     ctx.fillStyle = '#d9ccff';
     ctx.globalAlpha = 0.8 * blink;

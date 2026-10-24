@@ -55,7 +55,7 @@
 
   function hurtBeing(game, b, amount) {
     if (!Colony.isActive(b)) return;
-    b.hp -= amount;
+    b.hp -= amount * (Colony.species(b.species).armor || 1);
     b.lastHurt = game.time;
     b.hurt = 1;
     if (b.hp > 0) return;
@@ -346,7 +346,8 @@
       if (d <= sp.range + enemyRadius(enemy) && b.cd <= 0) {
         b.cd = sp.cooldown;
         b.flash = 1;
-        damageEnemy(game, enemy, sp.damage * Colony.statsOf(game, b).armyDamage, true);
+        const breaker = enemy.work || (enemy.nest && !enemy.colossus) ? sp.breaker || 1 : 1;
+        damageEnemy(game, enemy, sp.damage * breaker * Colony.statsOf(game, b).armyDamage, true);
       }
     },
 

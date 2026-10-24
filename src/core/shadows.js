@@ -7,6 +7,8 @@
   // Catalogue des ombres.
   //   prefers   cible préférée : 'any' (la plus proche), 'beings' (les êtres), 'structures' (bâtiments, cœurs)
   //   cost      poids dans le « budget » d'une marée ; fromTide : première marée où elle apparaît
+  //   burrow    elle passe sous les murailles ; spit : elle frappe de cette distance ; ram : ses coups contre une
+  //             muraille comptent autant de fois
   Vide.SHADOW_KINDS = [
     { id: 'errante', name: 'Errante', hp: 20, speed: 45, damage: 8, cooldown: 1, radius: 12,
       prefers: 'any', echoes: 1, cost: 1, fromTide: 0 },
@@ -14,6 +16,12 @@
       prefers: 'beings', echoes: 1, cost: 1, fromTide: 2 },
     { id: 'massive', name: 'Massive', hp: 110, speed: 26, damage: 22, cooldown: 1.8, radius: 22,
       prefers: 'structures', echoes: 5, cost: 4, fromTide: 4 },
+    { id: 'cracheuse', name: 'Cracheuse', hp: 26, speed: 40, damage: 6, cooldown: 2.2, radius: 12, spit: 170,
+      prefers: 'any', echoes: 2, cost: 2, fromTide: 5 },
+    { id: 'fouisseuse', name: 'Fouisseuse', hp: 34, speed: 55, damage: 7, cooldown: 1, radius: 10, burrow: true,
+      prefers: 'beings', echoes: 2, cost: 2, fromTide: 6 },
+    { id: 'beliere', name: 'Bélière', hp: 170, speed: 22, damage: 12, cooldown: 2, radius: 24, ram: 6,
+      prefers: 'structures', echoes: 6, cost: 5, fromTide: 7 },
   ];
 
   function kind(id) {
@@ -142,7 +150,12 @@
 
     const { player } = game.state;
     if (!game.vitality.invulnerable) consider('player', player, player.x, player.y, pref('player'));
-    for (const b of game.colony.beings) if (Colony.isActive(b)) consider('being', b, b.x, b.y, pref('beings'));
+    for (const b of game.colony.beings) {
+      if (!Colony.isActive(b)) continue;
+      // Un porte-bouclier attire les coups : à portée de défi, on ne voit plus que lui.
+      const taunt = Colony.species(b.species).taunt && (b.x - s.x) ** 2 + (b.y - s.y) ** 2 <= CONFIG.shadows.taunt ** 2;
+      consider('being', b, b.x, b.y, taunt ? 1e-6 : pref('beings'));
+    }
     for (const v of game.state.villages) {
       for (const b of v.buildings) if (Structures.isWorking(b)) consider('building', b, b.x, b.y, pref('structures'), v);
       consider('heart', v, v.x, v.y, pref('structures'));
@@ -244,7 +257,7 @@
       }
       const dx = tx - s.x, dy = ty - s.y;
       const d = Math.hypot(dx, dy) || 1;
-      const reach = s.target ? k.radius + reachOf(s.target) : 0;
+      const reach = s.target ? (k.spit || k.radius + reachOf(s.target)) : 0;
       // Mouvement lourd et ondulant, qui s'arrête au contact (et ralentit le long d'un rempart).
       const speed = d > reach ? k.speed * Structures.wardAt(state, s.x, s.y) : 0;
       const kk = util.damp(3, dt);
@@ -256,12 +269,13 @@
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       // Une enceinte l'arrête (ses portes ne s'ouvrent pas aux ombres) : elle s'en prend au pan qui la bloque.
-      s.wall = game.walled.length ? Vide.Walls.hold(game.walled, s, x0, y0, k.radius, false, s) : null;
+      // (Une fouisseuse passe dessous.)
+      s.wall = game.walled.length && !k.burrow ? Vide.Walls.hold(game.walled, s, x0, y0, k.radius, false, s) : null;
       if (s.wall && s.cd <= 0 && !(s.target && d <= reach + 4)) {
         s.cd = k.cooldown;
         const { v, w, seg } = s.wall;
         const armor = Villages.statsOf(game, v).structureArmor;
-        if (Vide.Walls.damage(game, v, w, seg, (k.damage * CONFIG.walls.shadowDamage) / armor)) {
+        if (Vide.Walls.damage(game, v, w, seg, (k.damage * (k.ram || 1) * CONFIG.walls.shadowDamage) / armor)) {
           Vide.Sim.emit(game, 'breach', { village: v.type, x: s.x, y: s.y });
         }
       }
@@ -269,6 +283,7 @@
       if (s.target && d <= reach + 4 && s.cd <= 0) {
         s.cd = k.cooldown;
         Vide.Combat.strike(game, s, s.target, k.damage);
+        if (k.spit) Vide.Sim.emit(game, 'darkBolt', { x: s.x, y: s.y, tx, ty, spit: true });
       }
     }
 

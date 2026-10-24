@@ -32,7 +32,32 @@
 
     // Signes distinctifs de l'armée : un bouclier pour le gardien, des pointes pour l'étincelle,
     // un halo doux pour la veilleuse.
-    if (sp.role === 'guard') {
+    const dirX = speed > 1 ? b.vx / speed : Math.cos(b.phase), dirY = speed > 1 ? b.vy / speed : Math.sin(b.phase);
+    if (sp.id === 'bouclier') {
+      // Un écu large, tourné vers où il va.
+      const a = Math.atan2(dirY, dirX);
+      ctx.globalAlpha = 0.75;
+      ctx.strokeStyle = `rgb(${sp.color.join(',')})`;
+      ctx.lineWidth = 2.4 / r.camera.scale;
+      ctx.beginPath();
+      ctx.arc(x, y, 14, a - 1.1, a + 1.1);
+      ctx.stroke();
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1 / r.camera.scale;
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (sp.id === 'lancier') {
+      // Une longue lance de lumière, pointée devant lui.
+      ctx.globalAlpha = 0.8;
+      ctx.strokeStyle = `rgb(${sp.color.join(',')})`;
+      ctx.lineWidth = 1.4 / r.camera.scale;
+      ctx.beginPath();
+      ctx.moveTo(x - dirX * 8, y - dirY * 8);
+      ctx.lineTo(x + dirX * 30, y + dirY * 30);
+      ctx.stroke();
+      Render.drawGlow(ctx, glow, x + dirX * 30, y + dirY * 30, 9, 0.9);
+    } else if (sp.role === 'guard') {
       ctx.globalAlpha = 0.55;
       ctx.strokeStyle = `rgb(${sp.color.join(',')})`;
       ctx.lineWidth = 1.5 / r.camera.scale;

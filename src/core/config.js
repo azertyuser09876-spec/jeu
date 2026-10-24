@@ -292,6 +292,7 @@
 
     // Ombres : marées qui visent le territoire, rôdeuses du vide lointain.
     shadows: {
+      taunt: 240,          // un porte-bouclier attire les ombres à cette distance
       firstTideRadius: 160,  // les marées commencent quand le territoire atteint ce rayon
       tideInterval: 110,
       tideJitter: 25,

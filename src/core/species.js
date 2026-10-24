@@ -9,6 +9,8 @@
 //   hp         points de vie (avant améliorations)
 //   damage, cooldown, range   combat (armée)
 //   siege      si présent : multiplicateur des dégâts contre les colosses et les cœurs des nids (troupe de siège)
+//   breaker    si présent : multiplicateur des dégâts contre les ouvrages et les remparts des bases d'ombre
+//   taunt      les ombres proches s'en prennent à lui d'abord ; armor : part des coups qu'il encaisse vraiment
 //   color      teinte [r, g, b] pour l'affichage
 //   cap        si présent : caractéristique qui limite cette espèce à part (sinon : la population, beingCap) ;
 //              les espèces qui partagent un même `cap` le partagent (toute l'armée : armyCap, les casernes)
@@ -93,7 +95,44 @@
       color: [255, 170, 220],
       requires: (state) => Vide.Villages.count(state, 'gardien') > 0,
     },
+    {
+      id: 'bouclier',
+      name: 'Porte-bouclier',
+      desc: 'Lent et massif : les ombres proches s’en prennent à lui d’abord, et il n’encaisse que la moitié de leurs coups.',
+      role: 'guard',
+      army: true,
+      cap: 'armyCap',
+      taunt: true,
+      armor: 0.5,
+      baseCost: 5000,
+      baseEchoes: 6,
+      speed: 58,
+      hp: 170,
+      damage: 3,
+      cooldown: 1,
+      range: 16,
+      color: [210, 230, 255],
+      requires: (state) => Vide.Villages.count(state, 'gardien') > 0,
+    },
     // --- Troupe de siège (dès qu'un colosse ou un nid d'ombre s'est montré) ---
+    {
+      id: 'lancier',
+      name: 'Lancier',
+      desc: 'Une longue lance de lumière : il frappe de loin au corps à corps, et brise ouvrages et remparts des bases d’ombre.',
+      role: 'guard',
+      army: true,
+      cap: 'armyCap',
+      breaker: 4,
+      baseCost: 8000,
+      baseEchoes: 10,
+      speed: 72,
+      hp: 80,
+      damage: 12,
+      cooldown: 1.3,
+      range: 36,
+      color: [255, 214, 150],
+      requires: (state) => Vide.Villages.count(state, 'gardien') > 0 && (state.nests.length > 0 || state.cleared.length > 0),
+    },
     {
       id: 'harponneur',
       name: 'Harponneur',

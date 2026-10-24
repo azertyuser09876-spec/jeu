@@ -81,13 +81,16 @@
     const state = twoVillages();
     const game = Sim.create(state);
     const nest = Nests.add(state, 4000, 0, 0);
-    const small = Nests.raid(game, nest);
-    assert.ok(small >= 2);
+    // (La force d'un raid : le poids de ses ombres, les plus grosses comptant davantage.)
+    const weight = () => game.shadows.list.reduce((sum, s) => sum + Vide.Shadows.kind(s.kind).cost, 0);
+    assert.ok(Nests.raid(game, nest) >= 2);
+    const small = weight();
     for (const s of game.shadows.list) assert.equal(s.home, state.villages[1]);
     assert.ok(game.events.some((e) => e.type === 'raid'));
     game.shadows.list.length = 0;
     nest.age = CONFIG.nests.levelEvery * 5;
-    assert.ok(Nests.raid(game, nest) > small);
+    Nests.raid(game, nest);
+    assert.ok(weight() > small);
     // Trop loin de tout village : aucun raid.
     const lone = Nests.add(state, 50000, 0, 0);
     assert.equal(Nests.raid(game, lone), 0);
