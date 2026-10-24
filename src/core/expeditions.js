@@ -218,10 +218,20 @@
   }
 
   // Avance une expédition de `seconds` secondes. Renvoie l'événement d'arrivée éventuel.
-  function move(state, exp, seconds) {
-    const { x: gx, y: gy } = goal(state, exp);
-    const d = Math.hypot(gx - exp.x, gy - exp.y);
+  // `walled` (en jeu) : les villages à enceinte, dont elle passe les portes.
+  function move(state, exp, seconds, walled) {
     const step = CONFIG.expeditions.speed * seconds;
+    const target = goal(state, exp);
+    const via = walled && walled.length ? Vide.Walls.route(walled, exp.x, exp.y, target.x, target.y) : null;
+    if (via) {
+      const dv = Math.hypot(via.x - exp.x, via.y - exp.y) || 1;
+      const s = Math.min(step, dv);
+      exp.x += ((via.x - exp.x) / dv) * s;
+      exp.y += ((via.y - exp.y) / dv) * s;
+      return null;
+    }
+    const { x: gx, y: gy } = target;
+    const d = Math.hypot(gx - exp.x, gy - exp.y);
     if (step < d) {
       exp.x += ((gx - exp.x) / d) * step;
       exp.y += ((gy - exp.y) / d) * step;
@@ -319,7 +329,7 @@
         for (const event of (observing(exp) ? observe : erect)(state, exp, dt).events) Vide.Sim.emit(game, event.type, event);
         continue;
       }
-      const event = move(state, exp, dt * (carried ? CONFIG.colossi.carry : 1));
+      const event = move(state, exp, dt * (carried ? CONFIG.colossi.carry : 1), carried ? null : game.walled);
       if (event) Vide.Sim.emit(game, event.type, { ...event, kind: exp.kind });
     }
   }

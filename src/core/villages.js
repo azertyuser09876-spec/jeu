@@ -220,6 +220,7 @@
       stock: { matiere: 0, savoir: 0 },
       extra: [],
       districts: [],
+      walls: [],
     };
     Territory.grow(village);
     if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;

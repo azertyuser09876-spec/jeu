@@ -43,6 +43,8 @@
     Vide.Garden.fill(game);
     Vide.Colony.create(game);
     game.structureHp = new Map(); // solidité des bâtiments abîmés (voir structures.js)
+    game.wallHp = new Map();      // … et des pans d'enceinte abîmés (voir walls.js)
+    game.walled = Vide.Walls.walled(state); // villages qui ont une enceinte achevée
     Vide.Shadows.create(game);
     Vide.Combat.create(game);
     Vide.Colossus.create(game);
@@ -109,8 +111,11 @@
     }
     // Le courant de la zone emporte la lumière.
     const current = game.region.current;
+    const x0 = player.x, y0 = player.y;
     player.x += (v.x + current.x) * dt;
     player.y += (v.y + current.y) * dt;
+    // Les enceintes l'arrêtent : elle passe par les portes.
+    if (game.walled.length) Vide.Walls.hold(game.walled, player, x0, y0, CONFIG.player.radius, true, v);
   }
 
   function gainLight(game, amount) {
@@ -161,6 +166,7 @@
     }
     game.stats = Vide.Stats.compute(state);
     Vide.Villages.refresh(game);
+    game.walled = Vide.Walls.walled(state);
     game.time += dt;
     state.stats.playTime += dt;
 

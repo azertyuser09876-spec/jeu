@@ -70,6 +70,12 @@ function priority() {
 }
 
 function steerTo(x, y, sign) {
+  // Vers un village : par ses portes, s'il a une enceinte.
+  const via = sign > 0 ? Vide.Walls.route(game.walled, state.player.x, state.player.y, x, y) : null;
+  if (via) {
+    x = via.x;
+    y = via.y;
+  }
   const dx = x - state.player.x, dy = y - state.player.y;
   const d = Math.hypot(dx, dy) || 1;
   input.move.x = (sign * dx) / d;

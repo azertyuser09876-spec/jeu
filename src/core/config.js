@@ -78,6 +78,21 @@
       lotArea: 40000,    // un emplacement à bâtir de plus par tant de surface (un carré de 200 de côté)
     },
 
+    // Enceintes (voir walls.js).
+    walls: {
+      thickness: 16,     // épaisseur d'une muraille
+      gate: 24,          // demi-largeur d'une porte
+      segment: 90,       // longueur d'un pan (chacun a sa solidité)
+      hp: 600,           // solidité d'un pan
+      costPerUnit: 8,    // prix (lumière) par unité de longueur
+      workPerUnit: 0.12, // travail des bâtisseurs par unité de longueur
+      minBoulevard: 2,   // la première enceinte suit au moins le deuxième boulevard
+      layerGap: 2,       // boulevards entre deux enceintes
+      reach: 0.95,       // une enceinte reste dans cette part du rayon du territoire…
+      inside: 0.85,      // … avec au moins cette part de son tracé dans le territoire
+      shadowDamage: 1,   // coups d'une ombre sur un pan, en part de ses dégâts
+    },
+
     // Routes entre villages.
     roads: {
       costPerUnit: 12,   // lumière par unité de longueur…

@@ -245,8 +245,19 @@
       const ux = dx / d, uy = dy / d;
       s.vx += ((ux - uy * wobble) * speed - s.vx) * kk;
       s.vy += ((uy + ux * wobble) * speed - s.vy) * kk;
+      const x0 = s.x, y0 = s.y;
       s.x += s.vx * dt;
       s.y += s.vy * dt;
+      // Une enceinte l'arrête (ses portes ne s'ouvrent pas aux ombres) : elle s'en prend au pan qui la bloque.
+      s.wall = game.walled.length ? Vide.Walls.hold(game.walled, s, x0, y0, k.radius, false, s) : null;
+      if (s.wall && s.cd <= 0 && !(s.target && d <= reach + 4)) {
+        s.cd = k.cooldown;
+        const { v, w, seg } = s.wall;
+        const armor = Villages.statsOf(game, v).structureArmor;
+        if (Vide.Walls.damage(game, v, w, seg, (k.damage * CONFIG.walls.shadowDamage) / armor)) {
+          Vide.Sim.emit(game, 'breach', { village: v.type, x: s.x, y: s.y });
+        }
+      }
 
       if (s.target && d <= reach + 4 && s.cd <= 0) {
         s.cd = k.cooldown;

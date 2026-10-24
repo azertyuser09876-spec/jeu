@@ -399,6 +399,7 @@
     Vide.Draw.territory(r, game);
     Vide.Draw.nests(r, game);
     Vide.Draw.roads(r, game);
+    Vide.Draw.walls(r, game);
     Vide.Draw.structures(r, game);
     drawReach(r, game);
     drawPulse(r, game);

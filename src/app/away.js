@@ -35,6 +35,7 @@
       if (e.type === 'engineBuilt') lines.push(`Des sapeurs ont achevé ${e.engine === 'chaine' ? 'une chaîne' : 'une baliste'}.`);
       if (e.type === 'studied') lines.push(`Les érudits ont dévoilé un sceau ${ofNamed(e.id)} (${e.revealed}/${e.total}).`);
     }
+    if (report.walls) lines.push(`${report.walls} enceinte${report.walls > 1 ? 's' : ''} achevée${report.walls > 1 ? 's' : ''}.`);
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
       const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
@@ -151,6 +152,11 @@
     heartAttacked: (e) => `Des ombres rongent le cœur d’un village (${Vide.Villages.type(e.village).name}) !`,
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
+    wallDone: (e) => (e.layers > 1
+      ? `Une enceinte de plus autour de ${Vide.Villages.type(e.village).name.toLowerCase()}.`
+      : `${Vide.Villages.type(e.village).name} a son enceinte : ses portes ne s’ouvrent qu’à la lumière.`),
+    breach: (e) => `Une brèche dans l’enceinte de ${Vide.Villages.type(e.village).name.toLowerCase()} : les ombres entrent.`,
+    wallRepaired: (e) => `L’enceinte de ${Vide.Villages.type(e.village).name.toLowerCase()} est relevée.`,
     heartbeat: (e) => Vide.Colossus.def(e.id).heartbeat,
     colossusFound: (e) => (e.sleeper
       ? 'Il dort. Ses rêves sont ses sceaux : monte sur son dos pour les apaiser.'

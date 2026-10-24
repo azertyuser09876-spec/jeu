@@ -3,7 +3,7 @@
 // autour du cœur de leur village. Chaque être vit, travaille et se rallume dans son village.
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Garden, Catalog, Structures, Villages, Territory, Grid } = Vide;
+  const { CONFIG, util, Garden, Catalog, Structures, Villages, Territory, Grid, Walls } = Vide;
 
   const bySpecies = new Map();
   function species(id) {
@@ -178,14 +178,21 @@
 
   // --- Déplacements ---
 
+  // Villages qui ont une enceinte achevée (game.walled, repris à chaque pas) : les êtres passent par leurs portes.
+  let walled = [];
+
+  // Va vers (tx, ty) ; renvoie la distance qui en sépare. Une enceinte entre les deux : par la porte la mieux placée.
   function steer(b, tx, ty, speed, dt) {
-    const dx = tx - b.x, dy = ty - b.y;
-    const d = Math.hypot(dx, dy) || 1;
-    // Ralentit à l'approche pour ne pas dépasser la cible.
-    const s = speed * Math.min(1, d / 30 + 0.25);
+    const d = Math.hypot(tx - b.x, ty - b.y) || 1;
+    const via = walled.length ? Walls.route(walled, b.x, b.y, tx, ty) : null;
+    const gx = via ? via.x : tx, gy = via ? via.y : ty;
+    const dx = gx - b.x, dy = gy - b.y;
+    const dg = Math.hypot(dx, dy) || 1;
+    // Ralentit à l'approche pour ne pas dépasser la cible (pas devant une porte).
+    const s = speed * (via ? 1 : Math.min(1, dg / 30 + 0.25));
     const k = util.damp(5, dt);
-    b.vx += ((dx / d) * s - b.vx) * k;
-    b.vy += ((dy / d) * s - b.vy) * k;
+    b.vx += ((dx / dg) * s - b.vx) * k;
+    b.vy += ((dy / dg) * s - b.vy) * k;
     return d;
   }
 
@@ -340,6 +347,19 @@
         }
         return;
       }
+      // Une brèche ou un pan abîmé : on le relève (depuis l'intérieur).
+      const breach = Walls.mostDamaged(game, b.village, b.x, b.y);
+      if (breach) {
+        const a = b.phase + game.time * 0.5;
+        steer(b, breach.x + Math.cos(a) * 12, breach.y + Math.sin(a) * 12, speed, dt);
+        b.working = Math.hypot(breach.x - b.x, breach.y - b.y) < 30;
+        b.task = b.working ? 'repair' : 'travel';
+        b.site = null;
+        if (b.working && Walls.repair(game, b.village, breach.w, breach.seg, stats.buildRate * CONFIG.colony.repairRate * dt)) {
+          Vide.Sim.emit(game, 'wallRepaired', { village: b.village.type });
+        }
+        return;
+      }
       const site = Structures.nearestSite(b.village, b.x, b.y);
       if (site) {
         const a = b.phase + game.time * 0.5;
@@ -351,6 +371,21 @@
         if (b.working) {
           game.colony.activeNow.add(site);
           if (Structures.addWork(site, stats.buildRate * dt)) built(game, site);
+        }
+        return;
+      }
+      // L'enceinte en chantier : on suit son front, qui fait le tour du cœur.
+      const wall = Walls.site(b.village);
+      if (wall) {
+        const f = Walls.front(b.village, wall);
+        const r = Walls.radius(wall) - 14 + Math.sin(b.phase + game.time) * 6;
+        const tx = b.village.x + Math.cos(f.a) * r, ty = b.village.y + Math.sin(f.a) * r;
+        steer(b, tx, ty, speed, dt);
+        b.working = Math.hypot(f.x - b.x, f.y - b.y) < 40;
+        b.task = b.working ? 'build' : 'travel';
+        b.site = null;
+        if (b.working && Walls.addWork(wall, stats.buildRate * dt)) {
+          Vide.Sim.emit(game, 'wallDone', { village: b.village.type, layers: b.village.walls.length });
         }
         return;
       }
@@ -396,6 +431,7 @@
     const colony = game.colony;
     colony.deposited.clear();
     colony.activeNow.clear();
+    walled = game.walled;
     index(colony);
     for (const b of colony.beings) {
       const sp = species(b.species);
@@ -431,8 +467,10 @@
       } else {
         ROLES[b.role](game, b, dt, speed);
       }
+      const x0 = b.x, y0 = b.y;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
+      if (walled.length) Walls.hold(walled, b, x0, y0, 4, true, b);
     }
     separate(colony, dt);
     // Les chantiers actifs de ce pas servent aux lueurs au pas suivant.

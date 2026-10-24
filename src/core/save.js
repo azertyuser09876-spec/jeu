@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 20;
+  const FORMAT = 21;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -95,6 +95,12 @@
       }
       return data;
     },
+    // 2.2 : les enceintes.
+    20: (data) => ({
+      ...data,
+      villages: Array.isArray(data.villages)
+        ? data.villages.map((v) => (v && typeof v === 'object' ? { ...v, walls: [] } : v)) : data.villages,
+    }),
   };
 
   function serialize(state, now) {
@@ -310,6 +316,7 @@
       stock: { matiere: 0, savoir: 0 },
       extra: [],
       districts: [],
+      walls: [],
     };
     const known = (t) => Vide.VILLAGE_TYPES.some((x) => x.id === t);
     for (const t of Array.isArray(raw.extra) ? raw.extra : []) {
@@ -327,6 +334,20 @@
       const n = beings[sp.id];
       if (Number.isInteger(n) && n > 0) village.beings[sp.id] = n;
     }
+    // Enceintes : une par boulevard, triées, une seule en chantier ; brèches valides et sans doublon.
+    for (const w of Array.isArray(raw.walls) ? raw.walls : []) {
+      if (!isObject(w) || !Number.isInteger(w.n) || w.n < 1 || w.n > 200 || village.walls.some((o) => o.n === w.n)) continue;
+      const wall = { n: w.n, work: 0, broken: [] };
+      wall.work = Math.min(positive(w.work, 0), Vide.Walls.workOf(wall));
+      if (!Vide.Walls.isDone(wall) && village.walls.some((o) => !Vide.Walls.isDone(o))) continue;
+      const count = Vide.Walls.segments(wall);
+      for (const s of Array.isArray(w.broken) ? w.broken : []) {
+        if (Number.isInteger(s) && s >= 0 && s < count && !wall.broken.includes(s)) wall.broken.push(s);
+      }
+      if (!Vide.Walls.isDone(wall)) wall.broken.length = 0;
+      village.walls.push(wall);
+    }
+    village.walls.sort((a, b) => a.n - b.n);
     const buildings = Array.isArray(raw.buildings) ? raw.buildings : [];
     for (const b of buildings) {
       if (!isObject(b)) continue;

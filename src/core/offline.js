@@ -19,6 +19,7 @@
       radiated: 0,
       brought: 0,
       built: [],
+      walls: 0,      // enceintes achevées
       kept: 0,       // lumière mise de côté par les intendants
       steward: [],   // ce qu'ils en ont fait
       villages: state.villages.length,
@@ -44,7 +45,11 @@
       const funds = v.funds;
       report.radiated += Vide.Steward.share(state, v, Territory.advance(v, local, applied) * stats.lightMult);
       Territory.whiten(v, local, applied);
+      // Les bâtisseurs finissent les chantiers, puis relèvent les brèches et avancent l'enceinte.
+      let reserved = 0;
+      for (const b of Vide.Structures.sites(v)) reserved += Vide.Structures.def(b.type).work - b.work;
       report.built.push(...Vide.Structures.advanceOffline(v, local, applied));
+      report.walls += Vide.Walls.advanceOffline(v, local, applied, reserved);
       // Les êtres continuent leur travail au rythme mesuré avant le départ.
       if (Object.keys(v.beings).length) report.brought += Vide.Steward.share(state, v, v.rate * applied * stats.lightMult);
       // L'intendant a mis de côté sa part, et l'a dépensée au fil du temps.

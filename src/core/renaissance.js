@@ -58,6 +58,7 @@
     game.colony.flashes.clear();
     game.colony.glows.clear();
     game.structureHp.clear();
+    game.wallHp.clear();
     game.heartHurt.clear();
     game.velocity.x = game.velocity.y = 0;
     game.pulse.cooldown = 0;
