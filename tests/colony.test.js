@@ -152,4 +152,39 @@
     assert.equal(v.rate, 0);
     assert.deepEqual(clean({ lueur: 2.5 }).beings, {});
   });
+
+  test('la grille spatiale trouve les mêmes voisins qu’un parcours complet', () => {
+    const { Grid, util } = Vide;
+    const rng = util.rng(5);
+    const items = Array.from({ length: 500 }, () => ({ x: (rng() - 0.5) * 2000, y: (rng() - 0.5) * 2000 }));
+    const grid = Grid.create(48);
+    for (const it of items) Grid.insert(grid, it);
+    for (let k = 0; k < 50; k++) {
+      const x = (rng() - 0.5) * 2000, y = (rng() - 0.5) * 2000, r = rng() * 150;
+      const found = new Set();
+      Grid.near(grid, x, y, r, (o) => { if (Math.hypot(o.x - x, o.y - y) <= r) found.add(o); });
+      const brute = items.filter((o) => Math.hypot(o.x - x, o.y - y) <= r);
+      assert.equal(found.size, brute.length);
+      for (const o of brute) assert.ok(found.has(o));
+    }
+    Grid.clear(grid);
+    let n = 0;
+    Grid.near(grid, 0, 0, 5000, () => n++);
+    assert.equal(n, 0, 'vidée');
+  });
+
+  test('des centaines d’êtres restent légers à simuler', () => {
+    const state = State.create(3);
+    for (let k = 0; k < 4; k++) {
+      village(state, { x: k * 3000, radius: 700, beings: { lueur: 60, batisseur: 3, gardien: 20, etincelle: 10, veilleuse: 7 } });
+    }
+    state.player.x = 500;
+    const game = Sim.create(state);
+    for (const v of state.villages) Vide.Shadows.startTide(game, v);
+    const t0 = Date.now();
+    run(game, 5);
+    const ms = (Date.now() - t0) / 300;
+    assert.equal(game.colony.beings.length, 400);
+    assert.ok(ms < 12, `${ms.toFixed(2)} ms par pas`);
+  });
 })();

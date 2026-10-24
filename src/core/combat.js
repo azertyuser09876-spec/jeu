@@ -232,6 +232,27 @@
     return Vide.Colossus ? Vide.Colossus.target(game, a.x, a.y, a.radius) : null;
   }
 
+  // L'ennemi visé est réévalué quatre fois par seconde, et aussitôt s'il tombe ou quitte la zone défendue :
+  // avec des centaines d'êtres, chercher à chaque pas coûterait trop.
+  const RETARGET = 0.25;
+
+  function stillValid(e, a) {
+    if (!e) return false;
+    if (e.colossus) {
+      const m = e.colossus.mode;
+      return (m === 'hunt' || m === 'kneel') && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius + e.radius;
+    }
+    return e.hp > 0 && !e.gone && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius;
+  }
+
+  function currentEnemy(game, b, a, dt) {
+    b.enemyCheck = (b.enemyCheck || 0) - dt;
+    if (b.enemyCheck > 0 && stillValid(b.enemy, a)) return b.enemy;
+    b.enemyCheck = RETARGET;
+    b.enemy = enemyFor(game, b, a);
+    return b.enemy;
+  }
+
   function enemyRadius(enemy) {
     return enemy.colossus ? enemy.radius : Shadows.kind(enemy.kind).radius;
   }
@@ -261,7 +282,7 @@
     guard(game, b, dt, speed) {
       const sp = Colony.species(b.species);
       const a = anchor(game, b);
-      const enemy = enemyFor(game, b, a);
+      const enemy = currentEnemy(game, b, a, dt);
       if (!enemy) return formation(game, b, a, speed, dt);
       b.task = 'fight';
       const d = Colony.steer(b, enemy.x, enemy.y, speed, dt);
@@ -276,7 +297,7 @@
     ranged(game, b, dt, speed) {
       const sp = Colony.species(b.species);
       const a = anchor(game, b);
-      const enemy = enemyFor(game, b, a);
+      const enemy = currentEnemy(game, b, a, dt);
       if (!enemy) return formation(game, b, a, speed, dt);
       b.task = 'fight';
       const dx = enemy.x - b.x, dy = enemy.y - b.y;
@@ -293,24 +314,31 @@
     },
 
     // Soin : rejoindre l'allié le plus blessé (être ou lumière du joueur) et le soigner.
+    // Le blessé est choisi deux fois par seconde ; on le garde tant qu'il en a besoin.
     healer(game, b, dt, speed) {
       const sp = Colony.species(b.species);
-      let best = null;
-      let worst = 1;
-      for (const o of game.colony.beings) {
-        if (o === b || !Colony.isActive(o) || o.hp === null) continue;
-        const ratio = o.hp / Colony.maxHp(game, o);
-        if (ratio < worst && Math.hypot(o.x - b.x, o.y - b.y) < 450) {
-          worst = ratio;
-          best = o;
-        }
-      }
       const v = game.vitality;
       const { player } = game.state;
-      const playerRatio = v.hp / game.stats.vitality;
-      if (playerRatio < worst && Math.hypot(player.x - b.x, player.y - b.y) < 450) {
-        best = player;
-        worst = playerRatio;
+      b.healCheck = (b.healCheck || 0) - dt;
+      let best = b.patient;
+      const needs = (o) => (o === player ? v.hp < game.stats.vitality
+        : !o.removed && Colony.isActive(o) && o.hp < Colony.maxHp(game, o));
+      if (b.healCheck <= 0 || (best && !needs(best))) {
+        b.healCheck = 0.5;
+        best = null;
+        let worst = 1;
+        for (const o of game.colony.beings) {
+          if (o === b || !Colony.isActive(o) || o.hp === null) continue;
+          if (Math.abs(o.x - b.x) > 450 || Math.abs(o.y - b.y) > 450) continue;
+          const ratio = o.hp / Colony.maxHp(game, o);
+          if (ratio < worst && Math.hypot(o.x - b.x, o.y - b.y) < 450) {
+            worst = ratio;
+            best = o;
+          }
+        }
+        const playerRatio = v.hp / game.stats.vitality;
+        if (playerRatio < worst && Math.hypot(player.x - b.x, player.y - b.y) < 450) best = player;
+        b.patient = best;
       }
       b.healing = null;
       if (!best) return formation(game, b, anchor(game, b), speed, dt);

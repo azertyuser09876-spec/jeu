@@ -3,11 +3,16 @@
 // autour du cœur de leur village. Chaque être vit, travaille et se rallume dans son village.
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Garden, Catalog, Structures, Villages, Territory } = Vide;
+  const { CONFIG, util, Garden, Catalog, Structures, Villages, Territory, Grid } = Vide;
 
+  const bySpecies = new Map();
   function species(id) {
-    const sp = Vide.SPECIES.find((s) => s.id === id);
-    if (!sp) throw new Error(`Espèce inconnue : ${id}`);
+    let sp = bySpecies.get(id);
+    if (!sp) {
+      sp = Vide.SPECIES.find((s) => s.id === id);
+      if (!sp) throw new Error(`Espèce inconnue : ${id}`);
+      bySpecies.set(id, sp);
+    }
     return sp;
   }
 
@@ -111,6 +116,7 @@
 
   function remove(colony, i) {
     releaseTarget(colony.beings[i]);
+    colony.beings[i].removed = true;
     colony.beings.splice(i, 1);
   }
 
@@ -151,6 +157,8 @@
       flashes: new Map(),               // éclat des bâtiments après un dépôt ou une fin de chantier
       active: new Set(),                // chantiers où un bâtisseur travaille (pas précédent)
       activeNow: new Set(),             // … et pendant ce pas
+      grid: Grid.create(48),            // êtres actifs, rangés par cases (rencontres, séparation)
+      near: [],                         // liste réutilisée pour les requêtes de voisinage
       deposited: new Map(),             // lumière déposée dans chaque village pendant ce pas
       gains: new Map(),                 // … et ce qu'elle rapporte (multiplicateurs des êtres appliqués)
     };
@@ -197,7 +205,10 @@
     b.danceCheck -= dt;
     if (b.danceCooldown > 0 || b.danceCheck > 0) return false;
     b.danceCheck = 0.5;
-    for (const o of game.colony.beings) {
+    const near = game.colony.near;
+    near.length = 0;
+    Grid.near(game.colony.grid, b.x, b.y, CONFIG.colony.danceRange, (o) => near.push(o));
+    for (const o of near) {
       if (o === b || o.task !== 'idle' || o.dance || o.danceCooldown > 0 || !isActive(o)) continue;
       if (Math.hypot(o.x - b.x, o.y - b.y) > CONFIG.colony.danceRange) continue;
       const cx = (b.x + o.x) / 2, cy = (b.y + o.y) / 2;
@@ -340,21 +351,30 @@
     },
   };
 
-  // Les êtres s'écartent légèrement les uns des autres pour ne pas se superposer.
-  function separate(beings, dt) {
+  // Range les êtres actifs dans la grille (une fois par pas : rencontres et séparation s'en servent).
+  function index(colony) {
+    Grid.clear(colony.grid);
+    for (const b of colony.beings) if (isActive(b)) Grid.insert(colony.grid, b);
+  }
+
+  // Les êtres s'écartent légèrement les uns des autres pour ne pas se superposer. La grille ne compare que
+  // les voisins proches : des centaines d'êtres restent légers.
+  function separate(colony, dt) {
     const minD = CONFIG.colony.separation;
-    for (let i = 0; i < beings.length; i++) {
-      const a = beings[i];
+    const grid = colony.grid;
+    const near = colony.near;
+    const k = Math.min(1, dt * 10);
+    for (const a of colony.beings) {
       if (!isActive(a)) continue;
-      for (let j = i + 1; j < beings.length; j++) {
-        const b = beings[j];
-        if (!isActive(b)) continue;
-        if (a.dance && b.dance) continue; // les danseurs se frôlent
+      near.length = 0;
+      Grid.near(grid, a.x, a.y, minD, (o) => near.push(o));
+      for (const b of near) {
+        if (b.id <= a.id || (a.dance && b.dance)) continue; // chaque paire une fois ; les danseurs se frôlent
         const dx = b.x - a.x, dy = b.y - a.y;
         const d2 = dx * dx + dy * dy;
         if (d2 >= minD * minD || d2 === 0) continue;
         const d = Math.sqrt(d2);
-        const push = ((minD - d) / d) * 0.5 * Math.min(1, dt * 10);
+        const push = ((minD - d) / d) * 0.5 * k;
         a.x -= dx * push; a.y -= dy * push;
         b.x += dx * push; b.y += dy * push;
       }
@@ -366,6 +386,7 @@
     const colony = game.colony;
     colony.deposited.clear();
     colony.activeNow.clear();
+    index(colony);
     for (const b of colony.beings) {
       const sp = species(b.species);
       const stats = statsOf(game, b);
@@ -403,7 +424,7 @@
       b.x += b.vx * dt;
       b.y += b.vy * dt;
     }
-    separate(colony.beings, dt);
+    separate(colony, dt);
     // Les chantiers actifs de ce pas servent aux lueurs au pas suivant.
     [colony.active, colony.activeNow] = [colony.activeNow, colony.active];
 

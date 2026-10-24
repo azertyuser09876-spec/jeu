@@ -248,11 +248,13 @@
         state.echoes += echoes;
         state.stats.shadows++;
         Vide.Sim.emit(game, 'shadowDown', { kind: s.kind, x: s.x, y: s.y, echoes, first: state.stats.shadows === 1 });
+        s.gone = true;
         sh.list.splice(i, 1);
         continue;
       }
       const fromPlayer = Math.hypot(s.x - state.player.x, s.y - state.player.y);
       if (fromPlayer > c.despawn && (s.origin === 'roam' || !(Territory.distanceToEdge(state, s.x, s.y) <= c.despawn))) {
+        s.gone = true;
         sh.list.splice(i, 1);
       }
     }
