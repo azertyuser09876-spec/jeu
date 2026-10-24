@@ -1,8 +1,11 @@
-// Catalogue de tout ce qui s'achète, rangé par onglets. L'interface l'affiche sans rien savoir
+// Catalogue de tout ce qui s'achète, rangé par onglets, puis par sections. L'interface l'affiche sans rien savoir
 // de ce que chaque achat fait : améliorations, villages, êtres, bâtiments… s'y enregistrent tous.
+// Onglets : 'village' (ce qui s'achète dans le village où l'on se trouve, et seulement là), 'fonder' (hors des
+// villages), 'lumiere' (ta lumière), 'monde' (ce qui vaut pour tous tes villages), 'souvenirs'.
 //
 // Un article :
 //   id, tab, name, desc
+//   group            section dans l'onglet (voir GROUPS), facultatif
 //   revealed(state)  visible dans l'interface ?
 //   maxed(state)     plus rien à acheter ?
 //   cost(state)      coût du prochain achat, ex. { light: 120 }
@@ -15,13 +18,15 @@
   'use strict';
 
   Vide.TABS = [
+    { id: 'village', name: 'village' },
+    { id: 'fonder', name: 'fonder' },
     { id: 'lumiere', name: 'lumière' },
-    { id: 'territoire', name: 'territoire' },
-    { id: 'etres', name: 'êtres' },
-    { id: 'batiments', name: 'bâtiments' },
-    { id: 'armee', name: 'armée' },
+    { id: 'monde', name: 'monde' },
     { id: 'souvenirs', name: 'souvenirs' },
   ];
+
+  // Les sections, dans leur ordre (un article sans section passe en tête de son onglet).
+  Vide.GROUPS = ['êtres', 'créatures', 'armée', 'économie', 'vie', 'savoir', 'défense', 'cité', 'routes', 'territoires'];
 
   const items = [];
   const byId = new Map();
@@ -38,8 +43,14 @@
   function register(item) {
     if (byId.has(item.id)) throw new Error(`Article déjà enregistré : ${item.id}`);
     const full = { ...DEFAULTS, ...item, index: items.length };
+    full.rank = (full.group ? Vide.GROUPS.indexOf(full.group) + 1 : 0) * 10000 + full.order;
+    // Ce qui s'achète dans un village ne se montre que dans un village.
+    if (full.tab === 'village') {
+      const revealed = full.revealed;
+      full.revealed = (state) => Boolean(Vide.Villages && Vide.Villages.current(state)) && revealed(state);
+    }
     items.push(full);
-    items.sort((a, b) => a.order - b.order || a.index - b.index);
+    items.sort((a, b) => a.rank - b.rank || a.index - b.index);
     byId.set(full.id, full);
     return full;
   }

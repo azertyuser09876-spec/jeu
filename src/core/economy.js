@@ -71,6 +71,7 @@
     Vide.Catalog.register({
       id: up.id,
       tab: up.tab || 'lumiere',
+      group: up.group,
       name: up.name,
       desc: up.desc,
       revealed: (state) => isRevealed(state, up.id),

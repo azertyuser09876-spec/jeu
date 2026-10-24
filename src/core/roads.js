@@ -274,8 +274,8 @@
 
   Catalog.register({
     id: 'route',
-    tab: 'territoire',
-    order: -5,
+    tab: 'village',
+    group: 'routes',
     name: 'Route',
     desc: 'Une route de lumière vers le village le plus proche qui n’est pas encore relié à celui-ci. '
       + 'Les bâtisseurs des deux bouts la construisent. Ta lumière y file plus vite, les caravanes y passent.',

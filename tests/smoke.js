@@ -101,11 +101,11 @@ const { chromium } = require('playwright');
     s.light += 500; s.totalLight += 500;
   });
   await page.waitForTimeout(100);
-  await page.click('.tab:has-text("territoire")');
-  // D'abord, la sous-faction (un choix pour toute la partie), puis le village.
-  await page.click('#shop-list li:not([hidden]) .item:has-text("Éleveurs")');
-  await page.waitForTimeout(100);
-  await page.click('#shop-list li:not([hidden]) .item:has-text("Bastion")');
+  // Une fondation se compose : le type, la sous-faction, puis « Fonder ».
+  await page.click('.tab:has-text("fonder")');
+  await page.click('#compose-types .chip:has-text("Bastion")');
+  await page.click('#compose-factions .chip:has-text("Éleveurs")');
+  await page.click('#compose-go');
   await page.waitForTimeout(400);
   const founded = await page.evaluate(() => Vide.game.state.villages.map((v) => ({ type: v.type, x: Math.round(v.x) })));
   const announced = await page.evaluate(() => Vide.Away.history.some((t) => t.includes('premier village')));
@@ -113,14 +113,18 @@ const { chromium } = require('playwright');
     'un village (bastion) se fonde là où l’on est, avec un message');
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'village.png') });
 
-  // Lueurs : l'onglet êtres permet d'en éveiller une, qui apparaît dans le monde.
+  // Lueurs : l'onglet du village (il porte son nom) permet d'en éveiller une, qui apparaît dans le monde.
   await page.evaluate(() => { const s = Vide.game.state; s.light += 1000; s.totalLight += 1000; });
   await page.waitForTimeout(100);
-  await page.click('.tab:has-text("êtres")');
+  await page.click('.tab:has-text("bastion")');
   await page.click('#shop-list li:not([hidden]) .item:has-text("Lueur")');
   await page.waitForTimeout(300);
   const beings = await page.evaluate(() => Vide.game.colony.beings.length);
-  check(beings === 1, 'une lueur s’éveille depuis l’onglet êtres');
+  check(beings === 1, 'une lueur s’éveille depuis l’onglet du village');
+  // Sa fiche : sa sous-faction se change d'un geste.
+  await page.click('#fiche-factions .chip:has-text("Lames")');
+  const switched = await page.evaluate(() => Vide.game.state.villages[0].faction);
+  check(switched === 'lames', 'la fiche du village change sa sous-faction d’un geste');
 
   // Bâtiments : avec un bâtisseur et un territoire assez grand, un nid se planifie.
   await page.evaluate(() => {
@@ -130,7 +134,6 @@ const { chromium } = require('playwright');
     s.villages[0].beings.batisseur = 1;
   });
   await page.waitForTimeout(200);
-  await page.click('.tab:has-text("bâtiments")');
   await page.click('#shop-list li:not([hidden]) .item:has-text("Nid")');
   // Le bâtisseur doit d'abord rejoindre le chantier.
   await page.waitForTimeout(3000);

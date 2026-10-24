@@ -510,8 +510,8 @@
   for (const sp of Vide.SPECIES) {
     Catalog.register({
       id: sp.id,
-      tab: 'etres',
-      order: -10, // les espèces avant leurs améliorations
+      tab: 'village',
+      group: sp.army ? 'armée' : 'êtres',
       name: sp.name,
       desc: sp.desc,
       revealed: (state) => count(state, sp.id) > 0 ||

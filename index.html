@@ -57,8 +57,22 @@
     <button type="button" class="ability hidden" data-ability="recall" title="Retour (R)" aria-label="Retour (R)">⌂</button>
   </div>
 
-  <aside id="shop" class="hidden" aria-label="Améliorations">
+  <aside id="shop" class="hidden" aria-label="Achats">
     <nav id="shop-tabs"></nav>
+    <!-- Dans un village : sa fiche (type, sous-faction à changer d'un geste, ce qui le limite). -->
+    <section id="fiche" class="sheet" hidden>
+      <div class="sheet-title" id="fiche-name"></div>
+      <div class="chips" id="fiche-factions"></div>
+      <div class="sheet-info" id="fiche-info"></div>
+    </section>
+    <!-- Hors des villages : une fondation se compose (type, sous-faction), puis se paie. -->
+    <section id="composer" class="sheet" hidden>
+      <div class="sheet-title">Fonder un village</div>
+      <div class="chips" id="compose-types"></div>
+      <div class="chips" id="compose-factions"></div>
+      <div class="sheet-info" id="compose-info"></div>
+      <button type="button" class="item" id="compose-go"><span class="name">Fonder</span><span class="label" id="compose-cost"></span><span class="effect" id="compose-effect"></span></button>
+    </section>
     <ol id="shop-list"></ol>
   </aside>
 

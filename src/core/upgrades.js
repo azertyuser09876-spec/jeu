@@ -107,7 +107,8 @@
     // --- Territoire (visibles une fois un village fondé) ---
     {
       id: 'expansion',
-      tab: 'territoire',
+      tab: 'monde',
+      group: 'territoires',
       name: 'Expansion',
       desc: 'Le territoire s’étend plus vite.',
       requires: (state) => state.villages.length > 0,
@@ -119,7 +120,8 @@
     },
     {
       id: 'fertility',
-      tab: 'territoire',
+      tab: 'monde',
+      group: 'territoires',
       name: 'Fertilité',
       desc: 'Chaque parcelle du territoire rayonne davantage.',
       requires: (state) => state.villages.length > 0,
@@ -131,7 +133,8 @@
     },
     {
       id: 'memory',
-      tab: 'territoire',
+      tab: 'monde',
+      group: 'territoires',
       name: 'Mémoire',
       desc: 'Le territoire se souvient plus longtemps de toi pendant ton absence.',
       requires: (state) => state.villages.length > 0,
@@ -143,7 +146,8 @@
     },
     {
       id: 'bloom',
-      tab: 'territoire',
+      tab: 'monde',
+      group: 'territoires',
       name: 'Floraison',
       desc: 'Plus de lumière naît dans le territoire, pour tes lueurs.',
       requires: (state) => Vide.Villages.count(state, 'lueur') > 0,
@@ -157,7 +161,8 @@
     // --- Êtres (visibles une fois la première lueur éveillée) ---
     {
       id: 'agility',
-      tab: 'etres',
+      tab: 'monde',
+      group: 'êtres',
       name: 'Agilité',
       desc: 'Les êtres se déplacent plus vite.',
       requires: (state) => Vide.Villages.count(state, 'lueur') > 0,
@@ -169,7 +174,8 @@
     },
     {
       id: 'burden',
-      tab: 'etres',
+      tab: 'monde',
+      group: 'êtres',
       name: 'Charge',
       desc: 'Les lueurs portent plus de lumière avant de rentrer.',
       requires: (state) => Vide.Villages.count(state, 'lueur') > 0,
@@ -181,7 +187,8 @@
     },
     {
       id: 'fervor',
-      tab: 'etres',
+      tab: 'monde',
+      group: 'êtres',
       name: 'Ferveur',
       desc: 'La lumière rapportée par les êtres vaut plus.',
       requires: (state) => Vide.Villages.count(state, 'lueur') > 0,
@@ -193,7 +200,8 @@
     },
     {
       id: 'ardor',
-      tab: 'etres',
+      tab: 'monde',
+      group: 'êtres',
       name: 'Ardeur',
       desc: 'Les bâtisseurs construisent plus vite.',
       requires: (state) => Vide.Villages.count(state, 'batisseur') > 0,
@@ -207,7 +215,8 @@
     // --- Armée et combat (payées en échos, visibles après la première ombre vaincue) ---
     {
       id: 'scorch',
-      tab: 'armee',
+      tab: 'monde',
+      group: 'armée',
       name: 'Brûlure',
       desc: 'Ta pulsation blesse davantage les ombres.',
       currency: 'echoes',
@@ -220,7 +229,8 @@
     },
     {
       id: 'intensity',
-      tab: 'armee',
+      tab: 'monde',
+      group: 'armée',
       name: 'Intensité',
       desc: 'Ta lumière résiste mieux aux coups.',
       currency: 'echoes',
@@ -233,7 +243,8 @@
     },
     {
       id: 'vigor',
-      tab: 'armee',
+      tab: 'monde',
+      group: 'armée',
       name: 'Vigueur',
       desc: 'Tous les êtres résistent mieux aux ombres.',
       currency: 'echoes',
@@ -246,7 +257,8 @@
     },
     {
       id: 'edge',
-      tab: 'armee',
+      tab: 'monde',
+      group: 'armée',
       name: 'Tranchant',
       desc: 'L’armée et les tours frappent plus fort, les veilleuses soignent mieux.',
       currency: 'echoes',
@@ -259,7 +271,8 @@
     },
     {
       id: 'resonance',
-      tab: 'armee',
+      tab: 'monde',
+      group: 'armée',
       name: 'Résonance',
       desc: 'Les ombres vaincues laissent plus d’échos.',
       requires: (state) => state.stats.shadows > 0,

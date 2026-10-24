@@ -47,17 +47,20 @@ let goal = null; // 'join' | 'leave' | null
 
 // L'achat serait-il possible une fois dans le village le plus proche ? (Sans quoi le robot ferait des allers-retours
 // pour rien : une lueur abordable mais la population pleine, par exemple.)
-function buyableAtHome(item) {
+// (Les achats d'un village ne se montrent que dans ce village : on les regarde comme si l'on y était.)
+function atHome(item, affordable) {
   const home = Villages.nearest(state, state.player.x, state.player.y);
   if (!home) return false;
   const { x, y } = state.player;
   state.player.x = home.x;
   state.player.y = home.y;
-  const why = item.blocked(state);
+  const ok = item.revealed(state) && !item.maxed(state) && !item.blocked(state) && (!affordable || Wallet.has(state, item.cost(state)));
   state.player.x = x;
   state.player.y = y;
-  return !why;
+  return ok;
 }
+const buyableAtHome = (item) => atHome(item, true);
+const possibleAtHome = (item) => atHome(item, false);
 
 // Ce qu'un joueur ferait passer avant tout, quitte à économiser : quand la population du village est pleine,
 // un bâtisseur s'il n'en a pas, sinon un nid (s'il n'y en a pas déjà un en chantier).
@@ -66,7 +69,7 @@ function priority() {
   if (!home || Vide.Colony.populationIn(home) < Villages.local(state, home).beingCap) return null;
   if ((home.beings.batisseur || 0) && Vide.Structures.sites(home).some((b) => b.type === 'nid')) return null;
   const item = Catalog.get(home.beings.batisseur ? 'nid' : 'batisseur');
-  return item && item.revealed(state) && !item.maxed(state) && buyableAtHome(item) ? item : null;
+  return item && possibleAtHome(item) ? item : null;
 }
 
 function steerTo(x, y, sign) {
@@ -82,18 +85,24 @@ function steerTo(x, y, sign) {
   input.move.y = (sign * dy) / d;
 }
 
+Vide.Factions.choose(state, Vide.FACTIONS[0].id);
+
 for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   if (--waitCheck <= 0) {
     waitCheck = 30;
     goal = null;
     // Les fondations ne se montrent que hors des villages : le robot les considère toujours.
     for (const i of Catalog.all()) {
+      if (i.tab === 'village' && !Villages.current(state)) {
+        if (!goal && i.id !== 'intendant' && buyableAtHome(i)) goal = 'join';
+        continue;
+      }
       const cost = i.cost(state);
       if (i.id === 'intendant' || i.maxed(state) || !Object.keys(cost).length || !Wallet.has(state, cost)) continue;
       const founding = i.id.startsWith('village-');
       if (!founding && !i.revealed(state)) continue;
       const why = i.blocked(state);
-      if (JOIN.includes(why) && !goal && buyableAtHome(i)) goal = 'join';
+      if (JOIN.includes(why) && !goal && possibleAtHome(i)) goal = 'join';
       // Fonder (le premier village, ou le suivant quand on peut se l'offrir) passe avant tout.
       if (founding && (LEAVE.includes(why) || (Villages.current(state) && !why))) goal = 'leave';
     }
@@ -134,6 +143,8 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     if (first) buyable.splice(0, buyable.length, ...(Catalog.canBuy(state, first.id) ? [first] : []));
     if (buyable.length) {
       const item = buyable[0];
+      // Chaque fondation a sa sous-faction, à tour de rôle.
+      if (item.id.startsWith('village-')) Vide.Factions.choose(state, Vide.FACTIONS[state.villages.length % Vide.FACTIONS.length].id);
       Catalog.buy(state, item.id);
       if (!(item.id in firsts)) firsts[item.id] = game.time;
     }

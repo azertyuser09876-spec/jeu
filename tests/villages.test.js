@@ -18,7 +18,7 @@
     assert.ok(Catalog.get('village-observatoire').revealed(state));
     // D'abord, sa sous-faction.
     assert.equal(Catalog.get('village-observatoire').blocked(state), 'choisis ta sous-faction');
-    assert.ok(Catalog.buy(state, 'faction-illumines'));
+    Vide.Factions.choose(state, 'illumines');
     assert.ok(Catalog.buy(state, 'village-observatoire'));
     assert.equal(state.villages[0].faction, 'illumines');
     assert.equal(state.villages.length, 1);

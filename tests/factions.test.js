@@ -3,20 +3,30 @@
   const { test, assert, village } = VideTest;
   const { CONFIG, State, Catalog, Factions, Villages, Nests, Save, Renaissance, Expeditions, Sim } = Vide;
 
-  test('le joueur choisit la sous-faction de son premier village, avant de le fonder', () => {
+  test('à chaque fondation, le joueur choisit le type et la sous-faction ; il change celle d’un village quand il veut', () => {
     const state = State.create(3);
-    state.light = state.totalLight = 1000;
-    const items = Vide.FACTIONS.map((f) => Catalog.get('faction-' + f.id));
-    assert.ok(items.every((i) => i.revealed(state)));
+    state.light = state.totalLight = 1e9;
     assert.equal(Catalog.get('village-jardins').blocked(state), 'choisis ta sous-faction');
-    assert.ok(Catalog.buy(state, 'faction-lames'));
-    assert.equal(state.faction, 'lames');
-    assert.ok(items.every((i) => !i.revealed(state)), 'le choix est fait');
+    Factions.choose(state, 'lames');
     assert.ok(Catalog.buy(state, 'village-jardins'));
     assert.equal(state.villages[0].faction, 'lames');
+    // Une autre fondation, un autre choix (ni hérité ni muté : c'est le joueur qui fonde).
+    state.player.x = 8000;
+    Factions.choose(state, 'eleveurs');
+    assert.ok(Catalog.buy(state, 'village-bastion'));
+    assert.equal(state.villages[1].faction, 'eleveurs');
+    // Autant de changements qu'on veut, sans frais.
+    const light = state.light;
+    for (const id of ['illumines', 'lames', 'eleveurs', 'illumines']) {
+      assert.ok(Factions.setVillage(state, state.villages[0], id));
+      assert.equal(state.villages[0].faction, id);
+    }
+    assert.equal(state.light, light);
+    assert.equal(state.faction, 'illumines', 'le dernier choix sert aux prochaines fondations');
+    assert.ok(!Factions.setVillage(state, state.villages[0], 'corrupteurs'), 'pas une sous-faction des ombres');
   });
 
-  test('un village fondé depuis un autre en hérite le plus souvent ; sinon il en prend une autre', () => {
+  test('un village né d’un autre (des colons) en hérite le plus souvent ; sinon il mute', () => {
     let same = 0;
     const N = 400;
     for (let id = 1; id <= N; id++) {
@@ -26,16 +36,11 @@
       if (f === 'eleveurs') same++;
     }
     assert.near(same / N, CONFIG.factions.inherit, 0.07);
-    // Fondé à pied, près d'un village : celle de ce village ; par des colons : celle du village d'où ils partent.
+    // Fondé par des colons : celle du village d'où ils partent, le plus souvent (ou une mutation).
     const state = State.create(9);
     state.faction = 'illumines';
     const a = village(state, { radius: 300 });
     assert.equal(a.faction, 'illumines');
-    const b = village(state, { x: 5000, radius: 300 });
-    b.faction = 'eleveurs';
-    state.player.x = 6200;
-    const c = Villages.found(state, 'atelier');
-    assert.equal(c.faction, Factions.inherit(state, 'eleveurs', Vide.FACTIONS, c.id), 'depuis le plus proche');
     state.light = state.totalLight = 1e9;
     state.player.x = 0;
     a.beings.lueur = 10;
@@ -82,7 +87,6 @@
     assert.equal(migrated.faction, null);
     assert.equal(migrated.villages[0].faction, null);
     assert.ok(Factions.isDark(migrated.nests[0].faction));
-    assert.ok(Catalog.get('faction-eleveurs').revealed(migrated));
     Factions.choose(migrated, 'eleveurs');
     assert.equal(migrated.villages[0].faction, 'eleveurs');
     const bad = Save.sanitize({ faction: 'ombre', villages: [{ id: 1, x: 0, y: 0, faction: 'devoreurs' }], nests: [{ id: 1, x: 9, y: 9, faction: 'eleveurs' }] });

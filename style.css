@@ -440,6 +440,52 @@ body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
   animation: reveal 1.6s ease both;
 }
 
+/* Titre d'une section de l'onglet. */
+#shop-list li.group {
+  margin: 6px 0 -2px 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  opacity: 0.7;
+}
+#shop-list li.group:first-child { margin-top: 0; }
+
+/* Fiche du village, compositeur de fondation. */
+.sheet {
+  margin-bottom: 10px;
+  padding: 10px 12px 12px 14px;
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  border: 1px solid var(--faint);
+  border-radius: 10px;
+  animation: reveal 1.2s ease both;
+}
+.sheet-title { color: var(--light); margin-bottom: 8px; }
+.sheet-info { margin-top: 8px; font-size: 0.74rem; color: var(--dim); line-height: 1.35; white-space: normal; }
+.sheet .item { margin-top: 10px; white-space: normal; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.chip {
+  --tint: var(--light);
+  padding: 3px 9px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.chip:hover { color: var(--text); }
+.chip.active {
+  color: var(--tint);
+  border-color: var(--tint);
+  box-shadow: 0 0 10px -2px var(--tint);
+}
+
 .item {
   position: relative;
   width: 100%;
@@ -471,6 +517,9 @@ body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
 .item:not(.affordable) { cursor: default; }
 .item.maxed { opacity: 0.45; }
 .item.blocked .cost { font-style: italic; opacity: 0.8; }
+/* Bloqué : la raison prend la place de l'effet, sur toute la largeur. */
+.item.blocked .effect { display: none; }
+.item.blocked .cost { grid-column: 1 / -1; text-align: left; white-space: normal; }
 .item.bought { animation: bought 0.5s ease; }
 
 .item .name { grid-area: name; }
@@ -537,6 +586,9 @@ body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 186px);
   }
   #shop-list li { flex: 0 0 auto; min-width: 150px; }
+  #shop-list li.group { display: none; }
+  .sheet { margin-bottom: 6px; padding: 8px 10px; }
+  .sheet-info { display: none; }
   .item { padding: 8px 10px; }
   @keyframes reveal {
     from { opacity: 0; transform: translateY(10px); }

@@ -282,8 +282,9 @@
 
   Catalog.register({
     id: 'enceinte',
-    tab: 'batiments',
-    order: Vide.BUILDING_FAMILIES.indexOf('defense'),
+    tab: 'village',
+    group: 'défense',
+    order: -1,
     name: 'Enceinte',
     desc: 'Une muraille qui fait le tour du village, sur un de ses boulevards, avec une porte au bout de chaque avenue. '
       + 'Elle arrête tout, sauf les colosses ; ses portes s’ouvrent à la lumière, jamais aux ombres, qui doivent '

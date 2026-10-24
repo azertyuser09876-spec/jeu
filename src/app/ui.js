@@ -1,5 +1,8 @@
 // Interface HTML par-dessus le canvas : compteur de lumière, boutique en onglets, pulsation.
 // Les éléments n'apparaissent que lorsqu'ils deviennent utiles : au début, il n'y a que le vide.
+// La boutique : des onglets (le village où l'on se trouve, fonder, lumière, monde, souvenirs), rangés en sections ;
+// en tête de l'onglet du village, sa fiche (sa sous-faction se change d'un geste) ; en tête de « fonder », le
+// compositeur d'une fondation (type, sous-faction).
 (function (Vide) {
   'use strict';
   const { util, Catalog, Wallet } = Vide;
@@ -45,6 +48,75 @@
     return row;
   }
 
+  // Le titre d'une section, avant son premier article.
+  function createHeader(ui, tab, group) {
+    const li = document.createElement('li');
+    li.className = 'group';
+    li.hidden = true;
+    li.textContent = group;
+    ui.list.appendChild(li);
+    return { li, tab, group };
+  }
+
+  // Une pastille de choix (type, sous-faction).
+  function chip(parent, text, title, tint, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.textContent = text;
+    btn.title = title;
+    if (tint) btn.style.setProperty('--tint', `rgb(${tint.join(',')})`);
+    btn.addEventListener('click', onClick);
+    parent.appendChild(btn);
+    return btn;
+  }
+
+  // La fiche du village et le compositeur de fondation.
+  function createSheets(ui) {
+    const { state } = ui.game;
+    ui.fiche = $('fiche');
+    ui.ficheName = $('fiche-name');
+    ui.ficheInfo = $('fiche-info');
+    ui.ficheChips = Vide.FACTIONS.map((f) => ({
+      f,
+      btn: chip($('fiche-factions'), f.name, f.desc, f.tint, () => {
+        const v = Vide.Villages.current(state);
+        if (v) Vide.Factions.setVillage(state, v, f.id);
+      }),
+    }));
+    ui.composer = $('composer');
+    ui.compose = { type: Vide.VILLAGE_TYPES[0].id, faction: null };
+    ui.composeTypes = Vide.VILLAGE_TYPES.map((t) => ({
+      t, btn: chip($('compose-types'), t.name, t.desc, t.tint, () => { ui.compose.type = t.id; }),
+    }));
+    ui.composeFactions = Vide.FACTIONS.map((f) => ({
+      f, btn: chip($('compose-factions'), f.name, f.desc, f.tint, () => { ui.compose.faction = f.id; }),
+    }));
+    ui.composeInfo = $('compose-info');
+    ui.composeGo = $('compose-go');
+    ui.composeEffect = $('compose-effect');
+    ui.composeCost = $('compose-cost');
+    ui.composeGo.addEventListener('click', () => found(ui));
+  }
+
+  const composedFaction = (ui) => ui.compose.faction || ui.game.state.faction || Vide.FACTIONS[0].id;
+
+  // Fonde le village composé : son type, sa sous-faction.
+  function found(ui) {
+    const { state } = ui.game;
+    const id = 'village-' + ui.compose.type;
+    const keep = state.faction;
+    Vide.Factions.choose(state, composedFaction(ui));
+    if (!buy(ui, id)) {
+      state.faction = keep;
+      return false;
+    }
+    ui.composeGo.classList.remove('bought');
+    void ui.composeGo.offsetWidth;
+    ui.composeGo.classList.add('bought');
+    return true;
+  }
+
   function createTab(ui, tab) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -87,7 +159,15 @@
       pulseShown: -1, // dernière progression affichée, pour éviter des écritures inutiles
     };
     for (const tab of Vide.TABS) ui.tabs.set(tab.id, createTab(ui, tab));
-    for (const item of Catalog.all()) ui.rows.push(createRow(ui, item));
+    ui.headers = [];
+    const lastGroup = new Map();
+    for (const item of Catalog.all()) {
+      if (item.composed) continue;
+      if (item.group && lastGroup.get(item.tab) !== item.group) ui.headers.push(createHeader(ui, item.tab, item.group));
+      lastGroup.set(item.tab, item.group);
+      ui.rows.push(createRow(ui, item));
+    }
+    createSheets(ui);
     for (const btn of ui.orderButtons) {
       btn.addEventListener('click', () => Vide.Combat.setPosture(game.state, btn.dataset.posture));
     }
@@ -109,9 +189,11 @@
     if (!Catalog.buy(ui.game.state, id)) return false;
     const row = ui.rows.find((r) => r.item.id === id);
     // Relance l'animation d'achat même si on achète plusieurs fois de suite.
-    row.btn.classList.remove('bought');
-    void row.btn.offsetWidth;
-    row.btn.classList.add('bought');
+    if (row) {
+      row.btn.classList.remove('bought');
+      void row.btn.offsetWidth;
+      row.btn.classList.add('bought');
+    }
     ui.game.glow = 1;
     if (ui.hooks.onBuy) ui.hooks.onBuy(id);
     return true;
@@ -208,13 +290,19 @@
       setClass(btn, 'notify', buyable);
     }
 
+    // L'onglet du village porte son nom.
+    const here = Vide.Villages.current(state);
+    setText(ui.tabs.get('village'), here ? Vide.Villages.type(here.type).name.toLowerCase() : 'village');
+
     let visible = 0;
+    const groups = new Set();
     for (const row of ui.rows) {
       const { item } = row;
       const shown = item.tab === ui.activeTab && item.revealed(state);
       setHidden(row.li, !shown);
       if (!shown) continue;
       visible++;
+      if (item.group) groups.add(item.group);
 
       const maxed = item.maxed(state);
       const blocked = maxed ? null : item.blocked(state);
@@ -226,7 +314,50 @@
       setClass(row.btn, 'maxed', maxed);
       setClass(row.btn, 'blocked', Boolean(blocked));
     }
+    for (const h of ui.headers) setHidden(h.li, h.tab !== ui.activeTab || !groups.has(h.group));
+    updateSheets(ui, here);
     setClass(ui.shop, 'hidden', tabs.length === 0);
+  }
+
+  // La fiche du village où l'on se trouve, et le compositeur de fondation.
+  function updateSheets(ui, here) {
+    const { state } = ui.game;
+    const fiche = ui.activeTab === 'village' && here;
+    setHidden(ui.fiche, !fiche);
+    if (fiche) {
+      const v = here;
+      setText(ui.ficheName, [v.type, ...(v.extra || [])].map((t) => Vide.Villages.type(t).name).join(' · ')
+        + (v.extra && v.extra.length ? ' — cité' : ''));
+      for (const { f, btn } of ui.ficheChips) setClass(btn, 'active', v.faction === f.id);
+      const l = Vide.Villages.local(state, v);
+      const walls = v.walls.filter((w) => Vide.Walls.isDone(w)).length;
+      const parts = [
+        `population ${Vide.Colony.populationIn(v)}/${l.beingCap}`,
+        `armée ${Vide.Colony.usedIn(v, 'armyCap')}/${l.armyCap}`,
+        `place ${v.buildings.length}/${Vide.Structures.lots(v)}`,
+      ];
+      if (walls) parts.push(`enceintes ${walls}`);
+      const f = Vide.Factions.def(v.faction);
+      setText(ui.ficheInfo, (f ? `${f.short} · ` : 'choisis sa sous-faction · ') + parts.join(' · '));
+    }
+    const composing = ui.activeTab === 'fonder';
+    setHidden(ui.composer, !composing);
+    if (composing) {
+      const faction = composedFaction(ui);
+      for (const { t, btn } of ui.composeTypes) setClass(btn, 'active', ui.compose.type === t.id);
+      for (const { f, btn } of ui.composeFactions) setClass(btn, 'active', faction === f.id);
+      const t = Vide.Villages.type(ui.compose.type);
+      const f = Vide.Factions.def(faction);
+      setText(ui.composeInfo, `${t.desc}`);
+      setText(ui.composeEffect, `${t.effectText} · ${f.short}`);
+      const item = Catalog.get('village-' + ui.compose.type);
+      const why = item.blocked(state);
+      const blocked = why === 'choisis ta sous-faction' ? null : why;
+      const cost = item.cost(state);
+      setText(ui.composeCost, blocked || Wallet.format(cost));
+      setClass(ui.composeGo, 'affordable', !blocked && Wallet.has(state, cost));
+      setClass(ui.composeGo, 'blocked', Boolean(blocked));
+    }
   }
 
   // Sous le compteur : le village où l'on se trouve (et ses spécialisations), puis ses ressources.

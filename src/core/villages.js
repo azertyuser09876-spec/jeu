@@ -202,12 +202,12 @@
   }
 
   // Fonde un village du type donné à l'emplacement du joueur (ou en `at`, pour des colons). Le premier d'une vie
-  // reçoit les lueurs offertes par les souvenirs (Éveil précoce). Sa sous-faction : celle que le joueur a choisie
-  // pour le premier ; ensuite, le plus souvent celle du village d'où il naît (`from`, sinon le plus proche).
+  // reçoit les lueurs offertes par les souvenirs (Éveil précoce). Sa sous-faction : celle que le joueur a choisie ;
+  // né d'un autre village (`from` : des colons), il en hérite le plus souvent, ou mute.
   function found(state, typeId, at, from) {
     const stats = Vide.Stats.compute(state);
     const where = at || state.player;
-    const parent = from || nearest(state, where.x, where.y);
+    const parent = from || null;
     const village = {
       id: state.villages.reduce((m, v) => Math.max(m, v.id), 0) + 1,
       type: type(typeId).id,
@@ -238,8 +238,8 @@
   for (const t of Vide.VILLAGE_TYPES) {
     Catalog.register({
       id: 'village-' + t.id,
-      tab: 'territoire',
-      order: -10,
+      tab: 'fonder',
+      composed: true, // l'interface le propose dans le compositeur de fondation, pas en liste
       name: t.name,
       desc: t.desc,
       // Les fondations ne se montrent que hors des villages : dans un village, la boutique est la sienne.

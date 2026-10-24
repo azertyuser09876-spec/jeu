@@ -117,8 +117,8 @@
   for (const t of Vide.VILLAGE_TYPES) {
     Catalog.register({
       id: 'specialite-' + t.id,
-      tab: 'territoire',
-      order: -8,
+      tab: 'village',
+      group: 'cité',
       name: `Spécialité : ${t.name.toLowerCase()}`,
       desc: `Ce village devient une cité, et ajoute à ses spécialités celle des ${t.name.toLowerCase()} `
         + `(${t.effectText}).`,

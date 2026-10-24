@@ -86,7 +86,8 @@
 
   Catalog.register({
     id: 'intendant',
-    tab: 'etres',
+    tab: 'village',
+    group: 'êtres',
     order: -20,
     name: 'Intendant',
     desc: 'Confie à l’intendant de ce village une part de la lumière qu’il produit : il la dépense seul pour '

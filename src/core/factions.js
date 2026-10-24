@@ -1,8 +1,10 @@
 // Les sous-factions : en plus de son type, chaque village a la sienne, et chaque base d'ombre aussi. Elles disent
 // surtout ce que fait le camp d'une créature intermédiaire à bout de forces (voir creatures.js) : l'apprivoiser,
 // la purifier, la corrompre… ou l'achever.
-// Le joueur choisit celle de son premier village (state.faction) ; un village fondé depuis un autre en hérite le
-// plus souvent (CONFIG.factions.inherit), sinon il en prend une autre ; de même pour l'avant-poste d'une base.
+// Le joueur choisit la sous-faction de chaque village qu'il fonde (en même temps que son type : state.faction est
+// son dernier choix), et peut la changer quand il veut, village par village. Un village né d'un autre (des colons)
+// en hérite le plus souvent (CONFIG.factions.inherit), sinon il mute vers une autre — ils restent amis ; de même
+// pour l'avant-poste d'une base.
 // Les `id` sont stockés dans les sauvegardes : ne jamais les renommer.
 //   convert   camps des créatures qu'elle retourne à bout de forces : 'wild' (la faune), 'shadow', 'light'
 //   verb      ce qu'elle en fait (pour les messages) ; modify : effet sur les caractéristiques de ses villages
@@ -10,7 +12,7 @@
 //   nourrissent de ce qu'elles abattent ; packs : créatures de plus (multiplicateur)
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Catalog } = Vide;
+  const { CONFIG, util } = Vide;
 
   Vide.FACTIONS = [
     {
@@ -97,12 +99,21 @@
     return others[Math.floor(util.hash2(id, 7, state.seed + 4517) * others.length) % others.length].id;
   }
 
-  // Le joueur choisit la sous-faction de son premier village (avant de le fonder, ou après pour une partie
-  // ancienne : tous ses villages sans sous-faction la prennent).
+  // Le joueur choisit la sous-faction de ses prochaines fondations (pour une partie ancienne, ses villages qui
+  // n'en ont pas encore la prennent aussi).
   function choose(state, id) {
     if (!isLight(id)) return false;
     state.faction = id;
     for (const v of state.villages) if (!v.faction) v.faction = id;
+    return true;
+  }
+
+  // Change la sous-faction d'un village : autant qu'on veut, sans frais. (Elle devient aussi le choix par défaut
+  // des prochaines fondations.)
+  function setVillage(state, village, id) {
+    if (!isLight(id) || !state.villages.includes(village)) return false;
+    village.faction = id;
+    state.faction = id;
     return true;
   }
 
@@ -112,23 +123,5 @@
     if (f && f.modify) f.modify(l);
   }
 
-  for (const f of Vide.FACTIONS) {
-    Catalog.register({
-      id: 'faction-' + f.id,
-      tab: 'territoire',
-      order: -30,
-      name: f.name,
-      desc: f.desc,
-      // Le choix se montre quand la première fondation approche (ou d'emblée, pour une partie ancienne).
-      revealed: (state) => !state.faction &&
-        (state.villages.length > 0 || state.totalLight >= CONFIG.villages.firstCost * 0.4),
-      cost: () => ({}),
-      blocked: () => null,
-      apply: (state) => { choose(state, f.id); },
-      label: () => '',
-      effect: () => f.short,
-    });
-  }
-
-  Vide.Factions = { def, isLight, isDark, inherit, choose, modify };
+  Vide.Factions = { def, isLight, isDark, inherit, choose, setVillage, modify };
 })(globalThis.Vide);

@@ -238,14 +238,16 @@
     return done;
   }
 
+  const FAMILY_GROUP = { economie: 'économie', vie: 'vie', savoir: 'savoir', defense: 'défense' };
+
   for (const d of Vide.BUILDINGS) {
     // « propre aux ateliers », « propre aux jardins »…
     const onlyName = d.only ? Villages.type(d.only).name.toLowerCase().replace(/([^s])$/, '$1s') : null;
     Catalog.register({
       id: d.id,
-      tab: 'batiments',
+      tab: 'village',
       // Rangés par famille : économie, vie, savoir, défense.
-      order: Vide.BUILDING_FAMILIES.indexOf(d.family),
+      group: FAMILY_GROUP[d.family],
       name: d.name,
       desc: d.desc,
       revealed: (state) => count(state, d.id, true) > 0 ||
