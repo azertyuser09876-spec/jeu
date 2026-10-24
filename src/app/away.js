@@ -35,6 +35,8 @@
       if (e.type === 'engineBuilt') lines.push(`Des sapeurs ont achevé ${e.engine === 'chaine' ? 'une chaîne' : 'une baliste'}.`);
       if (e.type === 'studied') lines.push(`Les érudits ont dévoilé un sceau ${ofNamed(e.id)} (${e.revealed}/${e.total}).`);
     }
+    if (report.war) lines.push('Un avant-poste d’ombre s’est dressé : la guerre a commencé.');
+    else if (report.outposts) lines.push(`${report.outposts} avant-poste${report.outposts > 1 ? 's' : ''} d’ombre de plus.`);
     if (report.walls) lines.push(`${report.walls} enceinte${report.walls > 1 ? 's' : ''} achevée${report.walls > 1 ? 's' : ''}.`);
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
@@ -142,6 +144,11 @@
       ? `La base s’effondre. ◆ ${util.formatNumber(e.echoes)}. Sa région est libérée : le vide y fait naître plus de lumière.`
       : `Une base d’ombre s’effondre. ◆ ${util.formatNumber(e.echoes)}.`),
     raid: (e) => `Un raid d’ombres part d’une base vers ${to(e.village)} (${e.count}).`,
+    outpost: (e) => (e.first
+      ? 'Un avant-poste d’ombre se dresse sur le chemin de tes villages.'
+      : 'Un nouvel avant-poste d’ombre se dresse.'),
+    war: () => 'La guerre commence. Douce, d’abord : des ombres viendront rôder autour de tes villages. Elle ne le restera pas.',
+    prowl: (e) => `Des ombres rôdent autour ${of(e.village)}, sans attaquer… pour l’instant.`,
     nestBuilt: (e) => (e.kind === 'rempart' ? 'Une base d’ombre se ceint d’un rempart : il arrête la lumière. Ton armée devra l’abattre.' : null),
     workDown: (e) => `${Vide.darkWork(e.kind).name} d’ombre abattue. ◆ ${util.formatNumber(e.echoes)}.`,
     darkBreach: () => 'Une brèche dans le rempart d’ombre.',
@@ -156,10 +163,10 @@
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
     wallDone: (e) => (e.layers > 1
-      ? `Une enceinte de plus autour de ${Vide.Villages.type(e.village).name.toLowerCase()}.`
+      ? `Une enceinte de plus autour ${of(e.village)}.`
       : `${Vide.Villages.type(e.village).name} a son enceinte : ses portes ne s’ouvrent qu’à la lumière.`),
-    breach: (e) => `Une brèche dans l’enceinte de ${Vide.Villages.type(e.village).name.toLowerCase()} : les ombres entrent.`,
-    wallRepaired: (e) => `L’enceinte de ${Vide.Villages.type(e.village).name.toLowerCase()} est relevée.`,
+    breach: (e) => `Une brèche dans l’enceinte ${of(e.village)} : les ombres entrent.`,
+    wallRepaired: (e) => `L’enceinte ${of(e.village)} est relevée.`,
     heartbeat: (e) => Vide.Colossus.def(e.id).heartbeat,
     colossusFound: (e) => (e.sleeper
       ? 'Il dort. Ses rêves sont ses sceaux : monte sur son dos pour les apaiser.'

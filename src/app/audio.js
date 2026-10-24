@@ -290,7 +290,7 @@
         case 'birth': play('birth'); break;
         case 'built': case 'repaired': case 'wallDone': case 'wallRepaired': play('built'); break;
         case 'breach': play('footfall', 0.5); break;
-        case 'tide': case 'raid': play('tide'); break;
+        case 'tide': case 'raid': case 'war': play('tide'); break;
         case 'shadowDown': case 'workDown': play('shadowDown'); break;
         case 'darkBreach': play('footfall', 0.4); break;
         case 'dispersed': play('dispersed'); break;

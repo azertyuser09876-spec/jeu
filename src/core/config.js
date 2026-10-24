@@ -78,6 +78,17 @@
       lotArea: 40000,    // un emplacement à bâtir de plus par tant de surface (un carré de 200 de côté)
     },
 
+    // La guerre (voir war.js) : elle s'ouvre avec le premier avant-poste.
+    war: {
+      ramp: 3600,        // elle atteint sa plus grande âpreté en une heure
+      calm: 0.15,        // en deçà de cette âpreté, la tension : les avant-postes ne font que rôder
+      pace: 1,           // au plus rude, les ombres vont deux fois plus vite (raids, constructions, essaimage)
+      raidFrom: 0.7,     // taille des raids à l'ouverture de la guerre…
+      raidTo: 2,         // …et au plus rude
+      prowlers: 3,       // rôdeuses envoyées par un avant-poste pendant la tension…
+      prowlTime: 90,     // …qui tournent autour de ton village ce temps-là, puis s'en vont
+    },
+
     // Enceintes (voir walls.js).
     walls: {
       thickness: 16,     // épaisseur d'une muraille
@@ -206,6 +217,13 @@
       wallLevels: [4, 7],         // niveaux où elle se ceint d'un rempart d'ombre (un de plus à chacun)
       wallWork: 4,                // travail par seconde sur son rempart (elle le monte seule)
       workEchoes: 12,             // échos rendus par un ouvrage abattu
+      outpostLevel: 3,            // une base essaime dès ce niveau…
+      outpostEvery: 600,          // …un avant-poste toutes les 10 min (plus vite quand la guerre est rude)…
+      outpostsPer: 2,             // …au plus deux vivants par base
+      outpostDistance: [1400, 2600], // à cette distance de sa base, vers ton village le plus proche…
+      outpostGap: 900,            // …et au moins à cette distance du bord de tes villages
+      outpostSize: 0.6,           // un avant-poste est plus petit…
+      outpostMaxLevel: 5,         // …et ne dépasse pas ce niveau
       radius: 260,                // rayon de l'obscurité au niveau 1…
       radiusPerLevel: 60,         // …et à chaque niveau
       raidEvery: 140,

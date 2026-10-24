@@ -16,6 +16,7 @@
       beacon: null,      // fanal posé : { x, y, light } (voir abilities.js)
       nests: [],         // bases (nids) d'ombre : { id, x, y, hp, age, region, area, cells, buildings, walls, build } (voir nests.js)
       cleared: [],       // régions libérées d'un nid, pour de bon
+      war: null,         // la guerre, une fois ouverte : { age } (voir war.js)
       nestTimer: null,   // secondes avant le prochain nid près de tes villages
       echoes: 0,         // échos laissés par les ombres vaincues
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)

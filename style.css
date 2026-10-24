@@ -177,6 +177,16 @@ body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
   transition: opacity 2s ease;
 }
 
+/* La guerre, une fois ouverte : un mot, discret. */
+#war {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #a98be0;
+  text-shadow: 0 0 12px rgba(130, 80, 230, 0.5);
+  transition: opacity 2s ease;
+}
+
 #memories .glyph,
 #echoes .glyph {
   font-size: 0.75em;

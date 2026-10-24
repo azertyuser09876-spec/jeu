@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 22;
+  const FORMAT = 23;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -107,6 +107,13 @@
       ...data,
       nests: Array.isArray(data.nests)
         ? data.nests.map((n) => (n && typeof n === 'object' ? { ...n, cells: [], buildings: [], walls: [], build: 0 } : n)) : data.nests,
+    }),
+    // 2.3 : avant-postes et guerre. Les bases existantes sont des bases (pas des avant-postes) ; pas de guerre.
+    22: (data) => ({
+      ...data,
+      nests: Array.isArray(data.nests)
+        ? data.nests.map((n) => (n && typeof n === 'object' ? { ...n, parent: null, swarm: Vide.CONFIG.nests.outpostEvery } : n)) : data.nests,
+      war: null,
     }),
   };
 
@@ -239,6 +246,8 @@
         id: n.id, x: n.x, y: n.y, hp: 0, age: positive(n.age, 0), region: typeof n.region === 'string' ? n.region : null,
         area: 0, cells: [], buildings: [], walls: [],
         build: Number.isFinite(n.build) ? Math.max(0, Math.min(n.build, Vide.CONFIG.nests.buildEvery)) : Vide.CONFIG.nests.buildEvery,
+        parent: Number.isInteger(n.parent) && n.parent > 0 && n.parent !== n.id ? n.parent : null,
+        swarm: Number.isFinite(n.swarm) ? Math.max(0, Math.min(n.swarm, Vide.CONFIG.nests.outpostEvery)) : Vide.CONFIG.nests.outpostEvery,
       });
       nest.hp = Math.min(positive(n.hp, Vide.Nests.maxHp(nest)), Vide.Nests.maxHp(nest)) || 1;
       const R = Vide.Nests.radius(nest);
@@ -259,6 +268,7 @@
       if (typeof key === 'string' && /^-?\d+,-?\d+$/.test(key) && !state.cleared.includes(key)) state.cleared.push(key);
     }
     state.nestTimer = Number.isFinite(raw.nestTimer) ? Math.max(0, raw.nestTimer) : null;
+    state.war = isObject(raw.war) ? { age: positive(raw.war.age, 0) } : null;
 
     const beacon = isObject(raw.beacon) ? raw.beacon : null;
     if (beacon && Number.isFinite(beacon.x) && Number.isFinite(beacon.y)) {

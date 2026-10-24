@@ -29,7 +29,9 @@
     if (applied <= 0) return report;
 
     // Les nids vieillissent (mais ne lancent pas de raid : pas d'ombres pendant l'absence).
-    Vide.Nests.offline(state, applied);
+    const shadows = Vide.Nests.offline(state, applied);
+    report.outposts = shadows.outposts;
+    report.war = shadows.war;
 
     // Le fanal a récolté pendant ce temps.
     if (state.beacon) {

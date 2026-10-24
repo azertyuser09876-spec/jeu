@@ -68,6 +68,7 @@
       echoAmount: $('echo-amount'),
       memories: $('memories'),
       memoryAmount: $('memory-amount'),
+      war: $('war'),
       orders: $('orders'),
       boss: $('boss'),
       bossName: $('boss-name'),
@@ -252,6 +253,8 @@
     updatePlace(ui);
     setClass(ui.echoes, 'hidden', state.echoes <= 0 && state.stats.shadows === 0);
     setText(ui.echoAmount, util.formatNumber(state.echoes));
+    setClass(ui.war, 'hidden', !state.war);
+    if (state.war) setText(ui.war, `guerre · ${Vide.War.phase(state)}`);
     setClass(ui.memories, 'hidden', state.memories <= 0 && state.renaissances === 0);
     setText(ui.memoryAmount, util.formatNumber(state.memories));
     setClass(ui.orders, 'hidden', Vide.Combat.armySize(state) === 0);

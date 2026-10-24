@@ -183,8 +183,12 @@
     for (const v of list) {
       if (v.dark && !light) continue; // les ombres traversent leurs remparts
       const dx = body.x - v.x, dy = body.y - v.y;
+      // Loin dehors, avant comme après le pas : aucun mur à franchir (le cas de presque tous).
+      const outer = radius(v.walls[v.walls.length - 1]) + T;
+      const ex = x0 - v.x, ey = y0 - v.y;
+      if (dx * dx + dy * dy > outer * outer && ex * ex + ey * ey > outer * outer) continue;
       const d1 = Math.hypot(dx, dy);
-      const d0 = Math.hypot(x0 - v.x, y0 - v.y);
+      const d0 = Math.hypot(ex, ey);
       for (const w of v.walls) {
         if (!isDone(w)) continue;
         const r = radius(w);
@@ -224,7 +228,10 @@
     const step = TAU / Plan.AVENUES;
     for (const v of list) {
       if (v.dark) continue; // un rempart d'ombre n'a pas de porte pour la lumière : il faut l'abattre
-      const d = Math.hypot(x - v.x, y - v.y), dTarget = Math.hypot(tx - v.x, ty - v.y);
+      const outer = radius(v.walls[v.walls.length - 1]);
+      const px = x - v.x, py = y - v.y, qx = tx - v.x, qy = ty - v.y;
+      if (px * px + py * py > outer * outer && qx * qx + qy * qy > outer * outer) continue; // tous deux dehors
+      const d = Math.hypot(px, py), dTarget = Math.hypot(qx, qy);
       let first = null;
       for (const w of v.walls) {
         if (!isDone(w)) continue;

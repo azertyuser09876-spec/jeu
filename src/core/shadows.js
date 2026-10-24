@@ -130,6 +130,7 @@
 
   // Choisit une proie selon la nature de l'ombre, parmi ce qui est à portée de sens.
   function chooseTarget(game, s) {
+    if (s.calm) return null; // une rôdeuse ne s'en prend à rien
     const k = kind(s.kind);
     const sense2 = CONFIG.shadows.sense ** 2;
     const candidates = [];
@@ -230,6 +231,12 @@
         tx = p.x; ty = p.y;
       } else if (s.near && state.expeditions.includes(s.near)) {
         tx = s.near.x; ty = s.near.y; // elle suit l'expédition qu'elle a repérée
+      } else if (s.calm && s.home && state.villages.includes(s.home)) {
+        // Une rôdeuse tourne autour du village, au-delà de son bord.
+        const a = s.phase + s.age * 0.12;
+        const r = Territory.radius(s.home) + 280;
+        tx = s.home.x + Math.cos(a) * r;
+        ty = s.home.y + Math.sin(a) * r;
       } else if (s.home && state.villages.includes(s.home)) {
         tx = s.home.x; ty = s.home.y; // une marée sans proie en vue avance vers le cœur du village visé
       } else {
@@ -268,6 +275,12 @@
     // Disparition des ombres vaincues (avec récompense) ou égarées trop loin de tout.
     for (let i = sh.list.length - 1; i >= 0; i--) {
       const s = sh.list[i];
+      // Une rôdeuse s'en va, son temps passé (sans rien laisser).
+      if (s.ttl !== undefined && (s.ttl -= dt) <= 0) {
+        s.gone = true;
+        sh.list.splice(i, 1);
+        continue;
+      }
       if (s.hp <= 0) {
         const k = kind(s.kind);
         const echoes = k.echoes * game.stats.echoGain * (s.echoMult || 1);

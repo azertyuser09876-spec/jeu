@@ -137,6 +137,9 @@
     // Les sceaux des colosses aussi ; et le cœur des nids (deux fois plus), une fois par onde.
     if (Vide.Colossus) Vide.Colossus.pulseHit(game, x, y, radius);
     for (const nest of game.state.nests.slice()) {
+      // (Une base hors d'atteinte de l'onde : rien à regarder.)
+      const extent = Math.max(Vide.Nests.radius(nest), nest.walls.length ? Vide.Walls.radius(nest.walls[nest.walls.length - 1]) : 0) + 40;
+      if (Math.hypot(nest.x - x, nest.y - y) > radius + extent) continue;
       // Ses ouvrages, et les pans de ses remparts, que l'onde atteint.
       for (const b of nest.buildings.slice()) {
         if (game.nests.lastWave.get(b) === id || Math.hypot(b.x - x, b.y - y) > radius + Vide.darkWork(b.type).size) continue;

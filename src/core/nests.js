@@ -3,9 +3,12 @@
 // l'âge sans jamais empiéter sur tes villages ; sur leur plan radial, des ouvrages (fosses, flèches : voir
 // ouvrages.js) et, mûres, des remparts d'ombre. Elles naissent après tes premiers villages (à distance de ton
 // village le plus proche), ou t'attendent déjà dans les régions dangereuses lointaines. Elles lancent des raids
-// sur tes villages ; ton armée peut les assiéger (ouvrages, remparts, puis le cœur).
+// sur tes villages ; ton armée peut les assiéger (ouvrages, remparts, puis le cœur). Mûres, elles essaiment des
+// avant-postes vers tes villages : le premier ouvre la guerre (voir war.js).
 // État persistant : state.nests = [{ id, x, y, hp, age, region, area, cells, buildings: [{ type, x, y, hp }],
-// walls, build }] (build : secondes avant le prochain ouvrage) ; state.cleared : régions libérées pour de bon ;
+// walls, build, parent, swarm }] (build : secondes avant le prochain ouvrage ; parent : la base d'où vient un
+// avant-poste, null pour une base ; swarm : secondes avant son prochain avant-poste) ; state.cleared : régions
+// libérées pour de bon ;
 // state.nestTimer : secondes avant la prochaine base près de tes villages (null tant qu'il n'y en a pas lieu).
 (function (Vide) {
   'use strict';
@@ -18,7 +21,7 @@
 
   function level(nest) {
     const n = CONFIG.nests;
-    return Math.min(n.maxLevel, 1 + Math.floor(nest.age / n.levelEvery));
+    return Math.min(nest.parent ? n.outpostMaxLevel : n.maxLevel, 1 + Math.floor(nest.age / n.levelEvery));
   }
 
   function maxHp(nest) {
@@ -26,10 +29,10 @@
     return n.hp + n.hpPerLevel * (level(nest) - 1);
   }
 
-  // Rayon de son obscurité.
+  // Rayon de sa noirceur (un avant-poste est plus petit).
   function radius(nest) {
     const n = CONFIG.nests;
-    return n.radius + n.radiusPerLevel * (level(nest) - 1);
+    return (n.radius + n.radiusPerLevel * (level(nest) - 1)) * (nest.parent ? n.outpostSize : 1);
   }
 
   function create(game) {
@@ -71,6 +74,7 @@
       id: state.nests.reduce((m, n) => Math.max(m, n.id), 0) + 1,
       x, y, hp: 0, age: age || 0, region: regionKey || null,
       area: 0, cells: [], buildings: [], walls: [], build: CONFIG.nests.buildEvery,
+      parent: null, swarm: CONFIG.nests.outpostEvery,
     });
     nest.hp = maxHp(nest);
     state.nests.push(nest);
@@ -144,15 +148,69 @@
     return add(state, c.x, c.y, n.levelEvery * 3, region.key);
   }
 
-  // Lance un raid depuis un nid vers le village le plus proche (s'il est à portée). Renvoie le nombre d'ombres.
+  // --- Avant-postes ---
+
+  // Une base mûre essaime : un avant-poste sur le chemin de ton village le plus proche, à bonne distance de tes
+  // villages et des autres bases. Renvoie l'avant-poste, ou null s'il n'y a pas la place.
+  function spawnOutpost(state, base) {
+    const n = CONFIG.nests;
+    const target = Villages.nearest(state, base.x, base.y);
+    if (!target) return null;
+    const dist = Math.hypot(target.x - base.x, target.y - base.y);
+    const toward = Math.atan2(target.y - base.y, target.x - base.x);
+    const d = util.clamp(dist * 0.45, n.outpostDistance[0], n.outpostDistance[1]);
+    for (const off of [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05]) {
+      const x = base.x + Math.cos(toward + off) * d, y = base.y + Math.sin(toward + off) * d;
+      const clear = state.villages.every((v) => Math.hypot(v.x - x, v.y - y) - Territory.radius(v) > n.outpostGap);
+      const apart = state.nests.every((o) => Math.hypot(o.x - x, o.y - y) - Territory.radius(o) > n.outpostGap * 0.7);
+      if (!clear || !apart) continue;
+      const outpost = add(state, x, y, 0, null);
+      outpost.parent = base.id;
+      outpost.swarm = 0;
+      return outpost;
+    }
+    return null;
+  }
+
+  const outposts = (state, base) => state.nests.filter((o) => o.parent === base.id).length;
+
+  // L'horloge d'essaimage d'une base. Renvoie l'avant-poste né, ou null.
+  function swarm(state, base, seconds) {
+    const n = CONFIG.nests;
+    if (base.parent || level(base) < n.outpostLevel) return null;
+    base.swarm -= seconds * Vide.War.pace(state);
+    if (base.swarm > 0) return null;
+    base.swarm = n.outpostEvery;
+    if (outposts(state, base) >= n.outpostsPer || state.nests.length >= n.max * 3) return null;
+    return spawnOutpost(state, base);
+  }
+
+  // Pendant la tension, un avant-poste n'envoie que des rôdeuses : elles tournent autour de ton village, sans
+  // attaquer, puis s'en vont.
+  function prowl(game, nest, target) {
+    const rng = game.nests.rng;
+    let count = 0;
+    for (let k = 0; k < CONFIG.war.prowlers && game.shadows.list.length < CONFIG.shadows.max; k++) {
+      const s = Vide.Shadows.spawn(game, 'rodeuse', nest.x + (rng() - 0.5) * 80, nest.y + (rng() - 0.5) * 80, 'tide');
+      s.home = target;
+      s.calm = true;
+      s.ttl = CONFIG.war.prowlTime;
+      count++;
+    }
+    Vide.Sim.emit(game, 'prowl', { x: nest.x, y: nest.y, village: target.type, count });
+    return count;
+  }
+
+  // Lance un raid depuis une base vers le village le plus proche (s'il est à portée). Renvoie le nombre d'ombres.
   function raid(game, nest) {
     const { state } = game;
     const n = CONFIG.nests;
     const target = Villages.nearest(state, nest.x, nest.y);
     if (!target || Math.hypot(target.x - nest.x, target.y - nest.y) > n.raidRange) return 0;
+    if (nest.parent && Vide.War.calm(state)) return prowl(game, nest, target);
     const rng = game.nests.rng;
     const kinds = Vide.SHADOW_KINDS.filter((k) => level(nest) >= k.fromTide / 2 + 1);
-    let budget = n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid');
+    let budget = (n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid')) * Vide.War.raidScale(state);
     let count = 0;
     while (budget >= 1 && game.shadows.list.length < CONFIG.shadows.max) {
       const affordable = kinds.filter((k) => k.cost <= budget);
@@ -190,12 +248,20 @@
       if (nest) Vide.Sim.emit(game, 'nest', { x: nest.x, y: nest.y, far: true, first: state.nests.length === 1 });
     }
 
-    for (const nest of state.nests) {
+    Vide.War.advance(state, dt);
+    const pace = Vide.War.pace(state);
+    for (const nest of state.nests.slice()) {
       nest.age += dt;
       nest.hp = Math.min(maxHp(nest), nest.hp + n.regen * dt);
       spread(state, nest, dt);
+      // Elle essaime : le premier avant-poste ouvre la guerre.
+      const outpost = swarm(state, nest, dt);
+      if (outpost) {
+        Vide.Sim.emit(game, 'outpost', { x: outpost.x, y: outpost.y, first: !state.war });
+        if (Vide.War.begin(state)) Vide.Sim.emit(game, 'war', { x: outpost.x, y: outpost.y });
+      }
       // Elle bâtit, et monte ses remparts d'elle-même.
-      nest.build -= dt;
+      nest.build -= dt * pace;
       if (nest.build <= 0) {
         nest.build = n.buildEvery;
         const done = fortify(state, nest);
@@ -208,7 +274,7 @@
       const clock = (g.raids.has(nest.id) ? g.raids.get(nest.id) : n.raidEvery * (0.5 + g.rng() * 0.5)) - dt;
       if (clock <= 0) {
         raid(game, nest);
-        g.raids.set(nest.id, n.raidEvery + (g.rng() - 0.5) * 2 * n.raidJitter);
+        g.raids.set(nest.id, (n.raidEvery + (g.rng() - 0.5) * 2 * n.raidJitter) / pace);
       } else {
         g.raids.set(nest.id, clock);
       }
@@ -258,7 +324,7 @@
         if (e) target = { x: e.x, y: e.y, hit: () => Vide.Expeditions.hurt(state, e, damage) };
       }
       if (!target) {
-        g.towerCd.set(b, 0);
+        g.towerCd.set(b, 0.3); // personne à portée : elle regarde de nouveau un peu plus tard
         continue;
       }
       g.towerCd.set(b, d.tower.cooldown);
@@ -358,27 +424,46 @@
     return true;
   }
 
-  // Pendant l'absence : elle vieillit, grandit, noircit, bâtit (sans raid).
+  // Pendant l'absence : elles vieillissent, grandissent, noircissent, bâtissent, essaiment (sans raid) ; la guerre
+  // mûrit, ou s'ouvre. Le temps passe par tranches (un avant-poste né en route vit le reste de l'absence).
+  // Renvoie { outposts, war } : avant-postes nés, guerre ouverte pendant l'absence.
   function offline(state, seconds) {
     const n = CONFIG.nests;
-    for (const nest of state.nests) {
-      nest.age += seconds;
-      spread(state, nest, seconds);
-      nest.build -= seconds;
-      while (nest.build <= 0) {
-        nest.build += n.buildEvery;
-        if (!fortify(state, nest)) {
-          nest.build = n.buildEvery;
-          break;
+    const report = { outposts: 0, war: false };
+    const lived = new Map(state.nests.map((x) => [x, 0]));
+    const STEP = n.outpostEvery / 2;
+    for (let left = seconds; left > 1e-9; left -= STEP) {
+      const dt = Math.min(STEP, left);
+      Vide.War.advance(state, dt);
+      const pace = Vide.War.pace(state);
+      for (const nest of state.nests.slice()) {
+        nest.age += dt;
+        lived.set(nest, lived.get(nest) + dt);
+        spread(state, nest, 0);
+        if (swarm(state, nest, dt)) {
+          report.outposts++;
+          if (Vide.War.begin(state)) report.war = true;
         }
+        nest.build -= dt * pace;
+        while (nest.build <= 0) {
+          nest.build += n.buildEvery;
+          if (!fortify(state, nest)) {
+            nest.build = n.buildEvery;
+            break;
+          }
+        }
+        const wall = Vide.Walls.site(nest);
+        if (wall) Vide.Walls.addWork(wall, n.wallWork * dt);
       }
-      const wall = Vide.Walls.site(nest);
-      if (wall) Vide.Walls.addWork(wall, n.wallWork * seconds);
+      for (const nest of state.nests) if (!lived.has(nest)) lived.set(nest, 0);
     }
+    // Leur noirceur a mûri le temps qu'elles ont vécu.
+    for (const nest of state.nests) spread(state, nest, lived.get(nest) || 0);
+    return report;
   }
 
   Vide.Nests = {
     FAR_ZONES, level, maxHp, radius, create, darkAt, others, spread, shape, add, allowed, wallsAllowed, fortify, bonus,
-    spawnNear, discover, raid, update, shoot, offline, target, workTarget, nearestWork, hitWork, nearest, hit,
+    spawnNear, discover, spawnOutpost, swarm, prowl, raid, update, shoot, offline, target, workTarget, nearestWork, hitWork, nearest, hit,
   };
 })(globalThis.Vide);
