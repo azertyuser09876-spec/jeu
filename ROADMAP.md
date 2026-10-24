@@ -125,7 +125,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
    ils lancent les raids.
 2. Les assiéger avec l'armée, les détruire, reprendre le terrain.
 
-### [ ] 1.7 — Colosses redoutables
+### [x] 1.7 — Colosses redoutables
 1. Colosses bien plus grands (caméra qui recule), sceaux voilés tant qu'ils ne sont pas étudiés (érudits),
    phases à chaque sceau brisé, attaques plus dures.
 2. La relève : balistes et chaînes construites sur place par des sapeurs, troupes de siège.

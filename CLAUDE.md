@@ -46,6 +46,10 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   fanal (state.beacon, récolte abstraite selon la zone), retour.
 - **Nids d'ombre** (`nests.js`, state.nests, state.cleared) : apparition, obscurité, raids ; ordre « siege » de
   l'armée (`Combat.anchor`), cœur ciblé via `Nests.target`, `Nests.hit`.
+- **Colosses** (`colossus.js`) : `state.studied` (sceaux dévoilés par les érudits ; un sceau voilé ne se brise
+  pas), phases (`fury`, `PHASE`), marche sur un village (mode 'march', pendant le jeu seulement : `game.marchClock`),
+  `Colossus.engaged` pour tout ce qui peut s'en prendre à lui. Engins de siège : `engines.js` (state.engines, bâtis
+  par l'expédition 'sappers'). Rôles des colosses apaisés : `allies.js`.
 - **Performances** : `grid.js` (grille spatiale) pour tout voisinage d'êtres ; ne pas réintroduire de boucle sur
   tous les êtres à chaque pas et pour chaque être (banc d'essai : 400 êtres sous 12 ms par pas, test colony).
 - **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`

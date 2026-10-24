@@ -1,5 +1,29 @@
 # Historique des versions
 
+## 1.7.0 — Colosses redoutables
+
+- **Bien plus grands** : chaque colosse a pris une fois et demie à presque deux fois sa taille. La caméra recule
+  et se tourne vers lui pour qu'on le voie presque entier, et soi tout petit à côté.
+- **Sceaux voilés** : tant qu'ils ne sont pas étudiés, la pulsation glisse dessus. Depuis la carte, envoie des
+  **érudits** au repaire d'un colosse : à l'abri, ils l'observent et dévoilent un sceau après l'autre (deux fois
+  plus vite si leur village a du savoir ✎), même pendant l'absence. L'armée peut déjà le faire plier.
+- **Phases** : chaque sceau brisé le relève en rugissant. Son rugissement est un **séisme**, un anneau qui
+  s'étend, percé de quelques brèches où se glisser (ou à franchir d'une ruée). Ensuite il est plus vif, frappe
+  plus souvent, annonce ses coups plus tard, et gagne une attaque : séisme, **balayage** (un souffle étroit qui
+  parcourt un large arc), **pluie de toiles**. Ses coups font plus mal.
+- **La relève** : depuis la carte, des **sapeurs** (deux bâtisseurs) bâtissent sur place une **baliste** (de
+  lourds traits qui le font plier, ou qui visent un nid) ou une **chaîne** (elle retient le colosse qui passe :
+  ralenti, à genou plus longtemps ; elle s'use puis cède). Ses pas et ses séismes écrasent les engins.
+  Le **harponneur**, troupe de siège, frappe sept fois plus fort colosses et cœurs de nids ; l'ordre
+  « assiéger » vise aussi un colosse en combat près du village.
+- **Ils marchent sur tes villages** : pendant le jeu seulement, un colosse déjà rencontré quitte parfois son
+  repaire pour piétiner ton village le plus proche. Provoque-le, ou fais-le plier, pour le détourner.
+- **Apaisés, ils ont un rôle** : le Veilleur marche vers le danger et l'écrase (et tient tête à un colosse en
+  marche), la Tisseuse tisse tes routes en chantier, le Léviathan porte tes expéditions, trois fois plus vite et
+  hors d'atteinte des ombres.
+- Sauvegarde au format 18 (sceaux étudiés, engins de siège).
+- 314 tests de logique, 36 vérifications navigateur.
+
 ## 1.6.0 — Les ombres bâtissent
 
 - **Nids d'ombre** : après ton deuxième village, un nid naît à bonne distance de tes villages, puis un autre
