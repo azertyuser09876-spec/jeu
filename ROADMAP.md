@@ -176,13 +176,17 @@ les murailles **bloquent tout, sauf les colosses** (ta lumière passe par les po
 3. Équilibrage (robots) de cette nouvelle économie.
 
 ### [ ] 2.2 — Des villages bâtis avec logique
-1. Le plan : cœur, rues, îlots ; chaque bâtiment à sa place selon son rôle (économie au centre, logements autour,
-   production plus loin, défense au bord et aux portes). Le gouverneur du village suit ce plan.
-2. Les murailles : des enceintes qui font le tour du village (une couche de plus quand il grandit), avec des
-   portes. Elles bloquent physiquement tout — ta lumière, les êtres, les ombres — sauf les colosses ; les ombres
-   doivent les abattre.
-3. Circuler : les êtres et ta lumière passent par les portes ; de grandes routes (autoroutes) relient les portes
-   de deux villages.
+Choix : un plan **radial**, comme les villes fortifiées en étoile. Des boulevards en anneaux, quatre avenues qui
+rayonnent du cœur vers quatre portes (alignées d'une enceinte à l'autre), des îlots entre eux.
+1. Le plan : chaque bâtiment à sa place selon son rôle (vie et savoir au centre, logis autour, production plus
+   loin, défense au bord et près des avenues, donc des portes). Les emplacements sont fixes : un bâtiment posé y
+   reste quand le village grandit. Le gouverneur (intendant) suit ce plan ; les villages existants s'y rangent.
+2. Les murailles : un achat par village (« enceinte »), au prix de sa longueur, bâti par les bâtisseurs, sur un
+   boulevard ; une couche de plus quand le village grandit. Elles bloquent tout — ta lumière, les êtres, les
+   ombres — sauf les colosses. Les portes s'ouvrent à la lumière, jamais aux ombres : elles doivent abattre un pan
+   (une brèche, que les bâtisseurs relèvent).
+3. Circuler : les êtres et ta lumière passent par les portes (les avenues les y mènent) ; de grandes routes
+   (autoroutes) partent des portes qui se font face ; les caravanes les suivent.
 4. Refonte graphique : bâtiments, rues, enceintes, territoires, carte.
 
 ### [ ] 2.3 — Les bases des ombres
