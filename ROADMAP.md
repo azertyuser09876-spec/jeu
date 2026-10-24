@@ -167,7 +167,7 @@ Réponses du joueur : pendant l'absence, **tout est possible** (on peut perdre d
 la guerre arrive **avec les premiers avant-postes ennemis**, d'abord douce, sans forcément d'attaques ;
 les murailles **bloquent tout, sauf les colosses** (ta lumière passe par les portes).
 
-### [ ] 2.1 — Les fondations
+### [x] 2.1 — Les fondations
 1. Prix fixes : seuls les améliorations (de la lumière, générales) renchérissent ; recruter un être ou bâtir
    coûte toujours le même prix. Ce qui limite désormais : les logements (population), les casernes (armée), la
    place (des emplacements selon la surface du village) et un nombre maximal de chaque bâtiment par village.

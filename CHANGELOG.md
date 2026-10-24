@@ -1,5 +1,27 @@
 # Historique des versions
 
+## 2.1.0 — Les fondations
+
+Premier pas de « du vide au champ de bataille » : une économie qui ne renchérit plus que sur ce qui le mérite,
+et un blanc qui mûrit pour de bon.
+
+- **Prix fixes** : recruter un être ou bâtir coûte toujours le même prix. Seules les améliorations (de la
+  lumière, générales), les fondations et les routes renchérissent.
+- **Ce qui limite désormais** : les logements (population : les nids), les casernes (toute l'armée d'un village
+  partage un plafond : 3 au départ, +4 par caserne, +4 dans un bastion), la place (un emplacement à bâtir par lot
+  de 40 000 de surface) et un nombre maximal de chaque bâtiment par village. La boutique affiche ×n/max et la
+  place restante ; les messages disent quoi faire (« population pleine : un nid », « armée au complet : une
+  caserne », « plus de place : le territoire doit grandir »).
+- **Nouvelle caserne** (enclos, rangs, fanions) ; l'intendant respecte la place et les maximums.
+- **Le blanc en cinq nuances** : il mûrit nuance après nuance, chacune plus lente que la précédente, jusqu'au
+  blanc pur au cœur ; les nuances pâles restent vers le bord. Plus une cellule est blanche, plus elle tient
+  (prépare la guerre). À l'écran, les nuances s'empilent et le blanc pur est cerné d'un liseré ; même dégradé sur
+  la carte.
+- **Équilibrage** : le robot d'équilibrage joue désormais comme un joueur (il économise pour le bâtisseur puis le
+  nid d'un village plein). Aucune impasse : bâtisseur vers 5 min, ~3 M à 30 min, puis une croissance qui ralentit
+  doucement jusqu'à deux heures ; chaque renaissance atteint le million plus vite.
+- 342 tests de logique, 41 vérifications navigateur.
+
 ## 2.0.1 — Le monde ne file plus
 
 - **Villages qui semblaient se déplacer** : dans les Courants (et l'Éclat), le courant emportait ta lumière *et*
