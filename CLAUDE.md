@@ -35,10 +35,18 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   sa forme (`cells`, grille de 40, voir `territory.js`), ses êtres, ses bâtiments, son rendement. Les bâtiments et le
   type n'agissent que sur leur village : `Villages.local(state, village)` (ou `Villages.statsOf(game, village)` en jeu).
   La boutique des êtres et des plans vise le village où l'on se trouve (`Villages.current`). Tests : `VideTest.village`.
+- **Plan des villages** (`plan.js`) : plan radial fixe (boulevards tous les `Plan.STREET`, `Plan.AVENUES` avenues
+  orientées par `Plan.turn(v)`, îlots d'emplacements). `Structures.site` passe par `Plan.choose` (place selon
+  `def.ring`, la défense près des avenues). Un bâtiment posé ne bouge plus.
+- **Enceintes** (`walls.js`, village.walls = [{ n, work, broken }]) : murailles sur les boulevards, portes au bout des
+  avenues (ouvertes à la lumière seulement). Tout ce qui bouge passe par `Walls.hold` (après son pas) et, pour aller
+  quelque part, par `Walls.route` (la porte la mieux placée) ; `game.walled` liste les villages à enceinte achevée.
+  Les colosses ne sont jamais arrêtés. Solidité des pans : `game.wallHp`.
 - **Intendant** (`steward.js`) : part de la lumière d'un village mise en réserve et dépensée seule (jamais d'échos).
 - **Bâtiments** : `family` (ordre en boutique), `only` (type de village), `scope: 'global'` (effet sur tous les
   villages, via `Structures.modifyGlobal`), `ward` (ralentit les ombres).
-- **Routes, échanges, cités** : `roads.js` (state.roads), `trade.js` (village.stock, caravanes : la charge ne
+- **Routes, échanges, cités** : `roads.js` (state.roads ; tracé `Roads.route(state, a, b)` par les portes, courbe,
+  troncs communs : `Roads.network`/`Roads.trunks` ; le travail se compte sur la distance entre cœurs), `trade.js` (village.stock, caravanes : la charge ne
   quitte l'expéditeur qu'à l'arrivée), `cities.js` (fusion au contact, village.extra et village.districts ; une
   cité doit toujours valoir au moins ses villages).
 - **Expéditions** (`expeditions.js`, state.expeditions) : lancées depuis la carte, elles marchent et peuvent être

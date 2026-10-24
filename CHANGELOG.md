@@ -1,5 +1,31 @@
 # Historique des versions
 
+## 2.2.0 — Des villages bâtis avec logique
+
+Chaque village devient une ville en étoile : un plan, des rues, des portes, des enceintes.
+
+- **Le plan** : autour du cœur, des boulevards en anneaux et quatre avenues orientées selon le village ; entre
+  eux, des îlots. Chaque bâtiment y prend sa place selon son rôle : vie et savoir au centre, logis autour,
+  production plus loin, défense au bord, près des avenues et répartie d'une porte à l'autre ; les quarts du
+  village se remplissent à parts égales. Un bâtiment posé ne bouge plus quand le village grandit ; l'intendant
+  suit le plan ; les villages existants s'y rangent (une cité garde ses bâtiments et des places autour de ses
+  anciens cœurs).
+- **Les enceintes** : un achat par village, au prix de sa longueur, monté par les bâtisseurs qui en suivent le
+  front ; une couche de plus quand le village grandit. Elles arrêtent tout — ta lumière, les êtres, les ombres,
+  les expéditions — sauf les colosses. Les portes, au bout des avenues, s'ouvrent à la lumière, jamais aux
+  ombres : une ombre bloquée frappe le pan qui l'arrête jusqu'à la brèche, que les bâtisseurs relèvent (aussi
+  pendant l'absence).
+- **Circuler** : êtres et expéditions passent par la porte qui fait le moins de détour. Les routes partent du cœur
+  par l'avenue la mieux tournée, passent la porte, puis une grande route **courbe** (un peu d'ondulation, propre
+  à chaque route) rejoint l'autre village en contournant ceux qui sont sur son chemin. Les routes qui sortent
+  par la même porte **partagent un tronc** plus large, puis se séparent à un carrefour. Les caravanes suivent le
+  tracé ; ta lumière y file tout du long.
+- **Graphismes** : boulevards et avenues dessinés dans le territoire, parcelles sous les bâtiments (teintées par
+  famille, reliées au boulevard), enceintes à double trait avec bornes aux portes, brèches et pans frappés
+  visibles, chantier qui progresse ; sur la carte, routes courbes, troncs et enceintes.
+- Sauvegarde : format 21 (plan, enceintes).
+- 360 tests de logique, 41 vérifications navigateur.
+
 ## 2.1.0 — Les fondations
 
 Premier pas de « du vide au champ de bataille » : une économie qui ne renchérit plus que sur ce qui le mérite,

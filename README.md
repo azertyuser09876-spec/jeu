@@ -37,11 +37,15 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **La récolte** : la lumière flotte dans le vide ; attire-la, pulse pour tout attraper d'un coup.
 - **Les villages** : fonde-les où tu veux, du type que tu choisis (jardins, bastion, atelier, observatoire,
   sanctuaire). Chacun a son territoire vivant, qui pousse vers ses bâtiments et grandit lentement, toujours,
-  même sans toi ; son cœur blanchit avec le temps.
+  même sans toi ; son cœur blanchit avec le temps, en cinq nuances, jusqu'au blanc pur.
+- **Des villes en étoile** : chaque village suit son plan — boulevards en anneaux, quatre avenues vers quatre
+  portes, des îlots où chaque bâtiment prend sa place selon son rôle. Entoure-le d'**enceintes** : elles
+  arrêtent tout sauf les colosses, leurs portes ne s'ouvrent qu'à la lumière, et les ombres doivent les abattre.
 - **Les êtres** : dans chaque village, des lueurs récoltent le jardin, des bâtisseurs choisissent où construire
   nids, prismes, phares, tours et bien d'autres ; ils se croisent, dansent, ravitaillent les chantiers.
   Confie une part de lumière à l'**intendant** d'un village : il le fait grandir seul.
-- **Routes, échanges, cités** : relie tes villages par des routes de lumière ; des caravanes y portent la
+- **Routes, échanges, cités** : relie tes villages par de grandes routes de lumière, qui partent des portes et
+  partagent un tronc quand elles sortent ensemble ; des caravanes y portent la
   matière ◇ des ateliers, le savoir ✎ des observatoires, les soldats des bastions. Quand deux territoires se
   touchent, ils fusionnent en une cité qui garde toutes leurs spécialités.
 - **Expéditions et capacités** : depuis la carte, envoie des éclaireurs révéler le lointain, des colons fonder

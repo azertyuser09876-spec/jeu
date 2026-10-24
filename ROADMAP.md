@@ -175,7 +175,7 @@ les murailles **bloquent tout, sauf les colosses** (ta lumière passe par les po
    guerre). Affichage du territoire refait.
 3. Équilibrage (robots) de cette nouvelle économie.
 
-### [ ] 2.2 — Des villages bâtis avec logique
+### [x] 2.2 — Des villages bâtis avec logique
 Choix : un plan **radial**, comme les villes fortifiées en étoile. Des boulevards en anneaux, quatre avenues qui
 rayonnent du cœur vers quatre portes (alignées d'une enceinte à l'autre), des îlots entre eux.
 1. Le plan : chaque bâtiment à sa place selon son rôle (vie et savoir au centre, logis autour, production plus
