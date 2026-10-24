@@ -15,7 +15,7 @@ Ouvre `index.html` dans un navigateur. Aucune installation, aucune dépendance.
 | --- | --- | --- |
 | Se déplacer | maintenir le clic ou le doigt | ZQSD, WASD ou flèches |
 | Pulsation | bouton rond | Espace |
-| Améliorer | clic sur une carte | 1 à 5 |
+| Acheter | clic sur une carte | 1 à 9 (Tab : onglet suivant) |
 | Menu / pause | ≡ en haut à droite | Échap |
 
 La partie est sauvegardée automatiquement dans le navigateur.

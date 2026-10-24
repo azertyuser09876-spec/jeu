@@ -21,7 +21,7 @@ On ne passe jamais à la version suivante tant que la précédente n'est pas sol
 ### [x] 0.1 — Noyau
 Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambiance.
 
-### [ ] 0.2 — Territoire
+### [x] 0.2 — Territoire
 1. Interface en onglets, catalogue générique d'achats (prépare les êtres, bâtiments, armée).
 2. Le foyer : on retourne à l'origine pour l'allumer ; le territoire naît et s'étend lentement.
 3. Rayonnement : le territoire produit de la lumière selon sa surface ; dans le territoire, la pulsation

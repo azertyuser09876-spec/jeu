@@ -44,5 +44,17 @@
       cooldown: 12,      // secondes avant de pouvoir recommencer
       waveSpeed: 700,    // vitesse d'expansion de l'onde
     },
+
+    // Territoire de lumière autour du foyer (l'origine). Sa surface croît linéairement dans le temps :
+    // le rayon grandit donc de plus en plus lentement, sans jamais s'arrêter.
+    territory: {
+      foyerCost: 150,
+      foyerReach: 140,       // distance à l'origine pour pouvoir allumer le foyer
+      startRadius: 60,
+      growth: 70,            // unités² gagnées par seconde (avant améliorations)
+      yield: 4e-5,           // lumière par seconde et par unité² de territoire
+      insidePulseBoost: 2,   // la pulsation se recharge plus vite dans le territoire
+      offlineCap: 4 * 3600,  // durée d'absence prise en compte (avant améliorations)
+    },
   };
 })(globalThis.Vide);

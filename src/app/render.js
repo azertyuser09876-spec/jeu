@@ -96,19 +96,6 @@
     ctx.globalAlpha = 1;
   }
 
-  // L'origine, là où tout a commencé : un foyer très faible qui respire lentement.
-  function drawOrigin(r) {
-    const { ctx } = r;
-    const breath = 0.5 + Math.sin(r.time * 0.7) * 0.5;
-    drawGlow(ctx, r.glows.white, 0, 0, 90, 0.07 + breath * 0.03);
-    ctx.globalAlpha = 0.1 + breath * 0.05;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1 / r.camera.scale;
-    ctx.beginPath();
-    ctx.arc(0, 0, 26 + breath * 4, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
   // Quand l'origine est hors de l'écran, une petite flèche sur le bord indique sa direction.
   function drawOriginPointer(r) {
     const { ctx, camera } = r;
@@ -259,7 +246,7 @@
     ctx.translate(-camera.x, -camera.y);
     ctx.globalCompositeOperation = 'lighter';
 
-    drawOrigin(r);
+    Vide.Draw.territory(r, game);
     drawReach(r, game);
     drawPulse(r, game);
     drawParticles(r, game);
@@ -270,5 +257,7 @@
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  Vide.Render = { create, resize, screenToWorld, snapCamera, draw };
+  Vide.Render = { create, resize, screenToWorld, snapCamera, draw, drawGlow, viewBounds };
+  // Fonctions de dessin spécialisées (territoire, êtres…), définies dans src/app/draw-*.js.
+  Vide.Draw = Vide.Draw || {};
 })(globalThis.Vide);

@@ -11,6 +11,9 @@
       value: 1,     // multiplicateur de la lumière gagnée par particule
       pulseRadius: CONFIG.pulse.radius,
       pulseCooldown: CONFIG.pulse.cooldown,
+      territoryGrowth: CONFIG.territory.growth,
+      territoryYield: CONFIG.territory.yield,
+      offlineCap: CONFIG.territory.offlineCap,
     };
   }
 

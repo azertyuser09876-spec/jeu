@@ -73,6 +73,41 @@ const { chromium } = require('playwright');
     'la partie est retrouvée après rechargement'
   );
 
+  // Foyer : à l'origine, l'onglet territoire permet de l'allumer.
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    s.player.x = 20; s.player.y = 0;
+    s.light += 500; s.totalLight += 500;
+  });
+  await page.waitForTimeout(100);
+  await page.click('.tab:has-text("territoire")');
+  await page.click('#shop-list li:not([hidden]) .item:has-text("Allumer le foyer")');
+  await page.waitForTimeout(400);
+  const lit = await page.evaluate(() => Vide.game.state.territory.lit);
+  const toastText = await page.textContent('#toast');
+  check(lit && toastText.includes('foyer'), 'le foyer s’allume depuis l’origine, avec un message');
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'foyer.png') });
+
+  // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
+  const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
+  await page.evaluate(() => {
+    Vide.Storage.save(Vide.game.state);
+    const save = JSON.parse(localStorage.getItem('le-vide/save'));
+    save.savedAt -= 2 * 3600 * 1000;
+    localStorage.setItem('le-vide/save', JSON.stringify(save));
+    window.addEventListener('pagehide', (e) => e.stopImmediatePropagation(), { capture: true });
+    Vide.Storage.readOnly = true; // empêche la sauvegarde de sortie d'écraser la sauvegarde vieillie
+  });
+  await page.reload();
+  await page.waitForTimeout(300);
+  const awayShown = await page.isVisible('#away');
+  const radiusAfter = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
+  check(awayShown && radiusAfter > radiusBefore + 20,
+    `l’absence fait grandir le territoire (${Math.round(radiusBefore)} → ${Math.round(radiusAfter)}) et l’écran d’absence s’affiche`);
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'absence.png') });
+  await page.click('#away-close');
+  check(!(await page.isVisible('#away')), 'l’écran d’absence se ferme');
+
   // Menu : Échap l'ouvre et met le jeu en pause.
   await page.keyboard.press('Escape');
   const t0 = await page.evaluate(() => Vide.game.state.stats.playTime);

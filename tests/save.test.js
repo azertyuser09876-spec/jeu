@@ -88,6 +88,30 @@
     assert.equal(state.totalLight, 500);
   });
 
+  test('une sauvegarde de la 0.1 (format 1) se charge sans rien perdre', () => {
+    const v01 = {
+      format: 1,
+      game: '0.1.0',
+      savedAt: 5,
+      state: {
+        seed: 9, light: 77, totalLight: 500, upgrades: { reach: 4, pulse: 2 },
+        player: { x: 10, y: -20 }, stats: { playTime: 600, collected: 321 },
+      },
+    };
+    const result = Save.deserialize(JSON.stringify(v01));
+    assert.ok(result.ok);
+    assert.equal(result.state.light, 77);
+    assert.deepEqual(result.state.upgrades, { reach: 4, pulse: 2 });
+    assert.deepEqual(result.state.territory, { lit: false, area: 0 });
+  });
+
+  test('le territoire est relu et nettoyé', () => {
+    const start = Math.PI * Vide.CONFIG.territory.startRadius ** 2;
+    assert.deepEqual(Save.sanitize({ territory: { lit: true, area: 99999 } }).territory, { lit: true, area: 99999 });
+    assert.equal(Save.sanitize({ territory: { lit: true, area: -4 } }).territory.area, start);
+    assert.deepEqual(Save.sanitize({ territory: { lit: 'oui', area: 500 } }).territory, { lit: false, area: 0 });
+  });
+
   test('un état vide donne une partie neuve', () => {
     assert.deepEqual(Save.sanitize({ seed: 5 }), State.create(5));
   });

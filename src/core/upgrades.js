@@ -65,5 +65,43 @@
       },
       show: (s) => `${Math.round(s.pulseRadius)} · ${s.pulseCooldown.toFixed(1).replace('.', ',')}s`,
     },
+
+    // --- Territoire (visibles une fois le foyer allumé) ---
+    {
+      id: 'expansion',
+      tab: 'territoire',
+      name: 'Expansion',
+      desc: 'Le territoire s’étend plus vite.',
+      requires: (state) => state.territory.lit,
+      baseCost: 300,
+      growth: 1.8,
+      max: 20,
+      effects: { territoryGrowth: (l) => CONFIG.territory.growth * (1 + 0.35 * l) },
+      show: (s) => util.formatMultiplier(s.territoryGrowth / CONFIG.territory.growth),
+    },
+    {
+      id: 'fertility',
+      tab: 'territoire',
+      name: 'Fertilité',
+      desc: 'Chaque parcelle du territoire rayonne davantage.',
+      requires: (state) => state.territory.lit,
+      baseCost: 400,
+      growth: 1.9,
+      max: null,
+      effects: { territoryYield: (l) => CONFIG.territory.yield * Math.pow(1.45, l) },
+      show: (s) => util.formatMultiplier(s.territoryYield / CONFIG.territory.yield),
+    },
+    {
+      id: 'memory',
+      tab: 'territoire',
+      name: 'Mémoire',
+      desc: 'Le territoire se souvient plus longtemps de toi pendant ton absence.',
+      requires: (state) => state.territory.lit,
+      baseCost: 600,
+      growth: 2.1,
+      max: 20,
+      effects: { offlineCap: (l) => CONFIG.territory.offlineCap + l * 3600 },
+      show: (s) => `${Math.round(s.offlineCap / 3600)} h`,
+    },
   ];
 })(globalThis.Vide);

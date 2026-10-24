@@ -5,12 +5,13 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 1;
+  const FORMAT = 2;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
-  // Exemple pour un futur format 2 :
-  //   1: (data) => ({ ...data, territory: { radius: 0 } }),
-  const MIGRATIONS = {};
+  const MIGRATIONS = {
+    // 0.2 : apparition du territoire.
+    1: (data) => ({ ...data, territory: { lit: false, area: 0 } }),
+  };
 
   function serialize(state, now) {
     return JSON.stringify({ format: FORMAT, game: Vide.VERSION, savedAt: now, state });
@@ -83,6 +84,13 @@
     const player = isObject(raw.player) ? raw.player : {};
     state.player.x = finite(player.x, 0);
     state.player.y = finite(player.y, 0);
+
+    const territory = isObject(raw.territory) ? raw.territory : {};
+    state.territory.lit = territory.lit === true;
+    if (state.territory.lit) {
+      const start = Math.PI * Vide.CONFIG.territory.startRadius ** 2;
+      state.territory.area = Math.max(positive(territory.area, start), start);
+    }
 
     const stats = isObject(raw.stats) ? raw.stats : {};
     state.stats.playTime = positive(stats.playTime, 0);

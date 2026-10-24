@@ -11,6 +11,10 @@
 
   const loaded = Vide.Storage.load();
   const state = loaded && loaded.ok ? loaded.state : Vide.State.create((Math.random() * 2 ** 32) >>> 0);
+  // Le monde a continué pendant que la page était fermée.
+  const welcome = loaded && loaded.ok && loaded.savedAt
+    ? Vide.Offline.apply(state, (Date.now() - loaded.savedAt) / 1000)
+    : null;
   const game = Vide.Sim.create(state);
   const input = Vide.Input.create(canvas);
 
@@ -31,9 +35,17 @@
     },
   });
   Vide.Render.snapCamera(renderer, game);
+  Vide.Away.init();
+  if (welcome && Vide.Offline.worthShowing(welcome)) Vide.Away.show(welcome);
+
+  const paused = () => menu.open || Vide.Away.open;
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
   input.onAction = (code) => {
+    if (Vide.Away.open) {
+      if (code === 'Escape' || code === 'Enter' || code === 'Space') Vide.Away.close();
+      return true;
+    }
     if (code === 'Escape') {
       Vide.Menu.toggle(menu);
       return true;
@@ -50,8 +62,17 @@
   };
 
   // Sauvegarde quand on quitte ou change d'onglet (seul moment fiable sur mobile).
+  // Au retour sur l'onglet, le temps passé ailleurs compte comme une absence.
+  let hiddenAt = null;
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') save();
+    if (document.visibilityState === 'hidden') {
+      save();
+      hiddenAt = Date.now();
+    } else if (hiddenAt !== null) {
+      const report = Vide.Offline.apply(state, (Date.now() - hiddenAt) / 1000);
+      hiddenAt = null;
+      if (Vide.Offline.worthShowing(report)) Vide.Away.show(report);
+    }
   });
   window.addEventListener('pagehide', save);
 
@@ -68,7 +89,7 @@
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
 
-    if (menu.open) {
+    if (paused() || document.hidden) {
       // Jeu en pause : on rafraîchit seulement le texte du menu.
       accumulator = 0;
       sinceMenuRefresh += dt;
@@ -94,7 +115,9 @@
       save();
     }
 
-    Vide.Render.draw(renderer, game, menu.open ? 0 : dt);
+    Vide.Render.draw(renderer, game, paused() ? 0 : dt);
+    Vide.Away.readEvents(game);
+    Vide.Away.updateToast(now);
     Vide.UI.update(ui);
     requestAnimationFrame(frame);
   }

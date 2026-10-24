@@ -24,6 +24,9 @@
         duration: 1,  // durée totale de la recharge en cours (pour l'affichage)
         wave: -1,     // rayon actuel de l'onde, -1 si aucune onde en cours
       },
+      // Événements de ce qui vient de se passer ({ type, … }), lus puis vidés par l'interface.
+      events: [],
+      lit: state.territory.lit, // pour détecter l'allumage du foyer
     };
     Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
     return game;
@@ -57,13 +60,20 @@
     return true;
   }
 
+  function emit(game, type, data) {
+    game.events.push({ type, ...data });
+    // Garde-fou si personne ne lit les événements (tests, robot d'équilibrage).
+    if (game.events.length > 100) game.events.shift();
+  }
+
   function updatePulse(game, dt) {
     const p = game.pulse;
-    if (p.cooldown > 0) p.cooldown = Math.max(0, p.cooldown - dt);
+    const { player } = game.state;
+    const boost = Vide.Territory.isInside(game.state, player.x, player.y) ? CONFIG.territory.insidePulseBoost : 1;
+    if (p.cooldown > 0) p.cooldown = Math.max(0, p.cooldown - dt * boost);
     if (p.wave < 0) return;
     // L'onde suit la lumière et attrape tout ce qu'elle a déjà traversé.
     p.wave = Math.min(p.wave + CONFIG.pulse.waveSpeed * dt, game.stats.pulseRadius);
-    const { player } = game.state;
     Vide.Field.catchWithin(game.field, player.x, player.y, p.wave);
     if (p.wave >= game.stats.pulseRadius) p.wave = -1;
   }
@@ -83,15 +93,25 @@
     updatePulse(game, dt);
 
     const harvest = Vide.Field.update(game.field, state.player, game.stats, dt);
-    const gained = harvest.value * game.stats.value;
+    let gained = harvest.value * game.stats.value;
     if (harvest.count) {
       gainLight(game, gained);
       state.stats.collected += harvest.count;
       game.glow = Math.min(1, game.glow + 0.25 * harvest.count);
     }
+
+    if (state.territory.lit && !game.lit) {
+      game.lit = true;
+      emit(game, 'foyer');
+    }
+    const radiated = Vide.Territory.advance(state, game.stats, dt);
+    if (radiated > 0) {
+      gainLight(game, radiated);
+      gained += radiated;
+    }
     game.glow *= 1 - util.damp(4, dt);
     game.rate += (gained / dt - game.rate) * util.damp(1 / 3, dt);
   }
 
-  Vide.Sim = { create, step, emptyInput, gainLight, pulse, pulseReady };
+  Vide.Sim = { create, step, emptyInput, gainLight, emit, pulse, pulseReady };
 })(globalThis.Vide);

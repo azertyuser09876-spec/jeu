@@ -10,6 +10,10 @@
       totalLight: 0,     // lumière récoltée depuis le début
       upgrades: {},      // niveau de chaque amélioration, par identifiant
       player: { x: 0, y: 0 },
+      territory: {
+        lit: false,      // foyer allumé ?
+        area: 0,         // surface du territoire (unités²)
+      },
       stats: {
         playTime: 0,     // secondes de jeu actif
         collected: 0,    // particules récoltées
