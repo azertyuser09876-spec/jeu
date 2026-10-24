@@ -39,7 +39,7 @@
     const cinemaBtn = $('cinema-toggle');
     const showOptions = () => {
       showSound();
-      shakeBtn.textContent = reduced() ? 'secousses : réduites' : 'secousses : normales';
+      shakeBtn.textContent = reduced() ? 'secousses, éclairs : réduits' : 'secousses, éclairs : normaux';
       cinemaBtn.textContent = Vide.Cinema.enabled() ? 'tableaux : joués' : 'tableaux : coupés';
     };
     shakeBtn.addEventListener('click', () => {

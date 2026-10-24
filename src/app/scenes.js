@@ -360,8 +360,9 @@
               ctx.stroke();
             }
           }
-          // L'éclair, puis les éclats qui filent au loin.
-          const flash = 1 - Math.abs((p - 0.42) / 0.08);
+          // L'éclair (adouci si l'on a réduit secousses et éclairs), puis les éclats qui filent au loin.
+          const calm = Vide.Settings.get('reduceShake', Vide.Render.REDUCE_DEFAULT);
+          const flash = (1 - Math.abs((p - 0.42) / 0.08)) * (calm ? 0.25 : 1);
           if (flash > 0) {
             ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = flash;

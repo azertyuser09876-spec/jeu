@@ -415,7 +415,7 @@ const { chromium } = require('playwright');
   // Options : secousses réduites, mémorisées.
   await page.click('#shake-toggle');
   const calm = await page.evaluate(() => ({ text: document.getElementById('shake-toggle').textContent, kept: Vide.Settings.get('reduceShake') }));
-  check(calm.text.includes('réduites') && calm.kept === true, 'les secousses se réduisent depuis le menu');
+  check(calm.text.includes('réduits') && calm.kept === true, 'les secousses et les éclairs se réduisent depuis le menu');
 
   // Tableaux : un tableau met le monde en pause, plein écran ; Échap le passe.
   await page.keyboard.press('Escape');

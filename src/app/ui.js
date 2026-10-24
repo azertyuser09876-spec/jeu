@@ -165,13 +165,14 @@
     setClass(ui.pulseBtn, 'ready', Vide.Sim.pulseReady(game));
   }
 
-  const GUARDS = { aloft: 'en vol', closed: 'refermée', shielded: 'protégée' };
+  const GUARDS = { aloft: 'en vol', closed: 'refermée', shielded: 'protégée', asleep: 'endormi' };
 
   // Combat contre un colosse : son nom, ses sceaux (● actif, ○ à venir, · brisé, ◌ voilé), la jauge qui le fait plier.
   function updateBoss(ui) {
     const { game } = ui;
     const { player } = game.state;
-    const c = game.colossi.find((k) => (k.mode === 'hunt' || k.mode === 'kneel') &&
+    // (Le Dormeur aussi, pendant son sommeil, quand on s'en approche : on voit ses rêves à apaiser.)
+    const c = game.colossi.find((k) => (k.mode === 'hunt' || k.mode === 'kneel' || k.mode === 'sleep') &&
       Math.hypot(k.x - player.x, k.y - player.y) < 1600 + Vide.Colossus.extent(k));
     setClass(ui.boss, 'hidden', !c);
     if (!c) return;
