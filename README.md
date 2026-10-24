@@ -27,9 +27,11 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 ## Ce qui t'attend
 
 - **La récolte** : la lumière flotte dans le vide ; attire-la, pulse pour tout attraper d'un coup.
-- **Le territoire** : allume le foyer à l'origine ; ton territoire grandit lentement, toujours, et rayonne.
-- **Les êtres** : lueurs qui récoltent le jardin, bâtisseurs qui choisissent où construire tes nids,
-  prismes, phares et tours ; ils se croisent, dansent, ravitaillent les chantiers.
+- **Les villages** : fonde-les où tu veux, du type que tu choisis (jardins, bastion, atelier, observatoire,
+  sanctuaire). Chacun a son territoire vivant, qui pousse vers ses bâtiments et grandit lentement, toujours,
+  même sans toi ; son cœur blanchit avec le temps.
+- **Les êtres** : dans chaque village, des lueurs récoltent le jardin, des bâtisseurs choisissent où construire
+  nids, prismes, phares et tours ; ils se croisent, dansent, ravitaillent les chantiers.
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
   (gardiens, étincelles, veilleuses) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
 - **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.

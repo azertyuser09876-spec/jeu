@@ -1,5 +1,36 @@
 # Historique des versions
 
+## 1.2.0 — Villages
+
+Il n'y a plus de base centrale. L'origine n'est plus que le lieu où naît la lumière.
+
+- **Fonder un village** là où l'on se trouve, en choisissant son type :
+  - **Jardins** : la lumière y naît plus dense, les lueurs portent davantage.
+  - **Bastion** : bâtiments plus solides, territoire qui brûle deux fois plus les ombres, armée plus forte.
+  - **Atelier** : chantiers bien plus rapides, un bâtisseur de plus.
+  - **Observatoire** : territoire qui grandit plus vite, pulsation qui s'y recharge plus vite.
+  - **Sanctuaire** : soins deux fois plus rapides, êtres plus résistants, cœur qui blanchit plus vite.
+
+  Le premier coûte ✦ 150, le deuxième ✦ 50 k, puis ×20.
+- **Chaque village vit à part** : son territoire, son jardin, ses êtres (qui y récoltent, y déposent et s'y
+  rallument), ses bâtiments, son rendement pendant l'absence. Les êtres et les plans s'achètent dans le village
+  où l'on se trouve ; les fondations ne se proposent qu'au-dehors.
+- **Territoire vivant** : une grille de cellules qui pousse au bord, là où le village attire sa lumière (près du
+  cœur, vers ses bâtiments, en grandes ondulations), avec une silhouette propre au type : pétales, octogone,
+  carré, rayons, disque. **Le cœur blanchit** lentement, et ce blanc se répand plus lentement encore ; dans le
+  blanc, les ombres brûlent trois fois plus et la lumière dorée naît deux fois plus souvent.
+- **Architecture** : chaque cœur a son dessin (fleur, remparts à tourelles, engrenage, arcs et astres en orbite,
+  ondes) ; les bâtiments portent un halo aux couleurs de leur village.
+- **Les marées visent un village** (d'autant plus souvent qu'il est vaste) ; les ombres rongent son cœur ;
+  l'armée défend son propre village.
+- **Dispersion** : la lumière éclate où elle tombe, l'écran s'éteint, puis ses éclats se rassemblent au village
+  le plus proche (ou à l'origine) et une onde rouvre le monde.
+- Carte : la vraie forme de chaque village et son blanc. Une petite flèche indique le village le plus proche.
+- Souvenirs : Racines agrandit tous tes villages ; Éveil précoce place ses lueurs dans le premier village fondé.
+- Sauvegarde au format 10 : l'ancien territoire devient un premier village de jardins, à l'origine, avec ses
+  êtres, ses bâtiments et son rendement.
+- 226 tests de logique, 30 vérifications navigateur ; robot d'équilibrage qui fonde et rejoint ses villages.
+
 ## 1.1.0 — Retouches et caméra
 
 Premiers retours de jeu sur la 1.0.

@@ -23,7 +23,7 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - Simulation à **pas fixe** (`CONFIG.step`) ; `Sim.step(game, dt, input)` est déterministe pour une graine donnée.
 - Les caractéristiques (`Stats.compute`) se recalculent à chaque pas à partir de l'état : pas de cache à invalider.
 - **Contenu = données**, chaque catalogue dans son fichier : améliorations (`upgrades.js`), espèces (`species.js`),
-  bâtiments (`buildings.js`), ombres (`SHADOW_KINDS` dans `shadows.js`), zones (`zones.js`), colosses
+  bâtiments (`buildings.js`), types de villages (`VILLAGE_TYPES` dans `villages.js`), ombres (`SHADOW_KINDS` dans `shadows.js`), zones (`zones.js`), colosses
   (`colossi.js`, corps et attaques dans `colossus.js`), récit (`lore.js`). Les `id` sont stockés dans les
   sauvegardes : ne jamais les renommer.
 - **Boutique** : tout ce qui s'achète s'inscrit au catalogue (`catalog.js`) avec un onglet ; l'interface
@@ -31,7 +31,11 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - **Événements** : la simulation signale ce qui arrive avec `Sim.emit(game, type, données)` ; l'interface
   (`away.js`), le son (`audio.js`) et le rendu les lisent chaque image. Ajouter un message = une entrée dans
   `MESSAGES` (away.js).
-- **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `garden.js`, `colony.js`
+- **Villages** (`state.villages`) : il n'y a plus de foyer central. Chaque village a son cœur, sa surface (économie),
+  sa forme (`cells`, grille de 40, voir `territory.js`), ses êtres, ses bâtiments, son rendement. Les bâtiments et le
+  type n'agissent que sur leur village : `Villages.local(state, village)` (ou `Villages.statsOf(game, village)` en jeu).
+  La boutique des êtres et des plans vise le village où l'on se trouve (`Villages.current`). Tests : `VideTest.village`.
+- **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`
   (êtres et comportements par rôle), `structures.js` (bâtiments), `shadows.js`, `combat.js` (vitalité, armée,
   projectiles, tours), `zones.js`, `colossus.js`, `offline.js` (absence), `renaissance.js`, `save.js`.
 - **Améliorations héritées** (`legacy: true`, payées en souvenirs) : rangées dans `state.legacy`, elles survivent

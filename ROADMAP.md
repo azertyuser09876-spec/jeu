@@ -94,7 +94,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 4. Écran titre animé au lancement.
 5. Options : réduire les secousses, exporter / importer sa sauvegarde.
 
-### [ ] 1.2 — Villages
+### [x] 1.2 — Villages
 1. Plus de foyer central : l'origine n'est qu'un lieu de naissance. On fonde un village là où l'on se trouve,
    en choisissant son type (Jardins, Bastion, Atelier, Observatoire, Sanctuaire), chacun avec ses effets.
    Êtres, bâtiments, jardin propres à chaque village ; boutique contextuelle (village où l'on se trouve).
