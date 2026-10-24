@@ -11,6 +11,7 @@ const { chromium } = require('playwright');
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
+  const shotDir = process.argv[2];
   const checks = [];
   const check = (ok, label) => checks.push({ ok, label });
   const player = () => page.evaluate(() => ({ ...Vide.game.state.player }));
@@ -61,11 +62,41 @@ const { chromium } = require('playwright');
   const pulse = await page.evaluate(() => ({ ...Vide.game.pulse }));
   check(pulse.cooldown > 0, 'Espace déclenche la pulsation');
 
-  // Capture facultative : `node tests/smoke.js capture.png`
-  const shot = process.argv[2];
-  if (shot) {
+  // Sauvegarde : l'état survit à un rechargement (sauvegarde déclenchée en quittant la page).
+  const saved = await page.evaluate(() => JSON.parse(JSON.stringify(Vide.game.state)));
+  await page.reload();
+  await page.waitForTimeout(300);
+  const reloaded = await page.evaluate(() => JSON.parse(JSON.stringify(Vide.game.state)));
+  check(
+    reloaded.upgrades.reach === saved.upgrades.reach && reloaded.upgrades.speed === saved.upgrades.speed &&
+      reloaded.totalLight >= saved.totalLight && reloaded.light >= saved.light,
+    'la partie est retrouvée après rechargement'
+  );
+
+  // Menu : Échap l'ouvre et met le jeu en pause.
+  await page.keyboard.press('Escape');
+  const t0 = await page.evaluate(() => Vide.game.state.stats.playTime);
+  await page.waitForTimeout(500);
+  const t1 = await page.evaluate(() => Vide.game.state.stats.playTime);
+  const menuOpen = await page.isVisible('#menu');
+  check(menuOpen && t1 === t0, 'Échap ouvre le menu et met en pause');
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'menu.png') });
+
+  // Recommencer : confirmation, puis partie neuve, sans que la sauvegarde de sortie ne la réécrive.
+  page.once('dialog', (d) => d.accept());
+  await Promise.all([page.waitForNavigation(), page.click('#menu-reset')]);
+  await page.waitForTimeout(300);
+  const fresh = await page.evaluate(() => ({ total: Vide.game.state.totalLight, ups: Vide.game.state.upgrades }));
+  check(fresh.total === 0 && Object.keys(fresh.ups).length === 0, 'recommencer efface la partie');
+  await page.reload();
+  await page.waitForTimeout(300);
+  const totalAfterReset = await page.evaluate(() => Vide.game.state.totalLight);
+  check(totalAfterReset === 0, 'la partie effacée ne revient pas au rechargement');
+
+  // Captures facultatives : `node tests/smoke.js dossier/`
+  if (shotDir) {
     await page.waitForTimeout(1800);
-    await page.screenshot({ path: shot });
+    await page.screenshot({ path: path.join(shotDir, 'jeu.png') });
   }
 
   await browser.close();

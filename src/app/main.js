@@ -3,20 +3,42 @@
   'use strict';
   const { CONFIG } = Vide;
 
+  const AUTOSAVE_EVERY = 10; // secondes
+
   const canvas = document.getElementById('view');
   const renderer = Vide.Render.create(canvas);
   window.addEventListener('resize', () => Vide.Render.resize(renderer));
 
-  const state = Vide.State.create((Math.random() * 2 ** 32) >>> 0);
+  const loaded = Vide.Storage.load();
+  const state = loaded && loaded.ok ? loaded.state : Vide.State.create((Math.random() * 2 ** 32) >>> 0);
   const game = Vide.Sim.create(state);
   const input = Vide.Input.create(canvas);
+
+  // Après « recommencer », plus aucune sauvegarde ne doit réécrire l'ancienne partie.
+  let resetting = false;
+  function save() {
+    if (!resetting) Vide.Storage.save(state);
+  }
+
   const ui = Vide.UI.create(game, {
     onPulse: () => { input.pulse = true; },
+  });
+  const menu = Vide.Menu.create(game, {
+    onReset: () => {
+      resetting = true;
+      Vide.Storage.clear();
+      window.location.reload();
+    },
   });
   Vide.Render.snapCamera(renderer, game);
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
   input.onAction = (code) => {
+    if (code === 'Escape') {
+      Vide.Menu.toggle(menu);
+      return true;
+    }
+    if (menu.open) return false;
     if (code === 'Space') {
       input.pulse = true;
       return true;
@@ -26,28 +48,52 @@
     return false;
   };
 
+  // Sauvegarde quand on quitte ou change d'onglet (seul moment fiable sur mobile).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') save();
+  });
+  window.addEventListener('pagehide', save);
+
   // Accès depuis la console du navigateur, pratique pour déboguer.
   Vide.game = game;
 
   let last = performance.now();
   let accumulator = 0;
+  let sinceSave = 0;
+  let sinceMenuRefresh = 0;
 
   function frame(now) {
     // Au retour d'un onglet en arrière-plan, on ne rattrape pas des minutes de simulation d'un coup.
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
 
-    accumulator += dt;
-    let steps = 0;
-    while (accumulator >= CONFIG.step && steps < CONFIG.maxStepsPerFrame) {
-      Vide.Input.update(input, game, renderer);
-      Vide.Sim.step(game, CONFIG.step, input);
-      accumulator -= CONFIG.step;
-      steps++;
+    if (menu.open) {
+      // Jeu en pause : on rafraîchit seulement le texte du menu.
+      accumulator = 0;
+      sinceMenuRefresh += dt;
+      if (sinceMenuRefresh > 0.5) {
+        sinceMenuRefresh = 0;
+        Vide.Menu.refresh(menu);
+      }
+    } else {
+      accumulator += dt;
+      let steps = 0;
+      while (accumulator >= CONFIG.step && steps < CONFIG.maxStepsPerFrame) {
+        Vide.Input.update(input, game, renderer);
+        Vide.Sim.step(game, CONFIG.step, input);
+        accumulator -= CONFIG.step;
+        steps++;
+      }
+      if (steps === CONFIG.maxStepsPerFrame) accumulator = 0;
     }
-    if (steps === CONFIG.maxStepsPerFrame) accumulator = 0;
 
-    Vide.Render.draw(renderer, game, dt);
+    sinceSave += dt;
+    if (sinceSave >= AUTOSAVE_EVERY) {
+      sinceSave = 0;
+      save();
+    }
+
+    Vide.Render.draw(renderer, game, menu.open ? 0 : dt);
     Vide.UI.update(ui);
     requestAnimationFrame(frame);
   }

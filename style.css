@@ -140,7 +140,7 @@ button { font: inherit; letter-spacing: inherit; }
   top: 50%;
   right: max(18px, env(safe-area-inset-right));
   transform: translateY(-50%);
-  width: 230px;
+  width: 250px;
   transition: opacity 2.5s ease;
 }
 
@@ -165,7 +165,7 @@ button { font: inherit; letter-spacing: inherit; }
   grid-template-areas:
     "name level"
     "effect cost";
-  row-gap: 3px;
+  gap: 3px 12px;
   padding: 10px 12px 10px 14px;
   text-align: left;
   color: var(--dim);
@@ -241,11 +241,117 @@ button { font: inherit; letter-spacing: inherit; }
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px);
   }
   #upgrade-list li { flex: 0 0 auto; min-width: 150px; }
-  .upgrade { padding: 8px 10px; column-gap: 12px; }
+  .upgrade { padding: 8px 10px; }
   @keyframes reveal {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }
   }
+}
+
+/* --- Menu --- */
+
+#menu-btn {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+
+#menu-btn:hover,
+#menu-btn[aria-expanded="true"] { opacity: 0.85; }
+
+/* Trois traits fins dessinés en CSS. */
+#menu-btn span,
+#menu-btn span::before,
+#menu-btn span::after {
+  position: absolute;
+  left: 11px;
+  width: 18px;
+  height: 1px;
+  background: #fff;
+  content: "";
+}
+#menu-btn span { top: 20px; }
+#menu-btn span::before { top: -6px; left: 0; }
+#menu-btn span::after { top: 6px; left: 0; }
+
+#menu {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  animation: fade 0.3s ease;
+}
+
+.menu-card {
+  width: min(440px, 100%);
+  padding: 28px 28px 22px;
+  border: 1px solid var(--faint);
+  border-radius: 14px;
+  background: #050506;
+}
+
+.menu-card h1 {
+  margin: 0;
+  font-weight: 200;
+  font-size: 1.8rem;
+  letter-spacing: 0.2em;
+  color: var(--light);
+}
+
+.menu-card .version {
+  margin: 4px 0 20px;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0 0 20px;
+  font-size: 0.85rem;
+}
+.controls dt { color: var(--dim); }
+.controls dd { margin: 0; }
+
+.menu-stats,
+.save-status {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
+.menu-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.menu-actions button {
+  padding: 9px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.menu-actions button:hover { background: rgba(255, 255, 255, 0.08); }
+.menu-actions .danger { border-color: rgba(255, 140, 140, 0.3); color: rgba(255, 180, 180, 0.8); }
+
+@keyframes fade {
+  from { opacity: 0; }
 }
 
 #view {

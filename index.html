@@ -28,6 +28,30 @@
     <ol id="upgrade-list"></ol>
   </aside>
 
+  <button id="menu-btn" type="button" aria-label="Menu" aria-expanded="false"><span></span></button>
+
+  <div id="menu" hidden>
+    <div class="menu-card" role="dialog" aria-label="Menu">
+      <h1>Le Vide</h1>
+      <p class="version">version <span id="version"></span></p>
+
+      <dl class="controls">
+        <dt>se déplacer</dt><dd>maintenir le clic ou le doigt · ZQSD, WASD ou flèches</dd>
+        <dt>pulsation</dt><dd>Espace ou le bouton rond</dd>
+        <dt>améliorer</dt><dd>clic ou touches 1 à 5</dd>
+        <dt>menu</dt><dd>Échap</dd>
+      </dl>
+
+      <p id="menu-stats" class="menu-stats"></p>
+      <p id="save-status" class="save-status"></p>
+
+      <div class="menu-actions">
+        <button id="menu-reset" type="button" class="danger">recommencer</button>
+        <button id="menu-close" type="button">reprendre</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Logique pure (testée par tests/run.js) -->
   <script src="src/core/vide.js"></script>
   <script src="src/core/util.js"></script>
@@ -38,11 +62,14 @@
   <script src="src/core/economy.js"></script>
   <script src="src/core/field.js"></script>
   <script src="src/core/sim.js"></script>
+  <script src="src/core/save.js"></script>
 
   <!-- Navigateur : affichage, contrôles, interface -->
   <script src="src/app/render.js"></script>
   <script src="src/app/input.js"></script>
   <script src="src/app/ui.js"></script>
+  <script src="src/app/storage.js"></script>
+  <script src="src/app/menu.js"></script>
   <script src="src/app/main.js"></script>
 </body>
 </html>

@@ -63,7 +63,7 @@
         pulseRadius: (l) => CONFIG.pulse.radius * (1 + 0.15 * l),
         pulseCooldown: (l) => CONFIG.pulse.cooldown * Math.pow(0.93, l),
       },
-      show: (s) => `${Math.round(s.pulseRadius)} · ${s.pulseCooldown.toFixed(1).replace('.', ',')} s`,
+      show: (s) => `${Math.round(s.pulseRadius)} · ${s.pulseCooldown.toFixed(1).replace('.', ',')}s`,
     },
   ];
 })(globalThis.Vide);
