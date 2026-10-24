@@ -202,10 +202,16 @@ s'ouvrent qu'aux ombres.
 3. Prendre une base : abattre son cœur rend son terrain au vide, ou à ton village s'il le touche.
 
 ### [ ] 2.4 — Le monde vit
-1. De nouvelles unités dans les deux camps.
-2. Des créatures intermédiaires, plus grandes et plus travaillées que les êtres ; des colosses encore plus grands
-   et bien plus solides.
-3. Des convois automatiques entre villages, et une faune neutre dans le vide.
+1. De nouvelles unités dans les deux camps. Lumière : le porte-bouclier (il attire les coups et en encaisse la
+   moitié), le lancier (longue allonge ; il brise ouvrages et remparts). Ombres : la fouisseuse (elle passe sous
+   les murailles), la cracheuse (elle crache de loin), la bélière (elle enfonce les murailles).
+2. Des créatures intermédiaires, plus grandes et plus travaillées que les êtres, plus petites qu'un colosse, aux
+   corps articulés : côté ombres, des chimères (loups d'ombre en meute, scolopendre) qui naissent des bases mûres
+   et viennent avec la guerre ; côté lumière, le cerf de lumière, gardien d'un village. Des colosses plus grands
+   (×1,4) et bien plus solides (sceaux ×2), réglés avec le duelliste.
+3. La vie du monde : de vrais convois sur les routes (plusieurs chariots, attaquables, la charge perdue s'ils
+   tombent) ; une faune neutre dans le vide (bancs de lucioles qui fuient, raies de lumière qui planent, une
+   baleine du vide dans les régions lointaines), qui ne fait pas de mal.
 
 ### [ ] 2.5 — Les gouverneurs
 1. Chaque village (et chaque base d'ombre) a un gouverneur et un budget : il bâtit selon le plan, recrute, lance
