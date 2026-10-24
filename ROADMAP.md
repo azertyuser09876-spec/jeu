@@ -77,6 +77,67 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 1. Renaissance : se dissoudre pour renaître plus fort (souvenirs ✧, bienfaits permanents).
 2. Équilibrage complet au robot, finitions, documentation.
 
+## Vers 2.0 — les villages (retours de jeu sur la 1.0)
+
+Ce qui change de fond : **il n'y a plus de base centrale**. L'origine n'est plus qu'un lieu de naissance.
+Le joueur fonde des **villages** où il veut, d'un **type qu'il choisit** ; chacun a son territoire de lumière
+qui pousse selon ses habitants (pas un disque), son cœur qui blanchit lentement. Les villages se relient,
+échangent (soldats contre ressources…), grandissent jusqu'à devenir des **cités** (village énorme ou villages
+qui fusionnent, plusieurs spécialisations). Plus tard, ou trop loin, **les ombres bâtissent aussi**.
+Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'origine.
+
+### [ ] 1.1 — Retouches et caméra
+1. Carte peinte : zones en dégradés fondus, brouillard sur l'inexploré, plus de texte sur les zones.
+2. Pattes des colosses : genoux toujours pliés du même côté, pas limités, rotation sur place (plus de
+   pattes qui virevoltent).
+3. Caméra : zoom (molette, pincement, + / −) et recul automatique quand un colosse est proche.
+4. Écran titre animé au lancement.
+5. Options : réduire les secousses, exporter / importer sa sauvegarde.
+
+### [ ] 1.2 — Villages
+1. L'origine devient un simple lieu de naissance ; on fonde un village là où l'on se trouve, en choisissant
+   son type (Jardins, Bastion, Atelier, Observatoire, Sanctuaire), chacun avec son architecture et ses effets.
+2. Territoire de lumière vivant (grille) : il pousse là où vivent et travaillent les habitants, autour des
+   bâtiments ; les zones pleines blanchissent, et ce blanc se répand plus lentement encore.
+3. Êtres, bâtiments, jardin propres à chaque village ; boutique contextuelle (village où l'on se trouve).
+4. Dispersion : animation, puis renaissance dans le village le plus proche (ou à l'origine).
+5. Migration : l'ancien territoire devient le premier village. Sauvegarde format 10.
+
+### [ ] 1.3 — Autonomie et bâtiments
+1. Population sans plafond fixe (logements) ; intendant de village qui construit seul avec la part de
+   lumière que tu lui confies.
+2. Nouveaux bâtiments par familles (économie, vie, savoir, défense) et bâtiments propres à chaque type.
+3. Performances : grille spatiale pour des centaines d'êtres.
+
+### [ ] 1.4 — Routes, échanges, cités
+1. Relier des villages par des routes de lumière ; caravanes visibles.
+2. Ressources de village (matière ◇, savoir ✎, soldats) et échanges automatiques entre villages reliés.
+3. Cités : villages dont les territoires se touchent, ou village devenu énorme — plusieurs spécialisations.
+
+### [ ] 1.5 — Expéditions et capacités
+1. Expéditions choisies sur la carte : colons (fondent au loin), éclaireurs (révèlent), escortes.
+2. Capacités de la lumière : élan (ruée), fanal (lumière posée), retour (vers un village).
+
+### [ ] 1.6 — Les ombres bâtissent
+1. Villages d'ombre (territoire d'obscurité, flèches noires) après tes premiers villages ou trop loin ;
+   ils lancent les raids.
+2. Les assiéger avec l'armée, les détruire, reprendre le terrain.
+
+### [ ] 1.7 — Colosses redoutables
+1. Colosses bien plus grands (caméra qui recule), sceaux voilés tant qu'ils ne sont pas étudiés (érudits),
+   phases à chaque sceau brisé, attaques plus dures.
+2. La relève : balistes et chaînes construites sur place par des sapeurs, troupes de siège.
+3. Colosses qui marchent sur un village (seulement pendant le jeu) ; colosses apaisés avec un vrai rôle.
+
+### [ ] 1.8 — Nouveaux colosses
+L'Oiseau d'aube (vole, à clouer au sol), la Méduse (sceaux au rythme de ses pulsations), la Nuée
+(milliers de fragments), le Colosse endormi (on peut bâtir sur son dos).
+
+### [ ] 1.9 — Cinématiques
+Tableaux peints en code qui racontent sans texte : ouverture, première rencontre, apaisement, renaissance.
+
+### [ ] 2.0 — Équilibrage et finitions
+
 ## Après 1.0 — pistes
 
 - D'autres colosses (le corps et les attaques sont des données : un oiseau aux ailes immenses, une méduse…).
