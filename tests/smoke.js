@@ -49,11 +49,11 @@ const { chromium } = require('playwright');
   await page.evaluate(() => { Vide.game.state.light += 1000; Vide.game.state.totalLight += 1000; });
   await page.waitForTimeout(100);
   await page.keyboard.press('Digit1');
-  await page.click('#upgrade-list li:nth-child(2) .upgrade');
+  await page.click('#shop-list li:nth-child(2) .item');
   const levels = await page.evaluate(() => ({ ...Vide.game.state.upgrades }));
   check(levels.reach === 1, 'la touche 1 achète la première amélioration');
   check(levels.speed === 1, 'un clic achète une amélioration');
-  const visible = await page.$$eval('#upgrade-list li:not([hidden])', (els) => els.length);
+  const visible = await page.$$eval('#shop-list li:not([hidden])', (els) => els.length);
   check(visible === 5, `les améliorations se dévoilent (${visible} visibles)`);
 
   // Pulsation : la touche Espace la déclenche.

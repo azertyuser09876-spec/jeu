@@ -43,6 +43,7 @@
       input.pulse = true;
       return true;
     }
+    if (code === 'Tab') return Vide.UI.nextTab(ui);
     const digit = /^(?:Digit|Numpad)([1-9])$/.exec(code);
     if (digit) return Vide.UI.buyByIndex(ui, Number(digit[1]));
     return false;

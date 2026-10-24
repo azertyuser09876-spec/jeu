@@ -191,37 +191,78 @@ button { font: inherit; letter-spacing: inherit; }
   #pulse-btn .key { display: none; }
 }
 
-/* --- Améliorations --- */
+/* --- Boutique (améliorations, foyer, êtres…) --- */
 
-#upgrades {
+#shop {
   position: fixed;
   top: 50%;
   right: max(18px, env(safe-area-inset-right));
   transform: translateY(-50%);
-  width: 250px;
+  width: 260px;
+  max-height: calc(100% - 140px);
+  display: flex;
+  flex-direction: column;
   transition: opacity 2.5s ease;
 }
 
-#upgrade-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+#shop-tabs {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  margin-bottom: 10px;
 }
 
-#upgrade-list li {
+.tab {
+  position: relative;
+  padding: 4px 10px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  color: var(--dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.3s, border-color 0.3s;
   animation: reveal 1.6s ease both;
 }
 
-.upgrade {
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--light); border-bottom-color: rgba(214, 234, 255, 0.5); }
+
+/* Point discret : un achat est possible dans cet onglet. */
+.tab.notify::after {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--light);
+  box-shadow: 0 0 6px var(--light);
+  content: "";
+}
+
+#shop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 24px;
+  margin-left: -24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+#shop-list li {
+  animation: reveal 1.6s ease both;
+}
+
+.item {
   position: relative;
   width: 100%;
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-areas:
-    "name level"
+    "name label"
     "effect cost";
   gap: 3px 12px;
   padding: 10px 12px 10px 14px;
@@ -237,24 +278,25 @@ button { font: inherit; letter-spacing: inherit; }
   transition: color 0.4s, border-color 0.4s, background 0.2s, opacity 0.4s;
 }
 
-.upgrade.affordable {
+.item.affordable {
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.32);
 }
 
-.upgrade.affordable:hover { background: rgba(28, 30, 34, 0.75); }
-.upgrade:not(.affordable) { cursor: default; }
-.upgrade.maxed { opacity: 0.45; }
-.upgrade.bought { animation: bought 0.5s ease; }
+.item.affordable:hover { background: rgba(28, 30, 34, 0.75); }
+.item:not(.affordable) { cursor: default; }
+.item.maxed { opacity: 0.45; }
+.item.blocked .cost { font-style: italic; opacity: 0.8; }
+.item.bought { animation: bought 0.5s ease; }
 
-.upgrade .name { grid-area: name; }
-.upgrade .level { grid-area: level; font-size: 0.75rem; opacity: 0.7; align-self: center; }
-.upgrade .effect { grid-area: effect; font-size: 0.78rem; opacity: 0.75; font-variant-numeric: tabular-nums; }
-.upgrade .cost { grid-area: cost; font-size: 0.78rem; font-variant-numeric: tabular-nums; }
-.upgrade.affordable .cost { color: var(--light); }
+.item .name { grid-area: name; }
+.item .label { grid-area: label; font-size: 0.75rem; opacity: 0.7; align-self: center; }
+.item .effect { grid-area: effect; font-size: 0.78rem; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.item .cost { grid-area: cost; font-size: 0.78rem; text-align: right; font-variant-numeric: tabular-nums; }
+.item.affordable .cost { color: var(--light); }
 
 /* Rappel de la touche clavier, inutile sur écran tactile. */
-.upgrade .key {
+.item .key {
   position: absolute;
   top: 50%;
   left: -20px;
@@ -264,7 +306,7 @@ button { font: inherit; letter-spacing: inherit; }
 }
 
 @media (hover: none) {
-  .upgrade .key { display: none; }
+  .item .key { display: none; }
 }
 
 @keyframes reveal {
@@ -277,9 +319,9 @@ button { font: inherit; letter-spacing: inherit; }
   100% { box-shadow: 0 0 0 14px rgba(214, 234, 255, 0); }
 }
 
-/* Petit écran : les améliorations passent en bas, sur une ligne qui défile. */
+/* Petit écran : la boutique passe en bas, sur une ligne qui défile. */
 @media (max-width: 640px) {
-  #upgrades {
+  #shop {
     top: auto;
     bottom: max(12px, env(safe-area-inset-bottom));
     left: 10px;
@@ -287,19 +329,21 @@ button { font: inherit; letter-spacing: inherit; }
     width: auto;
     transform: none;
   }
-  #upgrade-list {
+  #shop-tabs { margin-bottom: 6px; }
+  #shop-list {
     flex-direction: row;
     overflow-x: auto;
-    scrollbar-width: none;
+    overflow-y: hidden;
     padding: 4px 2px;
+    margin-left: 0;
   }
   #pulse-btn {
     left: auto;
     right: 14px;
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 112px);
   }
-  #upgrade-list li { flex: 0 0 auto; min-width: 150px; }
-  .upgrade { padding: 8px 10px; }
+  #shop-list li { flex: 0 0 auto; min-width: 150px; }
+  .item { padding: 8px 10px; }
   @keyframes reveal {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }

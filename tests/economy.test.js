@@ -53,6 +53,7 @@
   test('acheter retire le prix et monte le niveau', () => {
     const state = State.create(1);
     state.light = 100;
+    state.totalLight = 100;
     const price = Economy.nextCost(state, 'reach');
     assert.ok(Economy.buy(state, 'reach'));
     assert.equal(state.light, 100 - price);
@@ -68,6 +69,12 @@
     assert.ok(Economy.isMaxed(state, 'reach'));
     assert.equal(Economy.buy(state, 'reach'), false);
     assert.equal(Economy.preview(state, 'reach').next, null);
+  });
+
+  test("une amélioration encore cachée ne s'achète pas", () => {
+    const state = State.create(1);
+    state.light = 1000;
+    assert.equal(Economy.canBuy(state, 'density'), false);
   });
 
   test("une amélioration sans maximum n'est jamais plafonnée", () => {

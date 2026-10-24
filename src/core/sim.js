@@ -21,6 +21,7 @@
       glow: 0,   // éclat bref de la lumière après une récolte (0 à 1), purement visuel
       pulse: {
         cooldown: 0,  // secondes restantes avant la prochaine pulsation
+        duration: 1,  // durée totale de la recharge en cours (pour l'affichage)
         wave: -1,     // rayon actuel de l'onde, -1 si aucune onde en cours
       },
     };
@@ -51,7 +52,7 @@
   // Déclenche une pulsation si elle est rechargée. Renvoie vrai si elle part.
   function pulse(game) {
     if (!pulseReady(game)) return false;
-    game.pulse.cooldown = game.stats.pulseCooldown;
+    game.pulse.cooldown = game.pulse.duration = game.stats.pulseCooldown;
     game.pulse.wave = 0;
     return true;
   }
