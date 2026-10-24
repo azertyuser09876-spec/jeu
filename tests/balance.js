@@ -1,8 +1,9 @@
 // Robot d'équilibrage : `node tests/balance.js [minutes] [--renaissance]`.
 // Avec --renaissance, il renaît dès que possible et compare le rythme de chaque vie.
 // Joue une partie simulée (marche aléatoire douce, pulsation dès qu'elle est prête, achète toujours
-// l'article le moins cher du catalogue ; rejoint un village quand un achat l'exige, s'en éloigne pour en
-// fonder un autre) et affiche la progression.
+// l'article le moins cher du catalogue, sauf ce qui débloque un village plein — bâtisseur, nid — pour lequel il
+// économise ; rejoint un village quand un achat l'exige, s'en éloigne pour en fonder un autre) et affiche la
+// progression.
 // Sert à vérifier le rythme après un réglage.
 'use strict';
 const fs = require('fs');
@@ -44,6 +45,30 @@ const LEAVE = ['hors des villages', 'trop près d’un village'];
 let waitCheck = 0;
 let goal = null; // 'join' | 'leave' | null
 
+// L'achat serait-il possible une fois dans le village le plus proche ? (Sans quoi le robot ferait des allers-retours
+// pour rien : une lueur abordable mais la population pleine, par exemple.)
+function buyableAtHome(item) {
+  const home = Villages.nearest(state, state.player.x, state.player.y);
+  if (!home) return false;
+  const { x, y } = state.player;
+  state.player.x = home.x;
+  state.player.y = home.y;
+  const why = item.blocked(state);
+  state.player.x = x;
+  state.player.y = y;
+  return !why;
+}
+
+// Ce qu'un joueur ferait passer avant tout, quitte à économiser : quand la population du village est pleine,
+// un bâtisseur s'il n'en a pas, sinon un nid (s'il n'y en a pas déjà un en chantier).
+function priority() {
+  const home = Villages.nearest(state, state.player.x, state.player.y);
+  if (!home || Vide.Colony.populationIn(home) < Villages.local(state, home).beingCap) return null;
+  if ((home.beings.batisseur || 0) && Vide.Structures.sites(home).some((b) => b.type === 'nid')) return null;
+  const item = Catalog.get(home.beings.batisseur ? 'nid' : 'batisseur');
+  return item && item.revealed(state) && !item.maxed(state) && buyableAtHome(item) ? item : null;
+}
+
 function steerTo(x, y, sign) {
   const dx = x - state.player.x, dy = y - state.player.y;
   const d = Math.hypot(dx, dy) || 1;
@@ -62,7 +87,7 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
       const founding = i.id.startsWith('village-');
       if (!founding && !i.revealed(state)) continue;
       const why = i.blocked(state);
-      if (JOIN.includes(why) && !goal) goal = 'join';
+      if (JOIN.includes(why) && !goal && buyableAtHome(i)) goal = 'join';
       // Fonder (le premier village, ou le suivant quand on peut se l'offrir) passe avant tout.
       if (founding && (LEAVE.includes(why) || (Villages.current(state) && !why))) goal = 'leave';
     }
@@ -98,6 +123,9 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     const founding = buyable.filter((i) => i.id.startsWith('village-'));
     const offset = Number(process.env.VILLAGE_OFFSET) || 0;
     if (founding.length) buyable.unshift(founding[(state.villages.length + offset) % founding.length]);
+    // Ce qui débloque le village d'abord : on l'achète dès que possible, et l'on économise en attendant.
+    const first = priority();
+    if (first) buyable.splice(0, buyable.length, ...(Catalog.canBuy(state, first.id) ? [first] : []));
     if (buyable.length) {
       const item = buyable[0];
       Catalog.buy(state, item.id);
