@@ -190,11 +190,16 @@ rayonnent du cœur vers quatre portes (alignées d'une enceinte à l'autre), des
 4. Refonte graphique : bâtiments, rues, enceintes, territoires, carte.
 
 ### [ ] 2.3 — Les bases des ombres
-1. De vraies bases : cœur, territoire de noirceur (cinq nuances, dure à reprendre), bâtiments (fosses, tours,
-   murailles d'ombre) ; elles grandissent et se fortifient.
-2. Les avant-postes : une base essaime ; leur apparition ouvre la guerre, d'abord douce (tension, escarmouches),
-   puis de plus en plus rude.
-3. Prendre une base : abattre son cœur rend le terrain au vide, ou à toi s'il touche ton territoire.
+Choix : les nids deviennent des bases, bâties comme tes villages mais en négatif — un territoire de noirceur
+(les mêmes cellules, cinq nuances de noir), un plan radial, des ouvrages d'ombre, des remparts dont les portes ne
+s'ouvrent qu'aux ombres.
+1. De vraies bases : un territoire de noirceur qui grandit avec l'âge (ni lui ni tes villages n'empiètent l'un sur
+   l'autre), en cinq nuances (plus noir, plus dur à reprendre) ; des ouvrages : fosses (raids plus nombreux,
+   défenseurs), flèches (elles tirent sur la lumière), remparts d'ombre (ils arrêtent la lumière ; ton armée en
+   siège les abat). Elles bâtissent et se fortifient avec le temps.
+2. Les avant-postes : une base mûre essaime vers tes villages ; le premier avant-poste ouvre la guerre, douce
+   d'abord (tension : des ombres rôdent sans attaquer), puis de plus en plus rude.
+3. Prendre une base : abattre son cœur rend son terrain au vide, ou à ton village s'il le touche.
 
 ### [ ] 2.4 — Le monde vit
 1. De nouvelles unités dans les deux camps.
