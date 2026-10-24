@@ -470,7 +470,14 @@
       const x0 = b.x, y0 = b.y;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
-      if (walled.length) Walls.hold(walled, b, x0, y0, 4, true, b);
+      if (walled.length) {
+        const wall = Walls.hold(walled, b, x0, y0, 4, true, b);
+        // Arrêté par un rempart d'ombre, un soldat le frappe (une brèche finit par s'ouvrir).
+        if (wall && wall.v.dark && sp.damage && b.role !== 'healer') {
+          const amount = (sp.damage / sp.cooldown) * statsOf(game, b).armyDamage * (sp.siege || 1) * dt;
+          if (Walls.damage(game, wall.v, wall.w, wall.seg, amount)) Vide.Sim.emit(game, 'darkBreach', { x: b.x, y: b.y });
+        }
+      }
     }
     separate(colony, dt);
     // Les chantiers actifs de ce pas servent aux lueurs au pas suivant.

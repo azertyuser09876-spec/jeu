@@ -368,12 +368,30 @@
       ctx.arc(X(e.x), Y(e.y), 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
-    // Nids d'ombre : un disque sombre cerné de violet.
+    // Bases d'ombre : leur territoire de noirceur (plus noir au cœur), cerné de violet ; leur cœur.
     for (const nest of state.nests) {
-      ctx.fillStyle = 'rgba(8, 2, 18, 0.9)';
-      ctx.strokeStyle = 'rgba(160, 110, 240, 0.8)';
+      const path = (minDark) => {
+        ctx.beginPath();
+        for (const loop of Territory.outline(nest, minDark)) {
+          ctx.moveTo(X(loop[0][0]), Y(loop[0][1]));
+          for (const [x, y] of loop) ctx.lineTo(X(x), Y(y));
+          ctx.closePath();
+        }
+      };
+      if (Territory.radius(nest) * scale >= 3 && nest.cells.length) {
+        ctx.fillStyle = 'rgba(14, 4, 30, 0.85)';
+        ctx.strokeStyle = 'rgba(160, 110, 240, 0.7)';
+        path(0);
+        ctx.fill('evenodd');
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(2, 0, 6, 0.8)';
+        path(75);
+        ctx.fill('evenodd');
+      }
+      ctx.fillStyle = '#05010c';
+      ctx.strokeStyle = 'rgba(180, 130, 255, 0.9)';
       ctx.beginPath();
-      ctx.arc(X(nest.x), Y(nest.y), Math.max(3, Vide.Nests.radius(nest) * scale), 0, Math.PI * 2);
+      ctx.arc(X(nest.x), Y(nest.y), 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }

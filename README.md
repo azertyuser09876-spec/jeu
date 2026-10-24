@@ -51,7 +51,8 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Expéditions et capacités** : depuis la carte, envoie des éclaireurs révéler le lointain, des colons fonder
   au loin, des érudits étudier un colosse, des sapeurs bâtir balistes et chaînes — escortés si tu veux. Ta
   lumière apprend la ruée, le fanal et le retour.
-- **Les ombres bâtissent** : des nids d'ombre, à l'obscurité qui épuise ta lumière, lancent des raids sur tes
+- **Les ombres bâtissent** : des bases d'ombre, en négatif de tes villages — un territoire de noirceur en cinq
+  nuances, des fosses, des flèches qui tirent sur la lumière, des remparts qu'elle doit abattre — lancent des raids sur tes
   villages. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
   (gardiens, étincelles, veilleuses, harponneurs) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.

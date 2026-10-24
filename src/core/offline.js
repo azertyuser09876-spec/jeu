@@ -29,7 +29,7 @@
     if (applied <= 0) return report;
 
     // Les nids vieillissent (mais ne lancent pas de raid : pas d'ombres pendant l'absence).
-    for (const nest of state.nests) nest.age += applied;
+    Vide.Nests.offline(state, applied);
 
     // Le fanal a récolté pendant ce temps.
     if (state.beacon) {
@@ -43,7 +43,7 @@
     for (const v of state.villages) {
       const local = Villages.local(state, v, stats);
       const funds = v.funds;
-      report.radiated += Vide.Steward.share(state, v, Territory.advance(v, local, applied) * stats.lightMult);
+      report.radiated += Vide.Steward.share(state, v, Territory.advance(v, local, applied, state.nests) * stats.lightMult);
       Territory.whiten(v, local, applied);
       // Les bâtisseurs finissent les chantiers, puis relèvent les brèches et avancent l'enceinte.
       let reserved = 0;

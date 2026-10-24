@@ -336,6 +336,9 @@
     ctx.stroke();
   }
 
+  // Contour lissé de cellules (boucles de Territory.outline) : sert aussi aux bases des ombres.
+  Vide.Draw.outlinePath = toPath;
+
   Vide.Draw.territory = function (r, game) {
     const { state } = game;
     const view = Render.viewBounds(r, 200);

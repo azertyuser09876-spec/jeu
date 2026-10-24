@@ -14,7 +14,7 @@
       roads: [],         // routes entre villages : { a, b, work } (voir roads.js)
       expeditions: [],   // expéditions en route (voir expeditions.js)
       beacon: null,      // fanal posé : { x, y, light } (voir abilities.js)
-      nests: [],         // nids d'ombre : { id, x, y, hp, age, region } (voir nests.js)
+      nests: [],         // bases (nids) d'ombre : { id, x, y, hp, age, region, area, cells, buildings, walls, build } (voir nests.js)
       cleared: [],       // régions libérées d'un nid, pour de bon
       nestTimer: null,   // secondes avant le prochain nid près de tes villages
       echoes: 0,         // échos laissés par les ombres vaincues

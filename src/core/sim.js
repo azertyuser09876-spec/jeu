@@ -203,7 +203,7 @@
     let radiated = 0;
     for (const v of state.villages) {
       const local = Vide.Villages.statsOf(game, v);
-      radiated += Vide.Steward.share(state, v, Vide.Territory.advance(v, local, dt) * mult);
+      radiated += Vide.Steward.share(state, v, Vide.Territory.advance(v, local, dt, state.nests) * mult);
       Vide.Territory.whiten(v, local, dt);
     }
     if (radiated > 0) {

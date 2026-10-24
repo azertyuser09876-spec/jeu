@@ -155,7 +155,9 @@
   }
 
   // Ajoute les cellules qui manquent pour que la forme corresponde à la surface. Renvoie le nombre ajouté.
-  function grow(v) {
+  // `others` : des territoires où il ne peut pas s'étendre (les bases des ombres pour un village, et l'inverse) ;
+  // s'il est cerné, il ne grandit plus de ce côté.
+  function grow(v, others) {
     const idx = index(v);
     const target = targetCells(v);
     if (v.cells.length / 3 >= target) return 0;
@@ -169,6 +171,18 @@
       }
     }
     let added = 0;
+    const blocked = new Set();
+    const isBlocked = (c) => {
+      const k = key(c.i, c.j);
+      if (blocked.has(k)) return true;
+      for (const o of others) {
+        if (o !== v && o.cells.length && index(o).map.has(k)) {
+          blocked.add(k);
+          return true;
+        }
+      }
+      return false;
+    };
     while (v.cells.length / 3 < target) {
       // La cellule du bord la plus attirante : proche du cœur (relativement à la taille), près des bâtiments.
       const R = Math.max(CELL, radius(v));
@@ -176,15 +190,23 @@
       let bestScore = -Infinity;
       for (const c of idx.frontier.values()) {
         const score = c.appeal - c.reach / R;
-        if (score > bestScore) {
+        if (score > bestScore && !(others && others.length && isBlocked(c))) {
           bestScore = score;
           best = c;
         }
       }
+      if (!best) break;
       addCell(v, idx, best.i, best.j);
       added++;
     }
     return added;
+  }
+
+  // La cellule (i, j) appartient-elle à l'un de ces territoires ?
+  function owned(list, i, j) {
+    const k = key(i, j);
+    for (const o of list) if (o.cells.length && index(o).map.has(k)) return true;
+    return false;
   }
 
   // --- Blanc ---
@@ -353,12 +375,12 @@
   // donc identique qu'on l'appelle une fois pour 3 heures ou 648 000 fois pour 1/60 s.
   // Met à jour la surface (et la forme) et renvoie la lumière produite (à créditer par l'appelant).
   // `stats` : caractéristiques du village (voir Villages.local).
-  function advance(village, stats, seconds) {
+  function advance(village, stats, seconds, others) {
     if (seconds <= 0) return 0;
     const a0 = village.area;
     const g = stats.territoryGrowth;
     village.area = a0 + g * seconds;
-    grow(village);
+    grow(village, others);
     return stats.territoryYield * (a0 * seconds + (g * seconds * seconds) / 2);
   }
 
@@ -369,6 +391,6 @@
 
   Vide.Territory = {
     CELL, NUANCES, HOLD, cellOf, radius, targetCells, has, whiteOf, contains, isInside, whiteAt, distanceToEdge,
-    nuance, hold, grow, whiten, whiteness, randomPoint, outline, advance, production,
+    nuance, hold, grow, owned, whiten, whiteness, randomPoint, outline, advance, production,
   };
 })(globalThis.Vide);

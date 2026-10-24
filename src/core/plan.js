@@ -5,6 +5,7 @@
 // Chaque bâtiment a sa place selon son rôle (def.ring, en part du rayon du village : la vie et le savoir près du
 // cœur, les logis autour, la production plus loin, la défense au bord) ; la défense se range près des avenues,
 // donc des portes. Une cité garde le plan de son premier cœur ; ses anciens cœurs (quartiers) restent des places.
+// Les bases des ombres suivent le même plan (leurs ouvrages : voir ouvrages.js).
 (function (Vide) {
   'use strict';
   const { Territory } = Vide;
@@ -14,6 +15,11 @@
   const SPACING = 72;   // écart entre deux emplacements d'un même îlot (le long de l'anneau)
   const LANE = 30;      // aucun emplacement à moins de cette distance de l'axe d'une avenue
   const PLAZA = 70;     // autour d'un ancien cœur (quartier d'une cité), une place sans bâtiment
+
+  // Ce qu'est un bâtiment posé : un bâtiment de village, ou un ouvrage d'une base des ombres (même plan).
+  function defOf(type) {
+    return (Vide.darkWork && Vide.darkWork(type)) || Vide.Structures.def(type);
+  }
 
   // Orientation des avenues : propre à chaque village, toujours la même.
   function turn(v) {
@@ -115,7 +121,7 @@
     const q = quarter(v, s.a);
     let family = false;
     for (const b of v.buildings) {
-      const other = Vide.Structures.def(b.type);
+      const other = defOf(b.type);
       const near = Math.hypot(b.x - s.x, b.y - s.y);
       if (quarter(v, Math.atan2(b.y - v.y, b.x - v.x)) === q) cost += 0.025;
       if (defense && other.family === 'defense' && near < STREET * 2) cost += 0.12;
@@ -146,7 +152,7 @@
     const placed = [];
     const ghost = { ...v, buildings: placed };
     const spots = v.buildings.map((b) => {
-      const at = choose(ghost, Vide.Structures.def(b.type));
+      const at = choose(ghost, defOf(b.type));
       placed.push({ type: b.type, x: at ? at.x : b.x, y: at ? at.y : b.y });
       return at;
     });

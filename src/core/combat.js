@@ -137,6 +137,24 @@
     // Les sceaux des colosses aussi ; et le cœur des nids (deux fois plus), une fois par onde.
     if (Vide.Colossus) Vide.Colossus.pulseHit(game, x, y, radius);
     for (const nest of game.state.nests.slice()) {
+      // Ses ouvrages, et les pans de ses remparts, que l'onde atteint.
+      for (const b of nest.buildings.slice()) {
+        if (game.nests.lastWave.get(b) === id || Math.hypot(b.x - x, b.y - y) > radius + Vide.darkWork(b.type).size) continue;
+        game.nests.lastWave.set(b, id);
+        Vide.Nests.hitWork(game, nest, b, game.stats.pulseDamage);
+      }
+      for (const w of nest.walls) {
+        if (!Vide.Walls.isDone(w)) continue;
+        const count = Vide.Walls.segments(w);
+        for (let seg = 0; seg < count; seg++) {
+          const a = Vide.Walls.segmentAngle(nest, w, seg);
+          const sx = nest.x + Math.cos(a) * Vide.Walls.radius(w), sy = nest.y + Math.sin(a) * Vide.Walls.radius(w);
+          const k = `${nest.id}:${w.n}:${seg}`;
+          if (game.nests.lastWave.get(k) === id || Math.hypot(sx - x, sy - y) > radius) continue;
+          game.nests.lastWave.set(k, id);
+          if (Vide.Walls.damage(game, nest, w, seg, game.stats.pulseDamage)) Vide.Sim.emit(game, 'darkBreach', { x: sx, y: sy });
+        }
+      }
       if (game.nests.lastWave.get(nest.id) === id || Math.hypot(nest.x - x, nest.y - y) > radius + 28) continue;
       game.nests.lastWave.set(nest.id, id);
       Vide.Nests.hit(game, nest, game.stats.pulseDamage * 2);
@@ -173,10 +191,11 @@
       p.y += p.vy * dt;
       p.life -= dt;
       // Un trait lancé sur un colosse le frappe dès qu'il atteint son corps.
-      // Un trait lancé sur le cœur d'un nid le frappe en l'atteignant.
+      // Un trait lancé sur le cœur d'une base, ou sur un de ses ouvrages, le frappe en l'atteignant.
       if (p.target && p.target.nest) {
         if (Math.hypot(p.target.x - p.x, p.target.y - p.y) <= p.target.radius) {
-          Vide.Nests.hit(game, p.target.nest, p.damage);
+          if (p.target.work) Vide.Nests.hitWork(game, p.target.nest, p.target.work, p.damage);
+          else Vide.Nests.hit(game, p.target.nest, p.damage);
           list.splice(i, 1);
           continue;
         }
@@ -258,8 +277,11 @@
   function enemyFor(game, b, a) {
     const shadow = Shadows.nearest(game, b.x, b.y, Infinity, (s) => Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
     if (shadow) return shadow;
-    // En siège, une fois ses défenseurs dispersés : le cœur du nid.
-    if (a.nest) return Vide.Nests.target(a.nest);
+    // En siège, une fois ses défenseurs dispersés : ses ouvrages (les flèches d'abord), puis le cœur de la base.
+    if (a.nest) {
+      const work = Vide.Nests.nearestWork(a.nest, b.x, b.y);
+      return work ? Vide.Nests.workTarget(a.nest, work) : Vide.Nests.target(a.nest);
+    }
     return Vide.Colossus ? Vide.Colossus.target(game, a.x, a.y, a.radius) : null;
   }
 
@@ -269,6 +291,7 @@
 
   function stillValid(e, a) {
     if (!e) return false;
+    if (e.work) return a.nest === e.nest && e.nest.buildings.includes(e.work);
     if (e.nest) return a.nest === e.nest && e.nest.hp > 0;
     if (e.colossus) return Vide.Colossus.engaged(e.colossus) && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius + e.radius;
     return e.hp > 0 && !e.gone && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius;
@@ -288,6 +311,7 @@
 
   function damageEnemy(game, enemy, amount, melee) {
     if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount, melee);
+    else if (enemy.work) Vide.Nests.hitWork(game, enemy.nest, enemy.work, amount);
     else if (enemy.nest) Vide.Nests.hit(game, enemy.nest, amount);
     else Shadows.damage(enemy, amount);
   }

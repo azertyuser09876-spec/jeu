@@ -103,19 +103,146 @@
     assert.equal(Nests.level({ age: 1e9 }), CONFIG.nests.maxLevel);
   });
 
+  // --- Des bases ---
+
+  test('une base a un territoire de noirceur qui grandit avec l’âge, mûrit en nuances, et n’empiète jamais sur un village', () => {
+    const state = State.create(8);
+    const v = village(state, { radius: 300 });
+    const nest = Nests.add(state, 1100, 0, 0);
+    assert.ok(nest.cells.length > 0 && nest.dark);
+    assert.ok(Nests.darkAt(state, nest.x, nest.y) === nest);
+    assert.equal(Nests.darkAt(state, v.x, v.y), null);
+    const cells0 = nest.cells.length;
+    const game = Sim.create(state);
+    state.player.x = -5000;
+    for (let i = 0; i < 4; i++) {
+      nest.age += CONFIG.nests.levelEvery * 2;
+      v.area *= 1.8;
+      run(game, 2);
+    }
+    assert.ok(nest.cells.length > cells0, 'elle a grandi');
+    // Ni elle ni le village n'empiètent l'un sur l'autre, même en grandissant tous deux.
+    for (let k = 0; k < nest.cells.length; k += 3) assert.ok(!Territory.has(v, nest.cells[k], nest.cells[k + 1]));
+    // Sa noirceur mûrit, nuance après nuance, jusqu'au noir pur à son cœur.
+    Offline.apply(state, 4 * 3600);
+    const heart = nest.cells[2];
+    assert.equal(heart, 100);
+    assert.ok(Territory.nuance(heart) === Territory.NUANCES.length);
+  });
+
+  test('elle bâtit avec l’âge : fosses, flèches, puis un rempart d’ombre ; ses fosses grossissent ses raids', () => {
+    const state = State.create(8);
+    village(state, { radius: 300 });
+    const young = Nests.add(state, 2500, 0, 0);
+    assert.equal(young.buildings.length, 0);
+    const old = Nests.add(state, -3500, 0, CONFIG.nests.levelEvery * 7);
+    const count = (t) => old.buildings.filter((b) => b.type === t).length;
+    assert.equal(count('fosse'), Nests.allowed(old, Vide.darkWork('fosse')));
+    assert.equal(count('fleche'), Nests.allowed(old, Vide.darkWork('fleche')));
+    assert.ok(count('fosse') >= 2 && count('fleche') >= 3);
+    assert.equal(old.walls.length, 1);
+    assert.ok(Vide.Walls.isDone(old.walls[0]));
+    // Sur son plan : défense près des avenues, fosses plus près du cœur.
+    const mean = (t) => old.buildings.filter((b) => b.type === t).reduce((m, b) => m + Math.hypot(b.x - old.x, b.y - old.y), 0) / count(t);
+    assert.ok(mean('fosse') < mean('fleche'));
+    assert.ok(Nests.bonus(old, 'raid') > 0);
+    // La jeune base bâtit au fil du temps (et pendant l'absence).
+    Offline.apply(state, CONFIG.nests.levelEvery * 3);
+    assert.ok(young.buildings.length > 0);
+  });
+
+  test('ses flèches tirent sur la lumière à leur portée', () => {
+    const state = State.create(8);
+    village(state, { radius: 300 });
+    const nest = Nests.add(state, 3000, 0, CONFIG.nests.levelEvery * 4);
+    const fleche = nest.buildings.find((b) => b.type === 'fleche');
+    state.player.x = fleche.x + 100;
+    state.player.y = fleche.y;
+    const game = Sim.create(state);
+    const hp = game.vitality.hp;
+    run(game, 1);
+    assert.ok(game.vitality.hp < hp, 'touchée');
+    assert.ok(game.events.some((e) => e.type === 'darkBolt'));
+  });
+
+  test('un rempart d’ombre arrête la lumière (les ombres le traversent) ; l’armée en siège l’abat, puis les ouvrages, puis le cœur', () => {
+    const state = State.create(8);
+    village(state, { radius: 300, beings: { gardien: 10, etincelle: 6 } });
+    const nest = Nests.add(state, 1700, 0, CONFIG.nests.levelEvery * 4);
+    const wall = nest.walls[0];
+    assert.ok(wall && Vide.Walls.isDone(wall));
+    const r = Vide.Walls.radius(wall);
+    // La lumière, de l'extérieur, bute dessus.
+    const game0 = Sim.create(state);
+    state.player.x = nest.x - r - 80;
+    state.player.y = nest.y;
+    game0.vitality.invulnerable = 1e9;
+    const input = Sim.emptyInput();
+    input.move.x = 1;
+    for (let i = 0; i < 60 * 2; i++) Sim.step(game0, dt, input);
+    assert.ok(nest.x - state.player.x > r, 'arrêtée dehors');
+    // Une ombre le traverse.
+    const s = Vide.Shadows.spawn(game0, 'errante', nest.x, nest.y, 'roam');
+    s.home = state.villages[0];
+    s.hp = 1e9;
+    for (let i = 0; i < 60 * 12; i++) Sim.step(game0, dt, Sim.emptyInput());
+    assert.ok(Math.hypot(s.x - nest.x, s.y - nest.y) > r + 20, 'sortie sans brèche');
+    assert.equal(wall.broken.length, 0);
+
+    // Le siège.
+    Vide.Combat.setPosture(state, 'siege');
+    state.player.x = -3000;
+    state.player.y = 0;
+    state.upgrades.edge = 8;
+    const game = Sim.create(state);
+    game.field.particles.length = 0;
+    let breach = false, works = 0;
+    for (let i = 0; i < 60 * 240 && state.nests.length; i++) {
+      Sim.step(game, dt, Sim.emptyInput());
+      breach = breach || game.events.some((e) => e.type === 'darkBreach');
+      works += game.events.filter((e) => e.type === 'workDown').length;
+      game.events.length = 0;
+    }
+    assert.ok(breach, 'une brèche dans le rempart');
+    assert.ok(works > 0, 'des ouvrages abattus');
+    assert.equal(state.nests.length, 0, 'la base est tombée');
+  });
+
   test('nids sauvegardés : relus, nettoyés ; migration ; renaissance', () => {
     const state = twoVillages();
     Nests.add(state, 4000, 0, 600, '3,-2');
     state.cleared.push('1,1');
     state.nestTimer = 42;
     assert.deepEqual(Save.deserialize(Save.serialize(state, 1)).state, state);
+    // Une base mûre (territoire, ouvrages, rempart) se garde telle quelle.
+    const mature = Nests.add(state, -5000, 0, CONFIG.nests.levelEvery * 5);
+    const back = Save.deserialize(Save.serialize(state, 1)).state.nests.find((n) => n.id === mature.id);
+    assert.deepEqual([back.cells, back.buildings, back.walls, back.area], [mature.cells, mature.buildings, mature.walls, mature.area]);
+    state.nests.pop();
+    // Une ancienne base (format 21) retrouve son territoire au chargement, et bâtit sans tarder.
+    const before = JSON.parse(Save.serialize(state, 1));
+    before.format = 21;
+    for (const n of before.state.nests) {
+      delete n.cells;
+      delete n.buildings;
+      delete n.walls;
+      delete n.build;
+    }
+    const migrated = Save.deserialize(JSON.stringify(before)).state.nests[0];
+    assert.ok(migrated.cells.length > 0 && migrated.dark);
+    assert.equal(migrated.build, 0);
     const bad = Save.sanitize({
-      nests: [{ id: 1, x: 0, y: 0, hp: 1e9, age: -5 }, { id: 1, x: 5, y: 5 }, { id: 2, x: NaN, y: 0 }, 'x'],
+      nests: [{ id: 1, x: 0, y: 0, hp: 1e9, age: -5, buildings: [{ type: 'fosse', x: 1, y: 2, hp: 1e9 }, { type: '?', x: 0, y: 0 }, 4], walls: [{ n: 2, work: 1e9 }, 'x'], cells: 'non', area: 1e12 },
+        { id: 1, x: 5, y: 5 }, { id: 2, x: NaN, y: 0 }, 'x'],
       cleared: ['1,1', '1,1', 'abc', 3], nestTimer: 'bientôt',
     });
     assert.equal(bad.nests.length, 1);
     assert.equal(bad.nests[0].hp, CONFIG.nests.hp);
     assert.equal(bad.nests[0].age, 0);
+    assert.deepEqual(bad.nests[0].buildings, [{ type: 'fosse', x: 1, y: 2, hp: Vide.darkWork('fosse').hp }]);
+    assert.equal(bad.nests[0].walls.length, 1);
+    assert.ok(bad.nests[0].area <= Math.PI * 4 * Nests.radius(bad.nests[0]) ** 2);
+    assert.ok(bad.nests[0].cells.length > 0);
     assert.deepEqual(bad.cleared, ['1,1']);
     assert.equal(bad.nestTimer, null);
     const old = Save.deserialize(JSON.stringify({ format: 16, state: {} })).state;

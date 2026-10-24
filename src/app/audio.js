@@ -291,7 +291,8 @@
         case 'built': case 'repaired': case 'wallDone': case 'wallRepaired': play('built'); break;
         case 'breach': play('footfall', 0.5); break;
         case 'tide': case 'raid': play('tide'); break;
-        case 'shadowDown': play('shadowDown'); break;
+        case 'shadowDown': case 'workDown': play('shadowDown'); break;
+        case 'darkBreach': play('footfall', 0.4); break;
         case 'dispersed': play('dispersed'); break;
         case 'footfall': {
           const d = Math.hypot(e.x - player.x, e.y - player.y);

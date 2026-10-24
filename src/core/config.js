@@ -201,6 +201,11 @@
       hp: 500,
       hpPerLevel: 250,
       regen: 4,                   // points de vie regagnés par seconde
+      darkening: 1.5,             // le noir gagne ses nuances une fois et demie plus vite que le blanc
+      buildEvery: 150,            // une base bâtit un ouvrage (ou un rempart) toutes les 2 min 30, si son niveau le permet
+      wallLevels: [4, 7],         // niveaux où elle se ceint d'un rempart d'ombre (un de plus à chacun)
+      wallWork: 4,                // travail par seconde sur son rempart (elle le monte seule)
+      workEchoes: 12,             // échos rendus par un ouvrage abattu
       radius: 260,                // rayon de l'obscurité au niveau 1…
       radiusPerLevel: 60,         // …et à chaque niveau
       raidEvery: 140,

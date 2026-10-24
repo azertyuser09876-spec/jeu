@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 21;
+  const FORMAT = 22;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -100,6 +100,13 @@
       ...data,
       villages: Array.isArray(data.villages)
         ? data.villages.map((v) => (v && typeof v === 'object' ? { ...v, walls: [] } : v)) : data.villages,
+    }),
+    // 2.3 : les nids deviennent des bases (territoire, ouvrages, remparts). Leur territoire pousse au chargement ;
+    // elles bâtissent sans tarder ce que leur âge permet, un ouvrage après l'autre.
+    21: (data) => ({
+      ...data,
+      nests: Array.isArray(data.nests)
+        ? data.nests.map((n) => (n && typeof n === 'object' ? { ...n, cells: [], buildings: [], walls: [], build: 0 } : n)) : data.nests,
     }),
   };
 
@@ -228,8 +235,23 @@
     for (const n of nests) {
       if (!isObject(n) || !Number.isInteger(n.id) || !Number.isFinite(n.x) || !Number.isFinite(n.y)) continue;
       if (state.nests.some((o) => o.id === n.id) || state.nests.length >= Vide.CONFIG.nests.max * 3) continue;
-      const nest = { id: n.id, x: n.x, y: n.y, hp: 0, age: positive(n.age, 0), region: typeof n.region === 'string' ? n.region : null };
+      const nest = Vide.Nests.shape({
+        id: n.id, x: n.x, y: n.y, hp: 0, age: positive(n.age, 0), region: typeof n.region === 'string' ? n.region : null,
+        area: 0, cells: [], buildings: [], walls: [],
+        build: Number.isFinite(n.build) ? Math.max(0, Math.min(n.build, Vide.CONFIG.nests.buildEvery)) : Vide.CONFIG.nests.buildEvery,
+      });
       nest.hp = Math.min(positive(n.hp, Vide.Nests.maxHp(nest)), Vide.Nests.maxHp(nest)) || 1;
+      const R = Vide.Nests.radius(nest);
+      nest.area = Math.min(Math.max(positive(n.area, 0), Math.PI * R * R), Math.PI * 4 * R * R);
+      for (const b of Array.isArray(n.buildings) ? n.buildings : []) {
+        const d = isObject(b) && Vide.darkWork(b.type);
+        if (!d || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
+        if (nest.buildings.filter((o) => o.type === d.id).length >= d.max) continue;
+        nest.buildings.push({ type: d.id, x: b.x, y: b.y, hp: Math.min(positive(b.hp, d.hp), d.hp) || 1 });
+      }
+      readWalls(n.walls, nest);
+      readCells(n.cells, nest);
+      Vide.Territory.grow(nest, [...state.villages, ...state.nests]);
       state.nests.push(nest);
     }
     const cleared = Array.isArray(raw.cleared) ? raw.cleared : [];
@@ -334,20 +356,7 @@
       const n = beings[sp.id];
       if (Number.isInteger(n) && n > 0) village.beings[sp.id] = n;
     }
-    // Enceintes : une par boulevard, triées, une seule en chantier ; brèches valides et sans doublon.
-    for (const w of Array.isArray(raw.walls) ? raw.walls : []) {
-      if (!isObject(w) || !Number.isInteger(w.n) || w.n < 1 || w.n > 200 || village.walls.some((o) => o.n === w.n)) continue;
-      const wall = { n: w.n, work: 0, broken: [] };
-      wall.work = Math.min(positive(w.work, 0), Vide.Walls.workOf(wall));
-      if (!Vide.Walls.isDone(wall) && village.walls.some((o) => !Vide.Walls.isDone(o))) continue;
-      const count = Vide.Walls.segments(wall);
-      for (const s of Array.isArray(w.broken) ? w.broken : []) {
-        if (Number.isInteger(s) && s >= 0 && s < count && !wall.broken.includes(s)) wall.broken.push(s);
-      }
-      if (!Vide.Walls.isDone(wall)) wall.broken.length = 0;
-      village.walls.push(wall);
-    }
-    village.walls.sort((a, b) => a.n - b.n);
+    readWalls(raw.walls, village);
     const buildings = Array.isArray(raw.buildings) ? raw.buildings : [];
     for (const b of buildings) {
       if (!isObject(b)) continue;
@@ -357,20 +366,42 @@
       if (b.broken === true && building.work >= def.work) building.broken = true;
       village.buildings.push(building);
     }
-    // Forme : cellules entières, sans doublon, blanc de 0 à 100 ; jamais plus que la surface n'en permet.
-    // Ce qui manque (sauvegarde ancienne ou abîmée) repousse aussitôt à partir du cœur.
-    const cells = Array.isArray(raw.cells) ? raw.cells : [];
-    const max = Vide.Territory.targetCells(village);
+    readCells(raw.cells, village);
+    Vide.Territory.grow(village);
+    return village;
+  }
+
+  // Forme d'un territoire (village ou base) : cellules entières, sans doublon, blanc (ou noir) de 0 à 100 ; jamais
+  // plus que la surface n'en permet. Ce qui manque (sauvegarde ancienne ou abîmée) repousse ensuite du cœur.
+  function readCells(raw, territory) {
+    const cells = Array.isArray(raw) ? raw : [];
+    const max = Vide.Territory.targetCells(territory);
     const seen = new Set();
-    for (let k = 0; k + 2 < cells.length && village.cells.length / 3 < max; k += 3) {
+    for (let k = 0; k + 2 < cells.length && territory.cells.length / 3 < max; k += 3) {
       const [i, j, w] = [cells[k], cells[k + 1], cells[k + 2]];
       if (!Number.isInteger(i) || !Number.isInteger(j) || Math.abs(j) >= 1048576) continue;
       if (seen.has(`${i},${j}`)) continue;
       seen.add(`${i},${j}`);
-      village.cells.push(i, j, Number.isFinite(w) ? Math.round(Math.min(100, Math.max(0, w))) : 0);
+      territory.cells.push(i, j, Number.isFinite(w) ? Math.round(Math.min(100, Math.max(0, w))) : 0);
     }
-    Vide.Territory.grow(village);
-    return village;
+  }
+
+  // Enceintes (ou remparts d'ombre) : une par boulevard, triées, une seule en chantier ; brèches valides et sans
+  // doublon.
+  function readWalls(raw, owner) {
+    for (const w of Array.isArray(raw) ? raw : []) {
+      if (!isObject(w) || !Number.isInteger(w.n) || w.n < 1 || w.n > 200 || owner.walls.some((o) => o.n === w.n)) continue;
+      const wall = { n: w.n, work: 0, broken: [] };
+      wall.work = Math.min(positive(w.work, 0), Vide.Walls.workOf(wall));
+      if (!Vide.Walls.isDone(wall) && owner.walls.some((o) => !Vide.Walls.isDone(o))) continue;
+      const count = Vide.Walls.segments(wall);
+      for (const s of Array.isArray(w.broken) ? w.broken : []) {
+        if (Number.isInteger(s) && s >= 0 && s < count && !wall.broken.includes(s)) wall.broken.push(s);
+      }
+      if (!Vide.Walls.isDone(wall)) wall.broken.length = 0;
+      owner.walls.push(wall);
+    }
+    owner.walls.sort((a, b) => a.n - b.n);
   }
 
   // --- Codes de sauvegarde (exporter / importer) ---

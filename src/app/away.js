@@ -120,7 +120,7 @@
     siteStarted: (e) => `Les sapeurs arrivent : le chantier ${e.engine === 'chaine' ? 'de la chaîne' : 'de la baliste'} commence.`,
     engineBuilt: (e) => (e.engine === 'chaine'
       ? 'La chaîne est ancrée : un colosse qui passera à sa portée sera entravé.'
-      : 'La baliste est dressée : elle tirera sur un colosse qui passera à sa portée (ou sur un nid d’ombre).'),
+      : 'La baliste est dressée : elle tirera sur un colosse qui passera à sa portée (ou sur une base d’ombre).'),
     siteLost: () => 'Le chantier a été écrasé. Les sapeurs rentrent.',
     engineLost: (e) => (e.reason === 'snapped'
       ? 'La chaîne cède sous l’effort.'
@@ -134,14 +134,17 @@
     beaconCollected: (e) => `Le fanal te rend ✦ ${util.formatNumber(e.light)}.`,
     nest: (e) => (e.first
       ? (e.far
-        ? 'Un nid d’ombre, ici, au loin : les ombres bâtissent aussi. Son obscurité épuise ta lumière.'
-        : 'Les ombres bâtissent aussi : un nid d’ombre est né non loin de tes villages. Il lancera des raids.')
-      : (e.far ? 'Un nid d’ombre, dans cette région.' : 'Un nouveau nid d’ombre est né.'))
+        ? 'Une base d’ombre, ici, au loin : les ombres bâtissent aussi. Sa noirceur épuise ta lumière.'
+        : 'Les ombres bâtissent aussi : une base d’ombre est née non loin de tes villages. Elle grandira, se fortifiera, lancera des raids.')
+      : (e.far ? 'Une base d’ombre, dans cette région.' : 'Une nouvelle base d’ombre est née.'))
       + ' Ton armée peut l’assiéger (B).',
     nestDestroyed: (e) => (e.first
-      ? `Le nid s’effondre. ◆ ${util.formatNumber(e.echoes)}. Sa région est libérée : le vide y fait naître plus de lumière.`
-      : `Un nid d’ombre s’effondre. ◆ ${util.formatNumber(e.echoes)}.`),
-    raid: (e) => `Un raid d’ombres part d’un nid vers ${to(e.village)} (${e.count}).`,
+      ? `La base s’effondre. ◆ ${util.formatNumber(e.echoes)}. Sa région est libérée : le vide y fait naître plus de lumière.`
+      : `Une base d’ombre s’effondre. ◆ ${util.formatNumber(e.echoes)}.`),
+    raid: (e) => `Un raid d’ombres part d’une base vers ${to(e.village)} (${e.count}).`,
+    nestBuilt: (e) => (e.kind === 'rempart' ? 'Une base d’ombre se ceint d’un rempart : il arrête la lumière. Ton armée devra l’abattre.' : null),
+    workDown: (e) => `${Vide.darkWork(e.kind).name} d’ombre abattue. ◆ ${util.formatNumber(e.echoes)}.`,
+    darkBreach: () => 'Une brèche dans le rempart d’ombre.',
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       if (e.woven) return `La Tisseuse achève la route ${a} — ${b}.`;

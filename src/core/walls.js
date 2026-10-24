@@ -4,6 +4,8 @@
 // ombres : pour entrer, une ombre doit abattre un pan (une brèche, que les bâtisseurs relèvent).
 // État persistant : village.walls = [{ n, work, broken: [pans abattus] }] (n : numéro du boulevard).
 // La solidité des pans abîmés vit dans game.wallHp (oubliée au chargement : un pan debout repart intact).
+// Les bases des ombres (v.dark) ont leurs remparts d'ombre : sans porte pour la lumière, qui doit les abattre,
+// et que les ombres traversent comme si de rien n'était.
 (function (Vide) {
   'use strict';
   const { CONFIG, Catalog, Plan, Territory, Villages } = Vide;
@@ -34,9 +36,10 @@
     return Plan.offAvenue(v, angle) * radius(w) < CONFIG.walls.gate;
   }
 
-  // Passe-t-on dans cette direction : par une porte (la lumière seulement), ou par une brèche (tout le monde) ?
+  // Passe-t-on dans cette direction : par une porte (la lumière seulement, chez elle), ou par une brèche (tout le
+  // monde) ?
   function open(v, w, angle, light) {
-    if (light && isGate(v, w, angle)) return true;
+    if (light && !v.dark && isGate(v, w, angle)) return true;
     return w.broken.length > 0 && w.broken.includes(segmentAt(v, w, angle));
   }
 
@@ -98,7 +101,8 @@
 
   // --- Solidité des pans ---
 
-  const key = (v, w, seg) => `${v.id}:${w.n}:${seg}`;
+  const owner = (v) => (v.dark ? 'n' : '') + v.id;
+  const key = (v, w, seg) => `${owner(v)}:${w.n}:${seg}`;
 
   function hp(game, v, w, seg) {
     if (w.broken.includes(seg)) return 0;
@@ -149,7 +153,7 @@
     };
     for (const w of v.walls) for (const seg of w.broken) consider(w, seg);
     if (game.wallHp.size) {
-      const prefix = `${v.id}:`;
+      const prefix = `${owner(v)}:`;
       for (const k of game.wallHp.keys()) {
         if (!k.startsWith(prefix)) continue;
         const [, n, seg] = k.split(':').map(Number);
@@ -162,10 +166,11 @@
 
   // --- Ce qui bouge ---
 
-  // Villages qui ont au moins une enceinte achevée : les seuls à regarder.
+  // Villages (et bases des ombres) qui ont au moins une enceinte achevée : les seuls à regarder.
   function walled(state) {
     const list = [];
     for (const v of state.villages) if (v.walls.some(isDone)) list.push(v);
+    for (const n of state.nests) if (n.walls && n.walls.some(isDone)) list.push(n);
     return list;
   }
 
@@ -176,6 +181,7 @@
   function hold(list, body, x0, y0, size, light, vel) {
     const T = CONFIG.walls.thickness / 2 + size;
     for (const v of list) {
+      if (v.dark && !light) continue; // les ombres traversent leurs remparts
       const dx = body.x - v.x, dy = body.y - v.y;
       const d1 = Math.hypot(dx, dy);
       const d0 = Math.hypot(x0 - v.x, y0 - v.y);
@@ -217,6 +223,7 @@
   function route(list, x, y, tx, ty) {
     const step = TAU / Plan.AVENUES;
     for (const v of list) {
+      if (v.dark) continue; // un rempart d'ombre n'a pas de porte pour la lumière : il faut l'abattre
       const d = Math.hypot(x - v.x, y - v.y), dTarget = Math.hypot(tx - v.x, ty - v.y);
       let first = null;
       for (const w of v.walls) {
@@ -304,7 +311,7 @@
   });
 
   Vide.Walls = {
-    radius, length, workOf, isDone, segments, segmentAt, segmentAngle, isGate, open, insideShare, nextRing, cost,
+    owner, radius, length, workOf, isDone, segments, segmentAt, segmentAngle, isGate, open, insideShare, nextRing, cost,
     plan, site, addWork, front, hp, damage, repair, mostDamaged, walled, hold, route, advanceOffline,
   };
 })(globalThis.Vide);
