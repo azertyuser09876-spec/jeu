@@ -4,7 +4,6 @@
   'use strict';
   const { util } = Vide;
 
-  const SETTINGS_KEY = 'le-vide/reglages';
   const PENTATONIC = [0, 2, 4, 7, 9, 12, 14, 16];
   // Note fondamentale (MIDI) de la nappe d'ambiance de chaque zone.
   const ZONE_ROOT = { calme: 57, brume: 55, courants: 59, murmure: 52, eclat: 62, gouffre: 45 };
@@ -24,19 +23,14 @@
   // --- Réglages ---
 
   function loadSettings() {
-    try {
-      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-      if (s) {
-        audio.enabled = s.enabled !== false;
-        if (Number.isFinite(s.volume)) audio.volume = util.clamp(s.volume, 0, 1);
-      }
-    } catch (e) { /* réglages par défaut */ }
+    audio.enabled = Vide.Settings.get('enabled', true) !== false;
+    const volume = Vide.Settings.get('volume', 0.6);
+    if (Number.isFinite(volume)) audio.volume = util.clamp(volume, 0, 1);
   }
 
   function saveSettings() {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ enabled: audio.enabled, volume: audio.volume }));
-    } catch (e) { /* tant pis */ }
+    Vide.Settings.set('enabled', audio.enabled);
+    Vide.Settings.set('volume', audio.volume);
   }
 
   function applyVolume() {

@@ -20,9 +20,9 @@
     // Particules de lumière flottant dans le vide, générées autour de la lumière du joueur.
     field: {
       density: 0.00007,  // particules par unité² (avant améliorations)
-      radius: 800,       // elles naissent dans ce rayon autour du joueur…
-      despawnRadius: 950,// …et s'effacent au-delà de celui-ci
-      maxParticles: 900, // plafond pour garder un affichage fluide
+      radius: 1300,      // elles naissent dans ce rayon autour du joueur (couvre l'écran même dézoomé)…
+      despawnRadius: 1450, // …et s'effacent au-delà de celui-ci
+      maxParticles: 1500,  // plafond pour garder un affichage fluide
       refillTime: 6,     // secondes pour reremplir un champ entièrement vidé
       fadeIn: 1.5,       // durée d'apparition en fondu
       drift: 5,          // vitesse de dérive lente

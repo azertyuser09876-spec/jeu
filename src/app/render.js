@@ -29,6 +29,8 @@
       camera: { x: 0, y: 0, scale: 1 },
       trail: [],   // positions récentes de la lumière (purement visuel)
       fog: 0,      // brouillard affiché, qui suit en douceur celui de la zone
+      zoom: Vide.util.clamp(Number(Vide.Settings.get('zoom', 1)) || 1, ZOOM_MIN, ZOOM_MAX),
+      autoZoom: 1,
       time: 0,
       glows: {
         white: makeGlow(255, 255, 255),
@@ -46,7 +48,32 @@
     r.height = window.innerHeight;
     r.canvas.width = Math.round(r.width * r.dpr);
     r.canvas.height = Math.round(r.height * r.dpr);
-    r.camera.scale = Math.sqrt((r.width * r.height) / CONFIG.viewArea);
+    r.baseScale = Math.sqrt((r.width * r.height) / CONFIG.viewArea);
+    r.camera.scale = r.baseScale * r.zoom * r.autoZoom;
+  }
+
+  // Zoom choisi par le joueur (molette, pincement, + / −), gardé dans les réglages.
+  const ZOOM_MIN = 0.55;
+  const ZOOM_MAX = 1.8;
+
+  function zoomBy(r, factor) {
+    if (factor === 1) return;
+    r.zoom = Vide.util.clamp(r.zoom * factor, ZOOM_MIN, ZOOM_MAX);
+    Vide.Settings.set('zoom', r.zoom);
+  }
+
+  // Recul automatique quand un colosse sauvage approche : on doit voir la créature entière.
+  function updateZoom(r, game, dt) {
+    let target = 1;
+    const { player } = game.state;
+    for (const c of game.colossi) {
+      if (c.mode === 'resident' || c.mode === 'home') continue;
+      const d = Math.hypot(c.core.x - player.x, c.core.y - player.y);
+      const near = Vide.util.clamp((1800 - d) / 900, 0, 1);
+      target = Math.min(target, 1 - 0.45 * near * Math.min(1.6, c.def.size / 1.3));
+    }
+    r.autoZoom += (target - r.autoZoom) * Vide.util.damp(1.2, dt);
+    r.camera.scale = r.baseScale * r.zoom * r.autoZoom;
   }
 
   function screenToWorld(r, sx, sy) {
@@ -267,6 +294,7 @@
   function draw(r, game, dt) {
     const { ctx, camera } = r;
     r.time += dt;
+    updateZoom(r, game, dt);
     followCamera(r, game, dt);
     updateTrail(r, game);
     ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
@@ -309,7 +337,9 @@
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  Vide.Render = { create, resize, screenToWorld, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer };
+  Vide.Render = {
+    create, resize, screenToWorld, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer, zoomBy,
+  };
   // Fonctions de dessin spécialisées (territoire, êtres…), définies dans src/app/draw-*.js.
   Vide.Draw = Vide.Draw || {};
 })(globalThis.Vide);

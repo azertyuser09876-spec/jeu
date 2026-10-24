@@ -148,6 +148,21 @@ const { chromium } = require('playwright');
   check(!(await page.isVisible('#map')), 'Échap referme la carte');
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
+  // Zoom : la molette éloigne la caméra, + la rapproche ; le choix survit au rechargement.
+  await page.mouse.move(640, 400);
+  await page.mouse.wheel(0, 400);
+  await page.waitForTimeout(100);
+  const zoomed = await page.evaluate(() => Vide.renderer.zoom);
+  await page.keyboard.press('+');
+  await page.waitForTimeout(50);
+  const zoomedIn = await page.evaluate(() => Vide.renderer.zoom);
+  await page.reload();
+  await page.waitForTimeout(300);
+  const zoomKept = await page.evaluate(() => Vide.renderer.zoom);
+  check(zoomed < 0.8 && zoomedIn > zoomed && Math.abs(zoomKept - zoomedIn) < 1e-9,
+    `la molette et + règlent le zoom, gardé au rechargement (${zoomed.toFixed(2)} → ${zoomKept.toFixed(2)})`);
+  await page.evaluate(() => { Vide.renderer.zoom = 1; Vide.Settings.set('zoom', 1); });
+
   // Colosse : après assez d'ombres vaincues, son battement s'entend ; l'approcher le réveille.
   await page.evaluate(() => { Vide.game.state.stats.shadows = 15; });
   await page.waitForTimeout(300);
@@ -161,6 +176,8 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(600);
   const found = await page.evaluate(() => Vide.game.state.colossi.veilleur === 'found');
   check(found && (await page.isVisible('#boss')), 'approcher le Veilleur le réveille, sa jauge de combat apparaît');
+  const recoil = await page.evaluate(() => Vide.renderer.autoZoom);
+  check(recoil < 0.9, `la caméra recule devant le colosse (${recoil.toFixed(2)})`);
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.

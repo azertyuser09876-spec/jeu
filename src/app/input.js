@@ -21,12 +21,34 @@
       move: { x: 0, y: 0 },
       pulse: false,
       pointer: { active: false, id: null, x: 0, y: 0 },
+      touches: new Map(), // doigts posés sur le canvas (pour le pincement)
+      pinch: 0,           // écart entre deux doigts au dernier événement (0 : pas de pincement)
+      zoom: 1,            // facteur de zoom demandé depuis la dernière image (molette, pincement)
       keys: new Set(),
       onAction: null,   // rappel facultatif pour les touches d'action (pulsation, achats…)
     };
 
+    // Molette : zoom.
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      input.zoom *= Math.exp(-e.deltaY * 0.0015);
+    }, { passive: false });
+
+    const spread = () => {
+      const [a, b] = [...input.touches.values()];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+
     canvas.addEventListener('pointerdown', (e) => {
-      if (input.pointer.active) return;
+      input.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // Deux doigts : pincement pour zoomer, on cesse de se déplacer.
+      if (input.touches.size === 2) {
+        input.pointer.active = false;
+        input.pointer.id = null;
+        input.pinch = spread();
+        return;
+      }
+      if (input.pointer.active || input.touches.size > 2) return;
       input.pointer.active = true;
       input.pointer.id = e.pointerId;
       input.pointer.x = e.clientX;
@@ -34,11 +56,20 @@
       canvas.setPointerCapture(e.pointerId);
     });
     canvas.addEventListener('pointermove', (e) => {
+      if (input.touches.has(e.pointerId)) input.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (input.touches.size === 2 && input.pinch > 0) {
+        const d = spread();
+        if (d > 0) input.zoom *= d / input.pinch;
+        input.pinch = d;
+        return;
+      }
       if (e.pointerId !== input.pointer.id) return;
       input.pointer.x = e.clientX;
       input.pointer.y = e.clientY;
     });
     const release = (e) => {
+      input.touches.delete(e.pointerId);
+      if (input.touches.size < 2) input.pinch = 0;
       if (e.pointerId !== input.pointer.id) return;
       input.pointer.active = false;
       input.pointer.id = null;

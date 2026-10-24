@@ -64,6 +64,14 @@
       return true;
     }
     if (code === 'Tab') return Vide.UI.nextTab(ui);
+    if (key === '+' || key === '=' || code === 'NumpadAdd') {
+      Vide.Render.zoomBy(renderer, 1.15);
+      return true;
+    }
+    if (key === '-' || code === 'NumpadSubtract') {
+      Vide.Render.zoomBy(renderer, 1 / 1.15);
+      return true;
+    }
     if (isMapKey && state.zones.visited.length > 1) {
       Vide.Map.toggle(map, true);
       return true;
@@ -92,6 +100,7 @@
 
   // Accès depuis la console du navigateur, pratique pour déboguer.
   Vide.game = game;
+  Vide.renderer = renderer;
 
   let last = performance.now();
   let accumulator = 0;
@@ -114,6 +123,8 @@
     } else {
       accumulator += dt;
       let steps = 0;
+      Vide.Render.zoomBy(renderer, input.zoom);
+      input.zoom = 1;
       while (accumulator >= CONFIG.step && steps < CONFIG.maxStepsPerFrame) {
         Vide.Input.update(input, game, renderer);
         Vide.Sim.step(game, CONFIG.step, input);
