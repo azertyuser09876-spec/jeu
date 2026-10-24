@@ -153,4 +153,18 @@
       assert.equal(result.ok, false, String(bad).slice(0, 20));
     }
   });
+
+  test('tableaux vus : relus, nettoyés ; une partie en cours compte ce qu’elle a vécu comme vu', () => {
+    const state = Vide.State.create(1);
+    state.cinematics.push('ouverture', 'rencontre:veilleur');
+    assert.deepEqual(Save.deserialize(Save.serialize(state, 1)).state.cinematics, ['ouverture', 'rencontre:veilleur']);
+    const bad = Save.sanitize({ cinematics: ['ouverture', 'ouverture', 'Pas bon', 3, null, 'apaisement:veilleur', 'a:b:c'] });
+    assert.deepEqual(bad.cinematics, ['ouverture', 'apaisement:veilleur']);
+    const old = Save.deserialize(JSON.stringify({
+      format: 18, state: { totalLight: 50, renaissances: 1, colossi: { veilleur: 'tamed', tisseuse: 'found' } },
+    })).state;
+    assert.deepEqual(old.cinematics.sort(), ['apaisement:veilleur', 'ouverture', 'renaissance', 'rencontre:tisseuse', 'rencontre:veilleur'].sort());
+    const fresh = Save.deserialize(JSON.stringify({ format: 18, state: {} })).state;
+    assert.deepEqual(fresh.cinematics, [], 'une partie neuve verra l’ouverture');
+  });
 })();

@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
   const check = (ok, label) => checks.push({ ok, label });
   const player = () => page.evaluate(() => ({ ...Vide.game.state.player }));
   // Termine l'animation de lancement (après un rechargement), pour que les vérifications suivantes jouent.
-  const wake = () => page.evaluate(() => { Vide.intro.t = 99; });
+  const wake = () => page.evaluate(() => { Vide.Cinema.stop(Vide.cinema); Vide.intro.t = 99; });
 
   await page.goto('file://' + path.join(__dirname, '..', 'index.html'));
   await page.waitForTimeout(500);
@@ -397,6 +397,23 @@ const { chromium } = require('playwright');
   await page.click('#shake-toggle');
   const calm = await page.evaluate(() => ({ text: document.getElementById('shake-toggle').textContent, kept: Vide.Settings.get('reduceShake') }));
   check(calm.text.includes('réduites') && calm.kept === true, 'les secousses se réduisent depuis le menu');
+
+  // Tableaux : un tableau met le monde en pause, plein écran ; Échap le passe.
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    Vide.Scenes.register('essai', { shots: [{ d: 30, draw: (g) => Vide.Scenes.stars(g, 40, 1, 10) }] });
+    Vide.Cinema.play(Vide.cinema, Vide.game.state, 'essai', { force: true });
+  });
+  await page.waitForTimeout(300);
+  const c0 = await page.evaluate(() => Vide.game.state.stats.playTime);
+  await page.waitForTimeout(400);
+  const c1 = await page.evaluate(() => ({ t: Vide.game.state.stats.playTime, shown: !document.getElementById('cinema').hidden }));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const c2 = await page.evaluate(() => ({ t: Vide.game.state.stats.playTime, shown: !document.getElementById('cinema').hidden }));
+  check(c1.shown && c1.t === c0 && !c2.shown && c2.t > c1.t && !(await page.isVisible('#menu')),
+    'un tableau met le monde en pause, plein écran, et Échap le passe');
+  await page.keyboard.press('Escape');
 
   // Sauvegarde : exporter donne un code ; un code illisible est refusé ; un bon code remplace la partie.
   await page.click('.transfer summary');

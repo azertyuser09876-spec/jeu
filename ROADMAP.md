@@ -144,6 +144,13 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 
 ### [ ] 1.9 — Cinématiques
 Tableaux peints en code qui racontent sans texte : ouverture, première rencontre, apaisement, renaissance.
+1. Le projecteur : un lecteur de tableaux plein écran (bandes noires, fondus, un toucher pour passer) ; le monde
+   attend ; les tableaux vus restent dans la sauvegarde et se revoient depuis le menu ; on peut les couper.
+2. L'ouverture : le vide plein, la brisure, les gardiens qui s'endorment, la dernière lueur — puis l'éveil.
+3. Rencontres et apaisements : chaque colosse se dresse et ouvre les yeux ; apaisé, l'or gagne son corps et il
+   rejoint le ciel des colosses apaisés.
+4. Renaissance et épilogue : la lumière se dissout et renaît sous le ciel des colosses ; quand le Dormeur
+   s'éveille, les sept constellations se rejoignent.
 
 ### [ ] 2.0 — Équilibrage et finitions
 

@@ -41,6 +41,24 @@ button { font: inherit; letter-spacing: inherit; }
   background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
 }
 
+#cinema {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background: #000;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.tableaux-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
 #intro {
   position: fixed;
   inset: 0;

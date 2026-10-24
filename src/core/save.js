@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 18;
+  const FORMAT = 19;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -68,6 +68,18 @@
       const colossi = data.colossi && typeof data.colossi === 'object' ? data.colossi : {};
       for (const d of Vide.COLOSSI) if (colossi[d.id] === 'found') studied[d.id] = d.seals.length;
       return { ...data, studied, engines: [] };
+    },
+    // 1.9 : les tableaux. Ce qu'une partie en cours a déjà vécu compte comme vu (et se revoit depuis le menu).
+    18: (data) => {
+      const seen = [];
+      if (data.totalLight > 0) seen.push('ouverture');
+      const colossi = data.colossi && typeof data.colossi === 'object' ? data.colossi : {};
+      for (const d of Vide.COLOSSI) {
+        if (colossi[d.id] === 'found' || colossi[d.id] === 'tamed') seen.push('rencontre:' + d.id);
+        if (colossi[d.id] === 'tamed') seen.push('apaisement:' + d.id);
+      }
+      if (data.renaissances > 0) seen.push('renaissance');
+      return { ...data, cinematics: seen };
     },
   };
 
@@ -226,6 +238,13 @@
     state.tides = Number.isInteger(raw.tides) && raw.tides > 0 ? raw.tides : 0;
     const army = isObject(raw.army) ? raw.army : {};
     if (Vide.Combat.POSTURES.includes(army.posture)) state.army.posture = army.posture;
+
+    const cinematics = Array.isArray(raw.cinematics) ? raw.cinematics : [];
+    for (const id of cinematics) {
+      if (typeof id === 'string' && /^[a-z]+(:[a-z]+)?$/.test(id) && !state.cinematics.includes(id) && state.cinematics.length < 64) {
+        state.cinematics.push(id);
+      }
+    }
 
     const lore = Array.isArray(raw.lore) ? raw.lore : [];
     for (const id of lore) {

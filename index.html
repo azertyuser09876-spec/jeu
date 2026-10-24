@@ -131,6 +131,7 @@
       </div>
       <div class="sound-row">
         <button id="shake-toggle" type="button">secousses : normales</button>
+        <button id="cinema-toggle" type="button">tableaux : joués</button>
       </div>
 
       <details class="journal transfer">
@@ -149,6 +150,11 @@
         <ol id="journal-list"></ol>
       </details>
 
+      <details class="journal" id="tableaux" hidden>
+        <summary id="tableaux-title">tableaux</summary>
+        <div id="tableaux-list" class="tableaux-list"></div>
+      </details>
+
       <p id="menu-stats" class="menu-stats"></p>
       <p id="save-status" class="save-status"></p>
 
@@ -160,6 +166,9 @@
   </div>
 
   <!-- Logique pure (testée par tests/run.js) -->
+  <!-- Tableaux (cinématiques) : par-dessus tout, le temps qu'ils jouent. -->
+  <canvas id="cinema" hidden></canvas>
+
   <script src="src/core/vide.js"></script>
   <script src="src/core/util.js"></script>
   <script src="src/core/config.js"></script>
@@ -220,6 +229,8 @@
   <script src="src/app/map.js"></script>
   <script src="src/app/audio.js"></script>
   <script src="src/app/intro.js"></script>
+  <script src="src/app/scenes.js"></script>
+  <script src="src/app/cinema.js"></script>
   <script src="src/app/main.js"></script>
 </body>
 </html>

@@ -36,12 +36,18 @@
     volume.addEventListener('input', () => Vide.Audio.setVolume(Number(volume.value)));
     const shakeBtn = $('shake-toggle');
     const reduced = () => Vide.Settings.get('reduceShake', Vide.Render.REDUCE_DEFAULT);
+    const cinemaBtn = $('cinema-toggle');
     const showOptions = () => {
       showSound();
       shakeBtn.textContent = reduced() ? 'secousses : réduites' : 'secousses : normales';
+      cinemaBtn.textContent = Vide.Cinema.enabled() ? 'tableaux : joués' : 'tableaux : coupés';
     };
     shakeBtn.addEventListener('click', () => {
       Vide.Settings.set('reduceShake', !reduced());
+      showOptions();
+    });
+    cinemaBtn.addEventListener('click', () => {
+      Vide.Settings.set('cinematics', !Vide.Cinema.enabled());
       showOptions();
     });
     menu.showSound = showOptions;
@@ -111,6 +117,24 @@
     menu.stats.textContent = parts.join(' · ');
     menu.saveStatus.textContent = saveText();
     menu.showSound();
+    // Tableaux déjà vus : un bouton pour revoir chacun.
+    const seen = Vide.Scenes.seen(state);
+    $('tableaux').hidden = !seen.length;
+    $('tableaux-title').textContent = `tableaux · ${seen.length}`;
+    const tableaux = $('tableaux-list');
+    if (tableaux.childElementCount !== seen.length) {
+      tableaux.textContent = '';
+      for (const id of seen) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = Vide.Scenes.title(id);
+        btn.addEventListener('click', () => {
+          toggle(menu, false);
+          if (menu.hooks.onCinema) menu.hooks.onCinema(id);
+        });
+        tableaux.appendChild(btn);
+      }
+    }
     // Journal : les fragments du récit déjà révélés.
     const list = $('journal-list');
     $('journal-title').textContent = `journal · ${state.lore.length}/${Vide.LORE.length}`;

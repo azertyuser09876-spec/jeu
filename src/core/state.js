@@ -21,6 +21,7 @@
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
       army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse
       lore: [],          // fragments du récit déjà révélés, dans l'ordre
+      cinematics: [],    // tableaux (cinématiques) déjà vus : 'ouverture', 'rencontre:veilleur'…
       memories: 0,       // souvenirs (✧) gagnés en renaissant
       legacy: {},        // améliorations héritées (achetées en souvenirs) : elles survivent aux renaissances
       renaissances: 0,   // nombre de renaissances

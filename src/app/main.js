@@ -41,7 +41,11 @@
       Vide.Storage.replace(imported);
       window.location.reload();
     },
+    onCinema: (id) => Vide.Cinema.play(cinema, state, id, { force: true }),
   });
+  // Les tableaux : une nouvelle partie s'ouvre sur le premier, avant l'éveil.
+  const cinema = Vide.Cinema.create(renderer);
+  if (state.totalLight <= 0) Vide.Cinema.play(cinema, state, 'ouverture');
   const map = Vide.Map.create(game);
   Vide.Render.snapCamera(renderer, game);
   Vide.Away.init();
@@ -49,10 +53,15 @@
   let welcomePending = welcome && Vide.Offline.worthShowing(welcome) ? welcome : null;
   let intro = Vide.Intro.create('launch');
 
-  const paused = () => menu.open || Vide.Away.open || map.open || Vide.Intro.blocking(intro);
+  const paused = () => menu.open || Vide.Away.open || map.open || Vide.Intro.blocking(intro) || Vide.Cinema.active(cinema);
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
   input.onAction = (code, key) => {
+    // Un tableau joue : Échap, Espace ou Entrée le passe ; le reste attend.
+    if (Vide.Cinema.active(cinema)) {
+      if (code === 'Escape' || code === 'Space' || code === 'Enter') Vide.Cinema.skip(cinema);
+      return true;
+    }
     if (Vide.Intro.blocking(intro)) {
       Vide.Intro.skip(intro);
       return true;
@@ -121,6 +130,7 @@
   Vide.renderer = renderer;
   Vide.intro = intro;
   Vide.map = map;
+  Vide.cinema = cinema;
   canvas.addEventListener('pointerdown', () => Vide.Intro.skip(intro));
 
   // Dispersée (ou rappelée par le Retour), la lumière éclate puis se rassemble au village : on rejoue l'éveil.
@@ -140,7 +150,9 @@
     // Au retour d'un onglet en arrière-plan, on ne rattrape pas des minutes de simulation d'un coup.
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
-    Vide.Intro.update(intro, state, dt);
+    // (L'éveil attend la fin des tableaux.)
+    Vide.Cinema.update(cinema, state, dt);
+    if (!Vide.Cinema.active(cinema)) Vide.Intro.update(intro, state, dt);
     renderer.introZoom = Vide.Intro.zoom(intro);
     renderer.hold = Vide.Intro.hold(intro);
     if (welcomePending && Vide.Intro.done(intro)) {
@@ -182,7 +194,9 @@
     Vide.Intro.draw(renderer, intro, light.x, light.y);
     Vide.Audio.update(game, dt);
     Vide.Audio.readEvents(game);
+    Vide.Cinema.readEvents(cinema, game);
     Vide.Away.readEvents(game);
+    Vide.Cinema.draw(cinema, state);
     Vide.Away.updateToast(now);
     Vide.UI.update(ui);
     Vide.Map.update(map);
