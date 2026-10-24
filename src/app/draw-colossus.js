@@ -370,9 +370,9 @@
       ctx.arc(X(at.x), Y(at.y), 7, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = 'rgba(255, 217, 138, 0.9)';
-      ctx.font = '11px system-ui, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(d.name, X(at.x) + 11, Y(at.y) + 4);
+      ctx.beginPath();
+      ctx.arc(X(at.x), Y(at.y), 2, 0, Math.PI * 2);
+      ctx.fill();
     }
   });
 })(globalThis.Vide);

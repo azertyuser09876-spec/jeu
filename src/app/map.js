@@ -31,6 +31,83 @@
     return `rgba(${tint[0]}, ${tint[1]}, ${tint[2]}, ${a})`;
   }
 
+  // Peinture des régions : une image basse résolution (un échantillon tous les SAMPLE pixels), couleur de
+  // la zone en chaque point, floutée puis agrandie en douceur : frontières fondues, inexploré dans le noir.
+  const SAMPLE = 4;
+
+  function blur(buf, gw, gh, passes) {
+    const tmp = new Float32Array(buf.length);
+    for (let p = 0; p < passes; p++) {
+      for (let y = 0; y < gh; y++) {
+        for (let x = 0; x < gw; x++) {
+          for (let c = 0; c < 4; c++) {
+            let sum = 0, n = 0;
+            for (let k = -2; k <= 2; k++) {
+              const xx = x + k;
+              if (xx < 0 || xx >= gw) continue;
+              sum += buf[(y * gw + xx) * 4 + c];
+              n++;
+            }
+            tmp[(y * gw + x) * 4 + c] = sum / n;
+          }
+        }
+      }
+      for (let y = 0; y < gh; y++) {
+        for (let x = 0; x < gw; x++) {
+          for (let c = 0; c < 4; c++) {
+            let sum = 0, n = 0;
+            for (let k = -2; k <= 2; k++) {
+              const yy = y + k;
+              if (yy < 0 || yy >= gh) continue;
+              sum += tmp[(yy * gw + x) * 4 + c];
+              n++;
+            }
+            buf[(y * gw + x) * 4 + c] = sum / n;
+          }
+        }
+      }
+    }
+  }
+
+  function paintRegions(ctx, w, h, X, Y, scale, ox, oy, state) {
+    const gw = Math.ceil(w / SAMPLE), gh = Math.ceil(h / SAMPLE);
+    const buf = new Float32Array(gw * gh * 4);
+    const visited = new Set(state.zones.visited);
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++) {
+        const wx = (gx * SAMPLE + SAMPLE / 2 - ox) / scale;
+        const wy = (gy * SAMPLE + SAMPLE / 2 - oy) / scale;
+        const region = Zones.at(state.seed, wx, wy);
+        if (!visited.has(region.key)) continue;
+        // Le cœur d'une région est un peu plus lumineux que ses bords.
+        const glow = 0.7 + 0.3 * Math.min(1, region.edge / 700);
+        const i = (gy * gw + gx) * 4;
+        buf[i] = region.zone.tint[0] * glow;
+        buf[i + 1] = region.zone.tint[1] * glow;
+        buf[i + 2] = region.zone.tint[2] * glow;
+        buf[i + 3] = 1;
+      }
+    }
+    blur(buf, gw, gh, 2);
+    const off = document.createElement('canvas');
+    off.width = gw;
+    off.height = gh;
+    const octx = off.getContext('2d');
+    const img = octx.createImageData(gw, gh);
+    for (let i = 0; i < gw * gh; i++) {
+      const a = buf[i * 4 + 3];
+      // Couleurs moyennées avec le noir de l'inexploré : on les ramène à leur teinte, l'alpha porte le fondu.
+      img.data[i * 4] = a > 0 ? buf[i * 4] / a : 0;
+      img.data[i * 4 + 1] = a > 0 ? buf[i * 4 + 1] / a : 0;
+      img.data[i * 4 + 2] = a > 0 ? buf[i * 4 + 2] / a : 0;
+      img.data[i * 4 + 3] = Math.round(a * 150);
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(off, 0, 0, w, h);
+  }
+
   function draw(map) {
     const { state } = map.game;
     const seed = state.seed;
@@ -66,25 +143,7 @@
     const X = (x) => ox + x * scale;
     const Y = (y) => oy + y * scale;
 
-    // Régions : des taches de la couleur de leur zone.
-    const r = Zones.CELL * 0.62 * scale;
-    for (const c of cells) {
-      const grad = ctx.createRadialGradient(X(c.x), Y(c.y), 0, X(c.x), Y(c.y), r);
-      grad.addColorStop(0, rgba(c.zone.tint, 0.28));
-      grad.addColorStop(1, rgba(c.zone.tint, 0.04));
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(X(c.x), Y(c.y), r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (r > 45) {
-      ctx.font = '11px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      for (const c of cells) {
-        ctx.fillStyle = rgba(c.zone.tint, 0.7);
-        ctx.fillText(c.zone.name.toLowerCase(), X(c.x), Y(c.y));
-      }
-    }
+    paintRegions(ctx, w, h, X, Y, scale, ox, oy, state);
 
     // Territoire, bâtiments, foyer.
     if (state.territory.lit) {
@@ -113,9 +172,6 @@
     ctx.arc(X(state.player.x), Y(state.player.y), 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('toi', X(state.player.x) + 8, Y(state.player.y) + 4);
 
     // Légende : les zones découvertes.
     map.legend.textContent = '';
