@@ -55,7 +55,7 @@
     assert.equal(c.from, atelier);
     assert.equal(c.kind, 'matiere');
     // Elle suit le tracé de la route (avenues, portes, grande route).
-    assert.near(c.duration, Vide.Roads.pathLength(Vide.Roads.route(atelier, jardins)) / CONFIG.trade.caravanSpeed, 0.01);
+    assert.near(c.duration, Vide.Roads.pathLength(Vide.Roads.route(state, atelier, jardins)) / CONFIG.trade.caravanSpeed, 0.01);
     assert.ok(game.events.some((e) => e.type === 'caravanOut'));
     const before = atelier.stock.matiere;
     assert.ok(before > 90, 'pas encore retirée');

@@ -63,12 +63,21 @@
       const { state, a, b } = three();
       const road = Roads.plan(state, a, b);
       if (built) road.work = Roads.length(state, road);
-      state.player.x = 300;
+      // La lumière suit le tracé de la route, depuis le premier quart.
+      const path = Roads.route(state, a, b);
+      let f = 0.25;
+      Object.assign(state.player, Roads.along(path, f));
       const game = Sim.create(state);
       const input = Sim.emptyInput();
-      input.move.x = 1;
-      run(game, 3, input);
-      return state.player.x - 300;
+      for (let i = 0; i < Math.round(3 / dt); i++) {
+        let next = Roads.along(path, f);
+        while (Math.hypot(next.x - state.player.x, next.y - state.player.y) < 25 && f < 1) next = Roads.along(path, (f += 0.002));
+        const d = Math.hypot(next.x - state.player.x, next.y - state.player.y) || 1;
+        input.move.x = (next.x - state.player.x) / d;
+        input.move.y = (next.y - state.player.y) / d;
+        Sim.step(game, dt, input);
+      }
+      return f - 0.25;
     };
     assert.ok(travel(true) > travel(false) * 1.4);
   });
@@ -79,9 +88,11 @@
     const b = village(state, { x: 2600, y: 900, radius: 400 });
     const w = Vide.Walls.plan(a);
     w.work = Vide.Walls.workOf(w);
-    const path = Roads.route(a, b);
-    assert.equal(path.length, 4);
-    assert.deepEqual([path[0].x, path[0].y, path[3].x, path[3].y], [a.x, a.y, b.x, b.y]);
+    const path = Roads.route(state, a, b);
+    const last = path.length - 1;
+    assert.deepEqual([path[0].x, path[0].y, path[last].x, path[last].y], [a.x, a.y, b.x, b.y]);
+    // Le même tracé dans l'autre sens.
+    assert.deepEqual(Roads.route(state, b, a), path.slice().reverse());
     // La sortie : sur une avenue (donc par une porte), passé l'enceinte ; l'avenue la mieux tournée vers l'autre.
     const out = path[1];
     const angle = Math.atan2(out.y - a.y, out.x - a.x);
@@ -89,7 +100,7 @@
     assert.ok(Math.hypot(out.x - a.x, out.y - a.y) > Vide.Walls.radius(w));
     const toward = Math.atan2(b.y - a.y, b.x - a.x);
     assert.ok(Math.abs(Math.atan2(Math.sin(angle - toward), Math.cos(angle - toward))) <= Math.PI / Vide.Plan.AVENUES + 1e-9);
-    assert.near(Vide.Plan.offAvenue(b, Math.atan2(path[2].y - b.y, path[2].x - b.x)), 0, 1e-9);
+    assert.near(Vide.Plan.offAvenue(b, Math.atan2(path[last - 1].y - b.y, path[last - 1].x - b.x)), 0, 1e-9);
     // Le long du tracé, une route achevée fait filer la lumière ; à côté, non.
     const road = { a: a.id, b: b.id, work: 0 };
     road.work = Roads.length(state, road);
@@ -102,6 +113,27 @@
     assert.ok(!Roads.onRoad(state, mid.x + 300, mid.y - 900));
     // Morceaux et points d'un tracé.
     assert.near(Roads.pathLength(Roads.slice(path, 0.2, 0.7)), Roads.pathLength(path) * 0.5, 1e-6);
+  });
+
+  test('une grande route n’est pas droite : elle serpente à sa façon, et contourne les villages sur son chemin', () => {
+    const state = State.create(4);
+    const a = village(state, { radius: 300 });
+    const b = village(state, { x: 4000, radius: 300 });
+    const between = village(state, { x: 2000, y: 60, radius: 350 });
+    const path = Roads.route(state, a, b);
+    // Elle s'écarte de la ligne droite, sans jamais entrer dans le village du milieu.
+    const off = Math.max(...path.map((p) => Math.abs(p.y)));
+    assert.ok(off > 350, `écart ${Math.round(off)}`);
+    for (const p of path) assert.ok(Math.hypot(p.x - between.x, p.y - between.y) >= Vide.Territory.radius(between) + 100);
+    // Deux routes n'ont pas le même dessin.
+    const state2 = State.create(4);
+    const c = village(state2, { radius: 300 });
+    village(state2, { x: 9000, radius: 300 });
+    const d = village(state2, { x: 4000, radius: 300 });
+    const other = Roads.route(state2, c, d);
+    const mid = (p) => p[Math.floor(p.length / 2)].y;
+    assert.ok(Math.abs(mid(other)) > 1 || Math.abs(mid(Roads.route(state, a, b))) > 1);
+    assert.ok(Math.abs(mid(other) - mid(path)) > 1);
   });
 
   test('pendant l’absence, les routes avancent', () => {

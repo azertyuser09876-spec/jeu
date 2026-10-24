@@ -129,7 +129,7 @@
         if (tr.caravans.some((c) => c.from === from && c.to === to)) continue; // une à la fois par sens
         const load = shipment(state, from, to);
         if (!load) continue;
-        const duration = Vide.Roads.pathLength(Vide.Roads.route(from, to)) / t.caravanSpeed;
+        const duration = Vide.Roads.pathLength(Vide.Roads.route(state, from, to)) / t.caravanSpeed;
         tr.caravans.push({ from, to, ...load, t: 0, duration });
         Vide.Sim.emit(game, 'caravanOut', { kind: load.kind, from: from.type, to: to.type });
       }

@@ -36,7 +36,7 @@
     for (const road of state.roads) {
       const [a, b] = Roads.ends(state, road);
       if (!a || !b) continue;
-      const path = Roads.route(a, b);
+      const path = Roads.route(state, a, b);
       const len = Roads.pathLength(path) || 1;
       const half = Math.min(0.5, road.work / (Roads.length(state, road) || 1) / 2); // chaque bout bâtit sa moitié
       const done = half >= 0.5;
@@ -151,7 +151,7 @@
   function drawCaravans(r, game) {
     const { ctx } = r;
     for (const c of game.trade.caravans) {
-      const { x, y } = Roads.along(Roads.route(c.from, c.to), c.t / c.duration);
+      const { x, y } = Roads.along(Roads.route(game.state, c.from, c.to), c.t / c.duration);
       const bob = Math.sin(r.time * 5 + c.duration) * 2;
       Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 18, 0.55);
       Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 6, 1);
