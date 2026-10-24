@@ -33,6 +33,7 @@
     state.expeditions = [];
     state.beacon = null;
     state.nests = [];
+    state.engines = [];
     state.nestTimer = null;
     state.echoes = 0;
     state.tides = 0;

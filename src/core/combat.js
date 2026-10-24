@@ -145,13 +145,15 @@
 
   // --- Projectiles (traits des étincelles et des tours), légèrement guidés ---
 
-  function fire(game, x, y, target, damage, source) {
+  // `siege` : multiplicateur déjà compris dans `damage` (harpon lancé sur un colosse ou un nid) ; une ombre
+  // prise en chemin n'en subit pas l'effet.
+  function fire(game, x, y, target, damage, source, siege) {
     const dx = target.x - x, dy = target.y - y;
     const d = Math.hypot(dx, dy) || 1;
     const speed = CONFIG.combat.projectileSpeed;
     game.projectiles.push({
       x, y, vx: (dx / d) * speed, vy: (dy / d) * speed,
-      target, damage, source, life: CONFIG.combat.projectileLife,
+      target, damage, source, siege: siege || 1, life: CONFIG.combat.projectileLife,
     });
   }
 
@@ -188,7 +190,7 @@
       }
       const hit = Shadows.nearest(game, p.x, p.y, CONFIG.combat.projectileHit + 10);
       if (hit && Math.hypot(hit.x - p.x, hit.y - p.y) <= CONFIG.combat.projectileHit + Shadows.kind(hit.kind).radius) {
-        Shadows.damage(hit, p.damage);
+        Shadows.damage(hit, p.damage / p.siege);
         list.splice(i, 1);
         continue;
       }
@@ -240,7 +242,10 @@
       case 'escorte': return { x: state.player.x, y: state.player.y, radius: 320 };
       case 'chasse': return { x: v.x, y: v.y, radius: R + 1400 };
       case 'siege': {
-        // Au nid le plus proche de son village (sans nid à portée : il garde son village).
+        // Contre un colosse en combat à portée de son village, sinon au nid le plus proche (sans rien à
+        // portée : il garde son village).
+        const c = Vide.Engines.foe(game, v.x, v.y, CONFIG.nests.siegeRange);
+        if (c) return { x: c.core.x, y: c.core.y, radius: c.core.radius + 400 };
         const nest = Vide.Nests.nearest(state, v.x, v.y, CONFIG.nests.siegeRange);
         if (nest) return { x: nest.x, y: nest.y, radius: Vide.Nests.radius(nest) + 250, nest };
         return { x: v.x, y: v.y, radius: R + 260 };
@@ -337,7 +342,8 @@
       if (d <= sp.range && b.cd <= 0) {
         b.cd = sp.cooldown;
         b.flash = 1;
-        fire(game, b.x, b.y, enemy, sp.damage * Colony.statsOf(game, b).armyDamage, 'ally');
+        const siege = enemy.colossus || enemy.nest ? sp.siege || 1 : 1;
+        fire(game, b.x, b.y, enemy, sp.damage * siege * Colony.statsOf(game, b).armyDamage, sp.siege ? 'harpoon' : 'ally', siege);
       }
     },
 

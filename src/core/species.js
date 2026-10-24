@@ -8,6 +8,7 @@
 //   speed      vitesse de base
 //   hp         points de vie (avant améliorations)
 //   damage, cooldown, range   combat (armée)
+//   siege      si présent : multiplicateur des dégâts contre les colosses et les cœurs des nids (troupe de siège)
 //   color      teinte [r, g, b] pour l'affichage
 //   cap        si présent : caractéristique qui limite cette espèce à part (sinon : la population, beingCap)
 (function (Vide) {
@@ -95,6 +96,28 @@
       range: 120,
       color: [255, 170, 220],
       requires: (state) => Vide.Villages.count(state, 'gardien') > 0,
+    },
+    // --- Troupe de siège (dès qu'un colosse ou un nid d'ombre s'est montré) ---
+    {
+      id: 'harponneur',
+      name: 'Harponneur',
+      desc: 'Troupe de siège : de lourds harpons, lents, presque vains contre les ombres mais terribles contre '
+        + 'les colosses et les cœurs des nids.',
+      role: 'ranged',
+      army: true,
+      siege: 7,
+      baseCost: 15000,
+      growth: 1.5,
+      baseEchoes: 25,
+      echoGrowth: 1.45,
+      speed: 55,
+      hp: 50,
+      damage: 4,
+      cooldown: 2.4,
+      range: 260,
+      color: [255, 160, 120],
+      requires: (state) => Vide.Villages.count(state, 'gardien') > 0
+        && (Object.keys(state.colossi).length > 0 || state.nests.length > 0 || state.cleared.length > 0),
     },
   ];
 })(globalThis.Vide);

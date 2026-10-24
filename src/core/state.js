@@ -27,6 +27,7 @@
       runStart: 0,       // lumière totale au moment de la dernière renaissance
       colossi: {},       // colosses : 'heard' (entendu), 'found' (rencontré), 'tamed' (apaisé)
       studied: {},       // sceaux dévoilés par les érudits, par colosse
+      engines: [],       // engins de siège : balistes et chaînes (voir engines.js)
       zones: {
         visited: [],     // régions visitées (clés "i,j"), pour la carte
         discovered: [],  // types de zones déjà rencontrés

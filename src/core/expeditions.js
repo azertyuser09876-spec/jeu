@@ -2,18 +2,21 @@
 // les ombres peuvent les attaquer en chemin.
 //   Éclaireurs  révèlent les régions autour du but, puis rentrent.
 //   Colons      trois lueurs du village vont fonder, au but, un village du type choisi (au prix d'une fondation).
+//   Sapeurs     deux bâtisseurs du village vont bâtir sur place un engin de siège (baliste ou chaîne, voir
+//               engines.js), puis rentrent.
 //   Érudits     vont observer un colosse depuis un abri, à distance de son repaire : chaque étude dévoile l'un de
 //               ses sceaux (voir Colossus.revealed) ; tous dévoilés, ils rentrent. Plus rapides si leur village a
 //               du savoir ✎.
 //   Escorte     (en option) deux soldats du village accompagnent l'expédition, combattent en chemin, et restent
 //               avec les colons (ou rentrent avec les éclaireurs et les érudits).
 // État persistant : state.expeditions = [{ id, kind, from, x, y, tx, ty, type, members, hp, back }] ; les érudits
-// ont en plus { colossus, study } (study : secondes d'observation de l'étude en cours, null en chemin).
+// ont en plus { colossus, study } (study : secondes d'observation de l'étude en cours, null en chemin) ; les sapeurs
+// { engine, site } (engine : 'baliste' ou 'chaine' ; site : id de l'engin en chantier, null en chemin).
 (function (Vide) {
   'use strict';
   const { CONFIG, Villages, Colony, Territory, Zones } = Vide;
 
-  const KINDS = ['scouts', 'colons', 'scholars'];
+  const KINDS = ['scouts', 'colons', 'scholars', 'sappers'];
 
   function armyIn(v) {
     let n = 0;
@@ -28,6 +31,7 @@
     let bestD = Infinity;
     for (const v of state.villages) {
       if (kind === 'colons' && (v.beings.lueur || 0) < e.colonists) continue;
+      if (kind === 'sappers' && (v.beings.batisseur || 0) < CONFIG.engines.sappers) continue;
       if (escort && (v.beings.gardien || 0) < e.escort) continue;
       const d = Math.hypot(v.x - tx, v.y - ty);
       if (d < bestD) {
@@ -38,8 +42,10 @@
     return best;
   }
 
-  function cost(state, kind, tx, ty, from) {
+  // `what` : l'engin à bâtir (sapeurs).
+  function cost(state, kind, tx, ty, from, what) {
     if (kind === 'colons') return { light: Villages.foundCost(state) };
+    if (kind === 'sappers') return { light: CONFIG.engines.cost[what] || 0 };
     const d = from ? Math.hypot(from.x - tx, from.y - ty) : 0;
     const per = kind === 'scholars' ? CONFIG.expeditions.scholarCost : CONFIG.expeditions.scoutCost;
     return { light: Math.ceil(per * d) };
@@ -74,18 +80,25 @@
     return { x: at.x + (dx / d) * r, y: at.y + (dy / d) * r };
   }
 
-  // Raison qui empêche cette expédition, ou null. Érudits : `colossus` est le colosse à étudier.
-  function blocked(state, kind, tx, ty, escort, colossus) {
+  // Raison qui empêche cette expédition, ou null. `what` : le colosse à étudier (érudits) ou l'engin à bâtir
+  // (sapeurs).
+  function blocked(state, kind, tx, ty, escort, what) {
     const e = CONFIG.expeditions;
     if (!state.villages.length) return 'il faut un village';
     if (state.expeditions.length >= e.max) return 'trop d’expéditions en route';
     if (kind === 'scholars') {
-      if (!colossus) return 'aucun colosse à étudier ici';
-      if (state.expeditions.some((x) => x.kind === 'scholars' && x.colossus === colossus)) return 'des érudits l’étudient déjà';
+      if (!what) return 'aucun colosse à étudier ici';
+      if (state.expeditions.some((x) => x.kind === 'scholars' && x.colossus === what)) return 'des érudits l’étudient déjà';
+    }
+    if (kind === 'sappers') {
+      if (!Vide.Engines.def(what)) return 'quel engin ?';
+      const planned = state.expeditions.filter((x) => x.kind === 'sappers' && x.site === null).length;
+      if (state.engines.length + planned >= CONFIG.engines.max) return 'assez d’engins';
     }
     const from = origin(state, kind, tx, ty, escort);
     if (!from) {
       if (kind === 'colons') return `il faut ${e.colonists} lueurs dans un village`;
+      if (kind === 'sappers') return `il faut ${CONFIG.engines.sappers} bâtisseurs dans un village`;
       return `il faut ${e.escort} gardiens pour l’escorte`;
     }
     if (Math.hypot(from.x - tx, from.y - ty) > e.range) return 'trop loin';
@@ -94,18 +107,21 @@
         if (Math.hypot(v.x - tx, v.y - ty) - Territory.radius(v) < CONFIG.villages.gap) return 'trop près d’un village';
       }
     }
-    if (state.light < cost(state, kind, tx, ty, from).light) return 'pas assez de lumière';
+    if (state.light < cost(state, kind, tx, ty, from, what).light) return 'pas assez de lumière';
     return null;
   }
 
   // Lance une expédition (paie et retire ses membres du village). Renvoie l'expédition, ou null.
   function launch(state, kind, tx, ty, opts) {
     const o = opts || {};
-    if (!KINDS.includes(kind) || blocked(state, kind, tx, ty, o.escort, o.colossus)) return null;
+    const what = kind === 'sappers' ? o.engine : o.colossus;
+    if (!KINDS.includes(kind) || blocked(state, kind, tx, ty, o.escort, what)) return null;
     const e = CONFIG.expeditions;
     const from = origin(state, kind, tx, ty, o.escort);
-    state.light -= cost(state, kind, tx, ty, from).light;
-    const members = kind === 'colons' ? { lueur: e.colonists } : kind === 'scholars' ? { erudit: e.scholars } : { eclaireur: e.scouts };
+    state.light -= cost(state, kind, tx, ty, from, what).light;
+    const members = {
+      colons: { lueur: e.colonists }, scholars: { erudit: e.scholars }, sappers: { batisseur: CONFIG.engines.sappers },
+    }[kind] || { eclaireur: e.scouts };
     if (o.escort) members.gardien = e.escort;
     for (const [id, n] of Object.entries(members)) if (from.beings[id]) from.beings[id] -= n;
     const exp = {
@@ -124,6 +140,10 @@
     if (kind === 'scholars') {
       exp.colossus = o.colossus;
       exp.study = null;
+    }
+    if (kind === 'sappers') {
+      exp.engine = o.engine;
+      exp.site = null;
     }
     state.expeditions.push(exp);
     return exp;
@@ -156,6 +176,10 @@
     if (exp.kind === 'scholars') {
       exp.study = 0;
       return { type: 'studying', id: exp.colossus };
+    }
+    if (exp.kind === 'sappers') {
+      exp.site = Vide.Engines.add(state, exp.engine, exp.tx, exp.ty, 0).id;
+      return { type: 'siteStarted', engine: exp.engine };
     }
     if (exp.kind === 'scouts') {
       const found = reveal(state, exp.tx, exp.ty);
@@ -246,6 +270,25 @@
   }
 
   const observing = (exp) => exp.kind === 'scholars' && !exp.back && exp.study !== null;
+  const building = (exp) => exp.kind === 'sappers' && !exp.back && exp.site !== null;
+
+  // Les sapeurs bâtissent `seconds` secondes. L'engin achevé (ou détruit en chantier), ils rentrent.
+  // Renvoie les événements, et le temps restant.
+  function erect(state, exp, seconds) {
+    const site = Vide.Engines.byId(state, exp.site);
+    if (!site) {
+      exp.back = true;
+      return { events: [{ type: 'siteLost', engine: exp.engine }], left: seconds };
+    }
+    const need = (1 - site.built) * CONFIG.engines.buildTime;
+    if (need > seconds) {
+      site.built += seconds / CONFIG.engines.buildTime;
+      return { events: [], left: 0 };
+    }
+    site.built = 1;
+    exp.back = true;
+    return { events: [{ type: 'engineBuilt', engine: exp.engine, x: site.x, y: site.y }], left: seconds - need };
+  }
 
   // Les ombres blessent les expéditions (voir Combat.strike) ; à zéro, elle est perdue.
   function hurt(state, exp, amount) {
@@ -270,8 +313,8 @@
       if (foe) game.expeditionsFighting.add(exp);
       else game.expeditionsFighting.delete(exp);
       if (foe) continue;
-      if (observing(exp)) {
-        for (const event of observe(state, exp, dt).events) Vide.Sim.emit(game, event.type, event);
+      if (observing(exp) || building(exp)) {
+        for (const event of (observing(exp) ? observe : erect)(state, exp, dt).events) Vide.Sim.emit(game, event.type, event);
         continue;
       }
       const event = move(state, exp, dt);
@@ -285,8 +328,8 @@
     for (const exp of state.expeditions.slice()) {
       let left = seconds;
       while (left > 0 && state.expeditions.includes(exp)) {
-        if (observing(exp)) {
-          const done = observe(state, exp, left);
+        if (observing(exp) || building(exp)) {
+          const done = (observing(exp) ? observe : erect)(state, exp, left);
           events.push(...done.events);
           left = done.left;
           continue;
@@ -302,7 +345,7 @@
   }
 
   Vide.Expeditions = {
-    KINDS, origin, cost, studyable, studySpot, blocked, launch, hpOf, reveal, arrive, goal, move, studySpeed, observe, hurt,
-    update, offline,
+    KINDS, origin, cost, studyable, studySpot, blocked, launch, hpOf, reveal, arrive, goal, move, studySpeed, observe, erect,
+    hurt, update, offline,
   };
 })(globalThis.Vide);

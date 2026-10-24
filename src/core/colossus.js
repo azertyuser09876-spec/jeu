@@ -314,6 +314,7 @@
     }
     if (c.mode === 'calm') return;
     const r = FOOT.radius * c.def.size;
+    Vide.Engines.damageAt(game, foot.x, foot.y, r + 30, Vide.CONFIG.engines.footDamage);
     if (Math.hypot(state.player.x - foot.x, state.player.y - foot.y) <= r) {
       Vide.Combat.hurtPlayer(game, FOOT.damage, foot.x, foot.y);
     }
@@ -476,6 +477,12 @@
       if (Colony.isActive(b) && !atk.struck.has(b) && crossed(b.x, b.y)) {
         atk.struck.add(b);
         Vide.Combat.hurtBeing(game, b, a.beings);
+      }
+    }
+    for (const e of game.state.engines.slice()) {
+      if (!atk.struck.has(e) && crossed(e.x, e.y)) {
+        atk.struck.add(e);
+        Vide.Engines.hurt(game, e, Vide.CONFIG.engines.quakeDamage);
       }
     }
     if (atk.ring >= atk.length) endAttack(c);
@@ -732,8 +739,9 @@
           break;
         }
         const k = reach(c);
+        const held = c.bound ? Vide.CONFIG.engines.chain.slow : 1; // une chaîne le retient
         if (c.attack && c.attack.kind === 'charge') stop(c, dt); // il se ramasse avant de foncer
-        else if (dist > 380 * k) walkTo(c, player.x, player.y, d.speed * (1 + PHASE.speed * phase(c)), dt);
+        else if (dist > 380 * k) walkTo(c, player.x, player.y, d.speed * (1 + PHASE.speed * phase(c)) * held, dt);
         else stop(c, dt);
         turnTowards(c, Math.atan2(player.y - c.y, player.x - c.x), dt);
         if (c.attack) updateAttack(game, c, dt);
@@ -742,7 +750,7 @@
       }
       case 'kneel':
         stop(c, dt);
-        c.kneel -= dt;
+        c.kneel -= dt * (c.bound ? Vide.CONFIG.engines.chain.kneel : 1);
         if (c.kneel <= 0) {
           c.mode = 'hunt';
           c.attackCd = 2;

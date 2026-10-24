@@ -251,7 +251,9 @@
     for (const btn of ui.orderButtons) setClass(btn, 'active', btn.dataset.posture === state.army.posture);
     // « Assiéger » n'apparaît que lorsqu'il y a un nid d'ombre à assiéger.
     const siege = ui.orderButtons.find((b) => b.dataset.posture === 'siege');
-    setClass(siege, 'hidden', state.nests.length === 0 && state.army.posture !== 'siege');
+    // L'ordre de siège apparaît avec un nid d'ombre ou un colosse en combat.
+    const besieged = state.nests.length > 0 || ui.game.colossi.some((c) => c.mode === 'hunt' || c.mode === 'kneel');
+    setClass(siege, 'hidden', !besieged && state.army.posture !== 'siege');
 
     updateShop(ui);
     updatePulse(ui);

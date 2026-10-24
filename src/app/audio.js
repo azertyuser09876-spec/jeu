@@ -207,6 +207,17 @@
     tamed() {
       [0, 4, 7, 12, 16].forEach((n, i) => tone({ freq: note(n), dur: 4, gain: 0.04, attack: 0.8, delay: i * 0.15 }));
     },
+    // Un trait de baliste : un claquement sec, puis le sifflement du trait.
+    bolt() {
+      if (!throttle('bolt', 0.15)) return;
+      noise({ dur: 0.12, gain: 0.08, from: 900, type: 'lowpass' });
+      noise({ dur: 0.4, gain: 0.03, from: 3000, to: 1200, q: 4, delay: 0.05 });
+    },
+    // Des chaînes qui se tendent : un grincement grave et métallique.
+    chained() {
+      tone({ freq: 70, glideTo: 95, type: 'sawtooth', dur: 1.1, gain: 0.06, filter: 500 });
+      noise({ dur: 0.8, gain: 0.04, from: 1600, to: 900, q: 8 });
+    },
     web() {
       noise({ dur: 0.9, gain: 0.05, from: 2400, to: 600, q: 6 });
       tone({ freq: 880, glideTo: 660, dur: 0.6, gain: 0.02 });
@@ -284,6 +295,9 @@
         case 'quake': case 'phase': play('quake'); break;
         case 'colossusAttack': play('colossusAttack'); break;
         case 'web': play('web'); break;
+        case 'bolt': play('bolt'); break;
+        case 'chained': play('chained'); break;
+        case 'engineBuilt': play('built'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;
         case 'colossusTamed': case 'renaissance': play('tamed'); break;
         case 'lore': case 'zoneDiscovered': play('lore'); break;

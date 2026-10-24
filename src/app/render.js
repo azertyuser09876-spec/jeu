@@ -368,6 +368,7 @@
     drawPulse(r, game);
     drawParticles(r, game, game.garden.particles);
     drawParticles(r, game, game.field.particles, zoneGlow(r, game.region.zone));
+    Vide.Draw.engines(r, game, dt);
     Vide.Draw.colossi(r, game, dt);
     Vide.Draw.colony(r, game);
     Vide.Draw.combat(r, game, dt);

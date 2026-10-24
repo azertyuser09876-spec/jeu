@@ -61,12 +61,13 @@
     15: (data) => ({ ...data, beacon: null }),
     // 1.6 : les nids d'ombre.
     16: (data) => ({ ...data, nests: [], cleared: [], nestTimer: null }),
-    // 1.7 : les sceaux voilés. Un colosse déjà rencontré avait montré tous ses sceaux : ils restent dévoilés.
+    // 1.7 : les sceaux voilés (un colosse déjà rencontré avait montré tous ses sceaux : ils restent dévoilés),
+    // et les engins de siège.
     17: (data) => {
       const studied = {};
       const colossi = data.colossi && typeof data.colossi === 'object' ? data.colossi : {};
       for (const d of Vide.COLOSSI) if (colossi[d.id] === 'found') studied[d.id] = d.seals.length;
-      return { ...data, studied };
+      return { ...data, studied, engines: [] };
     },
   };
 
@@ -161,16 +162,34 @@
       if (![e.x, e.y, e.tx, e.ty].every(Number.isFinite) || !Number.isInteger(e.id)) continue;
       const members = {};
       const raw2 = isObject(e.members) ? e.members : {};
-      for (const id of ['lueur', 'eclaireur', 'erudit', 'gardien']) if (Number.isInteger(raw2[id]) && raw2[id] > 0) members[id] = raw2[id];
+      for (const id of ['lueur', 'eclaireur', 'erudit', 'batisseur', 'gardien']) if (Number.isInteger(raw2[id]) && raw2[id] > 0) members[id] = raw2[id];
       if (!Object.keys(members).length) continue;
       const scholars = e.kind === 'scholars';
       if (scholars && !Vide.COLOSSI.some((d) => d.id === e.colossus)) continue;
+      const sappers = e.kind === 'sappers';
+      if (sappers && !Vide.Engines.def(e.engine)) continue;
       state.expeditions.push({
         id: e.id, kind: e.kind, from: Number.isInteger(e.from) ? e.from : 0, x: e.x, y: e.y, tx: e.tx, ty: e.ty,
         type: e.kind === 'colons' ? (Vide.VILLAGE_TYPES.some((t) => t.id === e.type) ? e.type : 'jardins') : null,
         members, hp: Math.min(positive(e.hp, 1), Vide.Expeditions.hpOf(members)) || 1, back: e.back === true,
         ...(scholars ? { colossus: e.colossus, study: Number.isFinite(e.study) && e.study >= 0 ? e.study : null } : {}),
+        ...(sappers ? { engine: e.engine, site: Number.isInteger(e.site) ? e.site : null } : {}),
       });
+    }
+
+    // Engins de siège (après les expéditions : un chantier dont l'engin manque renvoie ses sapeurs).
+    const engines = Array.isArray(raw.engines) ? raw.engines : [];
+    for (const e of engines) {
+      if (!isObject(e) || !Vide.Engines.def(e.kind) || !Number.isInteger(e.id) || !Number.isFinite(e.x) || !Number.isFinite(e.y)) continue;
+      if (state.engines.some((o) => o.id === e.id) || state.engines.length >= Vide.CONFIG.engines.max) continue;
+      const max = Vide.Engines.def(e.kind).hp;
+      state.engines.push({
+        id: e.id, kind: e.kind, x: e.x, y: e.y,
+        hp: Math.min(positive(e.hp, max), max) || max, built: Number.isFinite(e.built) ? Math.min(1, Math.max(0, e.built)) : 1,
+      });
+    }
+    for (const exp of state.expeditions) {
+      if (exp.kind === 'sappers' && exp.site !== null && !state.engines.some((e) => e.id === exp.site)) exp.site = null;
     }
 
     const nests = Array.isArray(raw.nests) ? raw.nests : [];

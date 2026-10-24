@@ -141,6 +141,20 @@
       recallCooldown: 60,
     },
 
+    // Engins de siège bâtis par des sapeurs (voir engines.js).
+    engines: {
+      max: 8,
+      sappers: 2,          // bâtisseurs qui partent en sapeurs
+      buildTime: 50,       // secondes de chantier sur place
+      cost: { baliste: 15000, chaine: 9000 },
+      footDamage: 40,      // un pas de colosse sur un engin
+      quakeDamage: 60,     // un séisme qui le traverse
+      ballista: { range: 1500, reload: 3.5, stagger: 90, nestDamage: 45 },
+      // Chaîne : portée, vitesse du colosse retenu, jauge remplie par seconde, usure par seconde (vie 30),
+      // et vitesse à laquelle passe sa mise à genou.
+      chain: { range: 450, slow: 0.35, stagger: 30, wear: 1, kneel: 0.5 },
+    },
+
     // Nids d'ombre (voir nests.js).
     nests: {
       firstAfter: 2,              // un nid naît quand tu as fondé ce nombre de villages…

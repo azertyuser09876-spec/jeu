@@ -37,7 +37,7 @@
     <button type="button" data-posture="garde" title="Garder le territoire (G)">garder</button>
     <button type="button" data-posture="escorte" title="Escorter ta lumière (E)">escorter</button>
     <button type="button" data-posture="chasse" title="Chasser les ombres au loin (C)">chasser</button>
-    <button type="button" data-posture="siege" class="hidden" title="Assiéger le nid d’ombre le plus proche (B)">assiéger</button>
+    <button type="button" data-posture="siege" class="hidden" title="Assiéger le nid d’ombre ou le colosse le plus proche (B)">assiéger</button>
   </div>
 
   <button id="pulse-btn" class="hidden" type="button" aria-label="Pulsation (Espace)">
@@ -80,6 +80,7 @@
             <label class="exp-escort"><input id="exp-escort" type="checkbox"> escorte</label>
           </div>
           <div class="map-actions-row" id="exp-colons"></div>
+          <div class="map-actions-row" id="exp-sappers"></div>
           <div id="exp-status" class="exp-status"></div>
         </div>
       </div>
@@ -185,6 +186,7 @@
   <script src="src/core/expeditions.js"></script>
   <script src="src/core/abilities.js"></script>
   <script src="src/core/nests.js"></script>
+  <script src="src/core/engines.js"></script>
   <script src="src/core/shadows.js"></script>
   <script src="src/core/combat.js"></script>
   <script src="src/core/colossi.js"></script>
@@ -206,6 +208,7 @@
   <script src="src/app/draw-colossus.js"></script>
   <script src="src/app/draw-abilities.js"></script>
   <script src="src/app/draw-nests.js"></script>
+  <script src="src/app/draw-engines.js"></script>
   <script src="src/app/input.js"></script>
   <script src="src/app/ui.js"></script>
   <script src="src/app/storage.js"></script>

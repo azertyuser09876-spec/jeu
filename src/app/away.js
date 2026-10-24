@@ -32,6 +32,7 @@
     for (const e of report.expeditions || []) {
       if (e.type === 'settled') lines.push(`Des colons ont fondé ${to(e.village)}.`);
       if (e.type === 'scouted') lines.push('Des éclaireurs ont exploré au loin.');
+      if (e.type === 'engineBuilt') lines.push(`Des sapeurs ont achevé ${e.engine === 'chaine' ? 'une chaîne' : 'une baliste'}.`);
       if (e.type === 'studied') lines.push(`Les érudits ont dévoilé un sceau ${ofNamed(e.id)} (${e.revealed}/${e.total}).`);
     }
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
@@ -104,6 +105,7 @@
     expedition: (e) => {
       if (e.kind === 'colons') return `Des colons partent fonder ${to(e.type)} au loin. Les ombres pourraient les attaquer en chemin.`;
       if (e.kind === 'scholars') return `Des érudits partent étudier ${named(e.colossus)} depuis un abri.`;
+      if (e.kind === 'sappers') return `Des sapeurs partent bâtir ${e.engine === 'chaine' ? 'une chaîne' : 'une baliste'} au loin.`;
       return 'Des éclaireurs partent explorer au loin.';
     },
     studying: (e) => `Les érudits ont trouvé leur abri. Ils observent ${named(e.id)}.`,
@@ -113,10 +115,19 @@
     scouted: (e) => (e.zones.length
       ? `Les éclaireurs ont trouvé : ${e.zones.map((z) => Vide.Zones.get(z).name).join(', ')}. Ils rentrent.`
       : 'Les éclaireurs ont exploré au loin (voir la carte). Ils rentrent.'),
-    returned: (e) => (e.kind === 'scholars' ? 'Les érudits sont rentrés au village.' : 'Les éclaireurs sont rentrés au village.'),
+    returned: (e) => `Les ${{ scholars: 'érudits', sappers: 'sapeurs' }[e.kind] || 'éclaireurs'} sont rentrés au village.`,
+    siteStarted: (e) => `Les sapeurs arrivent : le chantier ${e.engine === 'chaine' ? 'de la chaîne' : 'de la baliste'} commence.`,
+    engineBuilt: (e) => (e.engine === 'chaine'
+      ? 'La chaîne est ancrée : un colosse qui passera à sa portée sera entravé.'
+      : 'La baliste est dressée : elle tirera sur un colosse qui passera à sa portée (ou sur un nid d’ombre).'),
+    siteLost: () => 'Le chantier a été écrasé. Les sapeurs rentrent.',
+    engineLost: (e) => (e.reason === 'snapped'
+      ? 'La chaîne cède sous l’effort.'
+      : `${e.kind === 'chaine' ? 'Une chaîne' : 'Une baliste'} est écrasée par le colosse.`),
+    chained: (e) => `Les chaînes se tendent et retiennent ${named(e.id)} !`,
     settled: (e) => `Les colons arrivent et fondent ${to(e.village)}.`,
     colonsJoined: (e) => `La place était prise : les colons rejoignent ${to(e.village)} le plus proche.`,
-    expeditionLost: (e) => `Les ombres ont dévoré une expédition (${{ colons: 'colons', scholars: 'érudits' }[e.kind] || 'éclaireurs'}).`,
+    expeditionLost: (e) => `Les ombres ont dévoré une expédition (${{ colons: 'colons', scholars: 'érudits', sappers: 'sapeurs' }[e.kind] || 'éclaireurs'}).`,
     beacon: () => (seen.beacon ? null : (seen.beacon = true,
       'Ton fanal brille : il récoltera seul la lumière alentour, même en ton absence. Repasse la reprendre.')),
     beaconCollected: (e) => `Le fanal te rend ✦ ${util.formatNumber(e.light)}.`,
@@ -188,6 +199,7 @@
     gardien: 'Un gardien s’éveille. Donne des ordres à l’armée : garder, escorter, chasser.',
     etincelle: 'Une étincelle s’éveille. Elle frappe les ombres de loin.',
     veilleuse: 'Une veilleuse s’éveille. Elle soignera les êtres et ta lumière.',
+    harponneur: 'Un harponneur s’éveille. Ses harpons sont faits pour les colosses et les cœurs des nids (ordre : siège).',
   };
 
   const toast = { queue: [], current: null, until: 0 };

@@ -79,10 +79,12 @@
   function drawProjectiles(r, game) {
     const { ctx } = r;
     for (const p of game.projectiles) {
-      const tail = 0.04;
+      // Un harpon : plus long, plus épais, orangé.
+      const harpoon = p.source === 'harpoon';
+      const tail = harpoon ? 0.08 : 0.04;
       ctx.globalAlpha = 0.9;
-      ctx.strokeStyle = p.source === 'tower' ? '#fff3d6' : '#cfe4ff';
-      ctx.lineWidth = 2 / r.camera.scale;
+      ctx.strokeStyle = harpoon ? '#ffb48a' : p.source === 'tower' ? '#fff3d6' : '#cfe4ff';
+      ctx.lineWidth = (harpoon ? 3 : 2) / r.camera.scale;
       ctx.beginPath();
       ctx.moveTo(p.x - p.vx * tail, p.y - p.vy * tail);
       ctx.lineTo(p.x, p.y);

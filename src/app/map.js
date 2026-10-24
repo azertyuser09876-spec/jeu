@@ -46,6 +46,20 @@
       colons.appendChild(btn);
       return btn;
     });
+    // Sapeurs : un bouton par engin de siège.
+    const sappers = $('exp-sappers');
+    const sapLabel = document.createElement('span');
+    sapLabel.className = 'label';
+    sapLabel.textContent = 'sapeurs :';
+    sappers.appendChild(sapLabel);
+    map.engineButtons = Object.values(Vide.Engines.KINDS).map((k) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.engine = k.id;
+      btn.addEventListener('click', () => launch(map, 'sappers', null, k.id));
+      sappers.appendChild(btn);
+      return btn;
+    });
     $('exp-scouts').addEventListener('click', () => launch(map, 'scouts'));
     $('exp-scholars').addEventListener('click', () => launch(map, 'scholars'));
     $('exp-escort').addEventListener('change', () => refreshActions(map));
@@ -82,6 +96,15 @@
     const colonWhy = E.blocked(state, 'colons', x, y, escort);
     for (const btn of map.colonButtons) btn.disabled = Boolean(colonWhy);
     const colonCost = Vide.util.formatNumber(E.cost(state, 'colons', x, y).light);
+    // Sapeurs : un engin bâti au point touché.
+    let sapperWhy = null;
+    for (const btn of map.engineButtons) {
+      const kind = btn.dataset.engine;
+      const why = E.blocked(state, 'sappers', x, y, escort, kind);
+      if (!sapperWhy && why && why !== 'pas assez de lumière') sapperWhy = why;
+      btn.textContent = `${Vide.Engines.def(kind).name.toLowerCase()} · ✦ ${Vide.util.formatNumber(E.cost(state, 'sappers', x, y, null, kind).light)}`;
+      btn.disabled = Boolean(why);
+    }
     // Érudits : vers l'abri d'où observer le colosse.
     const id = map.target.colossus;
     const scholars = $('exp-scholars');
@@ -99,17 +122,18 @@
     $('exp-status').textContent = [
       id && scholarWhy ? `érudits : ${scholarWhy}` : '',
       scoutWhy ? `éclaireurs : ${scoutWhy}` : '',
+      sapperWhy ? `sapeurs : ${sapperWhy}` : '',
       colonWhy ? `colons : ${colonWhy}` : `colons : ✦ ${colonCost}, trois lueurs du village`,
     ].filter(Boolean).join(' · ');
   }
 
-  function launch(map, kind, type) {
+  function launch(map, kind, type, engine) {
     let { x, y } = map.target;
     const colossus = kind === 'scholars' ? map.target.colossus : null;
     if (colossus) ({ x, y } = Vide.Expeditions.studySpot(map.game.state, colossus));
-    const exp = Vide.Expeditions.launch(map.game.state, kind, x, y, { type, colossus, escort: $('exp-escort').checked });
+    const exp = Vide.Expeditions.launch(map.game.state, kind, x, y, { type, colossus, engine, escort: $('exp-escort').checked });
     if (!exp) return refreshActions(map);
-    Vide.Sim.emit(map.game, 'expedition', { kind, type, colossus });
+    Vide.Sim.emit(map.game, 'expedition', { kind, type, colossus, engine });
     map.target = null;
     $('map-actions').hidden = true;
     draw(map);
@@ -302,7 +326,8 @@
       ctx.lineTo(X(g.x), Y(g.y));
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = e.kind === 'colons' ? rgba(Vide.Villages.type(e.type).tint, 0.95) : e.kind === 'scholars' ? '#aac8ff' : '#fff';
+      ctx.fillStyle = e.kind === 'colons' ? rgba(Vide.Villages.type(e.type).tint, 0.95)
+        : { scholars: '#aac8ff', sappers: '#ffd6a0' }[e.kind] || '#fff';
       ctx.beginPath();
       ctx.arc(X(e.x), Y(e.y), 2.5, 0, Math.PI * 2);
       ctx.fill();
