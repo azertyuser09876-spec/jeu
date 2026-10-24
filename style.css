@@ -261,6 +261,35 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
   transition: opacity 2.5s ease;
 }
 
+/* Capacités : de petits boutons ronds, en colonne au-dessus de la pulsation ; la recharge remplit le cercle. */
+#abilities {
+  position: fixed;
+  left: calc(max(22px, env(safe-area-inset-left)) + 11px);
+  bottom: calc(max(22px, env(safe-area-inset-bottom)) + 74px);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+}
+
+.ability {
+  --ready: 1;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--faint);
+  border-radius: 50%;
+  background:
+    conic-gradient(rgba(214, 234, 255, 0.16) calc(var(--ready) * 360deg), transparent 0),
+    rgba(0, 0, 0, 0.5);
+  color: var(--dim);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity 1.5s ease, color 0.3s;
+}
+
+.ability.hidden { display: none; }
+.ability.ready { color: var(--light); border-color: rgba(214, 234, 255, 0.4); }
+
 #pulse-btn svg {
   position: absolute;
   inset: 0;
@@ -466,6 +495,11 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
     left: auto;
     right: 14px;
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 112px);
+  }
+  #abilities {
+    left: auto;
+    right: 25px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 186px);
   }
   #shop-list li { flex: 0 0 auto; min-width: 150px; }
   .item { padding: 8px 10px; }

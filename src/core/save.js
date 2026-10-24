@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 15;
+  const FORMAT = 16;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -57,6 +57,8 @@
     }),
     // 1.5 : les expéditions.
     14: (data) => ({ ...data, expeditions: [] }),
+    // 1.5 : le fanal.
+    15: (data) => ({ ...data, beacon: null }),
   };
 
   function serialize(state, now) {
@@ -157,6 +159,11 @@
         type: e.kind === 'colons' ? (Vide.VILLAGE_TYPES.some((t) => t.id === e.type) ? e.type : 'jardins') : null,
         members, hp: Math.min(positive(e.hp, 1), Vide.Expeditions.hpOf(members)) || 1, back: e.back === true,
       });
+    }
+
+    const beacon = isObject(raw.beacon) ? raw.beacon : null;
+    if (beacon && Number.isFinite(beacon.x) && Number.isFinite(beacon.y)) {
+      state.beacon = { x: beacon.x, y: beacon.y, light: positive(beacon.light, 0) };
     }
 
     // Routes : entre deux villages existants et distincts, une seule par paire, jamais plus longue que bâtie.

@@ -13,6 +13,7 @@
       villages: [],      // villages fondés : territoire, êtres, bâtiments (voir villages.js)
       roads: [],         // routes entre villages : { a, b, work } (voir roads.js)
       expeditions: [],   // expéditions en route (voir expeditions.js)
+      beacon: null,      // fanal posé : { x, y, light } (voir abilities.js)
       echoes: 0,         // échos laissés par les ombres vaincues
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
       army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse

@@ -69,6 +69,41 @@
       show: (s) => `${Math.round(s.pulseRadius)} · ${s.pulseCooldown.toFixed(1).replace('.', ',')}s`,
     },
 
+    // --- Capacités (trois niveaux : le premier les débloque, les suivants raccourcissent la recharge) ---
+    {
+      id: 'dash',
+      name: 'Ruée',
+      desc: 'Maj : un élan bref et fulgurant, pendant lequel rien ne t’atteint.',
+      baseCost: 2500,
+      growth: 6,
+      max: 3,
+      requires: (state) => state.totalLight >= 1000,
+      effects: { dash: (l) => l },
+      show: (s) => (s.dash ? `recharge ${Math.round(CONFIG.abilities.dashCooldown * Math.pow(0.75, s.dash - 1) * 10) / 10}s`.replace('.', ',') : '—'),
+    },
+    {
+      id: 'beacon',
+      name: 'Fanal',
+      desc: 'F : pose une lumière qui récolte seule la lumière alentour, même en ton absence ; repasse la reprendre.',
+      baseCost: 8000,
+      growth: 6,
+      max: 3,
+      requires: (state) => state.villages.length > 0,
+      effects: { beacon: (l) => l },
+      show: (s) => (s.beacon ? `rayon ${Math.round(CONFIG.abilities.beaconRadius * (1 + 0.25 * (s.beacon - 1)))}` : '—'),
+    },
+    {
+      id: 'recall',
+      name: 'Retour',
+      desc: 'R : après une courte concentration, ta lumière se rassemble au cœur du village le plus proche.',
+      baseCost: 20000,
+      growth: 5,
+      max: 3,
+      requires: (state) => state.villages.length > 0,
+      effects: { recall: (l) => l },
+      show: (s) => (s.recall ? `recharge ${Math.round(CONFIG.abilities.recallCooldown * Math.pow(0.75, s.recall - 1))}s` : '—'),
+    },
+
     // --- Territoire (visibles une fois un village fondé) ---
     {
       id: 'expansion',

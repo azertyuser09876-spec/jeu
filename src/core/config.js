@@ -124,6 +124,18 @@
       engage: 90,        // une ombre plus proche que ça arrête l'expédition, qui fait face
     },
 
+    // Capacités de la lumière (voir abilities.js).
+    abilities: {
+      dashTime: 0.3,       // durée d'une ruée…
+      dashSpeed: 3.2,      // …à cette fois la vitesse de la lumière
+      dashCooldown: 7,
+      beaconCooldown: 20,
+      beaconRadius: 170,   // le fanal récolte ce qui naît dans ce rayon
+      beaconReach: 45,     // repasser à cette distance reprend sa réserve
+      recallChannel: 1.5,  // concentration avant le retour
+      recallCooldown: 60,
+    },
+
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
     renaissance: {
       threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître

@@ -31,6 +31,7 @@
     state.villages = [];
     state.roads = [];
     state.expeditions = [];
+    state.beacon = null;
     state.echoes = 0;
     state.tides = 0;
     state.player.x = 0;

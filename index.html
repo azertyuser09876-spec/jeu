@@ -48,6 +48,13 @@
     <span class="key">espace</span>
   </button>
 
+  <!-- Capacités de la lumière : un bouton chacune, au-dessus de la pulsation, dès qu'elle est acquise. -->
+  <div id="abilities">
+    <button type="button" class="ability hidden" data-ability="dash" title="Ruée (Maj)" aria-label="Ruée (Maj)">»</button>
+    <button type="button" class="ability hidden" data-ability="beacon" title="Fanal (F)" aria-label="Fanal (F)">✧</button>
+    <button type="button" class="ability hidden" data-ability="recall" title="Retour (R)" aria-label="Retour (R)">⌂</button>
+  </div>
+
   <aside id="shop" class="hidden" aria-label="Améliorations">
     <nav id="shop-tabs"></nav>
     <ol id="shop-list"></ol>
@@ -110,6 +117,8 @@
         <dt>armée</dt><dd>G garder · E escorter · C chasser</dd>
         <dt>carte</dt><dd>M</dd>
         <dt>zoom</dt><dd>molette, deux doigts, + / −</dd>
+        <dt>capacités</dt><dd>Maj ruée · F fanal · R retour</dd>
+        <dt>expéditions</dt><dd>toucher un point de la carte</dd>
         <dt>menu</dt><dd>Échap</dd>
       </dl>
 
@@ -172,6 +181,7 @@
   <script src="src/core/trade.js"></script>
   <script src="src/core/cities.js"></script>
   <script src="src/core/expeditions.js"></script>
+  <script src="src/core/abilities.js"></script>
   <script src="src/core/shadows.js"></script>
   <script src="src/core/combat.js"></script>
   <script src="src/core/colossi.js"></script>
@@ -191,6 +201,7 @@
   <script src="src/app/draw-structures.js"></script>
   <script src="src/app/draw-combat.js"></script>
   <script src="src/app/draw-colossus.js"></script>
+  <script src="src/app/draw-abilities.js"></script>
   <script src="src/app/input.js"></script>
   <script src="src/app/ui.js"></script>
   <script src="src/app/storage.js"></script>

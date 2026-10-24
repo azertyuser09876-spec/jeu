@@ -26,6 +26,7 @@
 
   const ui = Vide.UI.create(game, {
     onPulse: () => { input.pulse = true; },
+    onAbility: (id) => { input[id] = true; },
     onBuy: () => Vide.Audio.play('buy'),
   });
   Vide.Audio.init();
@@ -75,6 +76,12 @@
       return true;
     }
     if (code === 'Tab') return Vide.UI.nextTab(ui);
+    // Capacités : Maj (ruée), F (fanal), R (retour) — par position de touche, quel que soit le clavier.
+    const ability = { ShiftLeft: 'dash', ShiftRight: 'dash', KeyF: 'beacon', KeyR: 'recall' }[code];
+    if (ability) {
+      input[ability] = true;
+      return true;
+    }
     if (key === '+' || key === '=' || code === 'NumpadAdd') {
       Vide.Render.zoomBy(renderer, 1.15);
       return true;
@@ -115,11 +122,11 @@
   Vide.intro = intro;
   canvas.addEventListener('pointerdown', () => Vide.Intro.skip(intro));
 
-  // Dispersée, la lumière éclate puis se rassemble au village le plus proche : on rejoue l'éveil.
+  // Dispersée (ou rappelée par le Retour), la lumière éclate puis se rassemble au village : on rejoue l'éveil.
   function watchDispersal() {
-    const e = game.events.find((x) => x.type === 'dispersed');
+    const e = game.events.find((x) => x.type === 'dispersed' || x.type === 'recall');
     if (!e) return;
-    intro = Vide.Intro.create('respawn', e.from);
+    intro = Vide.Intro.create(e.type === 'recall' ? 'recall' : 'respawn', e.from);
     Vide.intro = intro;
   }
 

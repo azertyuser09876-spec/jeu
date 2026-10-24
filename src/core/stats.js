@@ -30,6 +30,9 @@
       lightMult: 1,         // multiplicateur de toute la lumière gagnée (souvenirs)
       startRadius: CONFIG.territory.startRadius, // rayon du territoire au départ (souvenirs)
       startLueurs: 0,       // lueurs présentes dès le départ d'une renaissance (souvenirs)
+      dash: 0,              // niveau des capacités (0 : pas encore acquise)
+      beacon: 0,
+      recall: 0,
     };
   }
 

@@ -12,6 +12,8 @@
   const KINDS = {
     launch: { scatter: 0, from: 0.6, to: 1.8, gather: 2.6, reveal: 1.8, zoom: 0.9, streaks: 56, cls: 'launching' },
     respawn: { scatter: 0.9, from: 1.0, to: 1.5, gather: 2.2, reveal: 1.0, zoom: 0.45, streaks: 40, cls: 'dispersing' },
+    // Le Retour : la même chose, en bref et sans éteindre l'interface.
+    recall: { scatter: 0.45, from: 0.5, to: 0.7, gather: 1.15, reveal: 0.6, zoom: 0.25, streaks: 28, cls: 'recalling' },
   };
   const TITLE_TIME = 4.5; // pour un joueur qui revient, le titre ne reste que quelques secondes
   const SHARDS = 36;
@@ -25,7 +27,7 @@
         angle: Math.random() * Math.PI * 2,
         dist: 0.55 + Math.random() * 0.6, // départ, en fraction de la demi-diagonale de l'écran
         start: k.from + Math.random() * (k.to - k.from),
-        travel: (0.6 + Math.random() * 0.4) * (kind === 'respawn' ? 0.7 : 1),
+        travel: (0.6 + Math.random() * 0.4) * (kind === 'launch' || !kind ? 1 : 0.7) * (kind === 'recall' ? 0.6 : 1),
         width: 0.6 + Math.random() * 0.9,
       });
     }

@@ -230,6 +230,33 @@ const { chromium } = require('playwright');
   check(city.n === cityCheck - 1 && city.extra && city.extra.length === 1 && city.districts === 1 && errors.length === 0,
     'deux villages qui se touchent deviennent une cité');
 
+  // Capacités : Maj (ruée), F (fanal), R (retour) ; leurs boutons apparaissent une fois acquises.
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    Object.assign(s.upgrades, { dash: 1, beacon: 1, recall: 1 });
+    const v = s.villages[0];
+    s.player.x = v.x + 900; s.player.y = v.y;
+  });
+  await page.waitForTimeout(200);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.press('ShiftLeft');
+  await page.waitForTimeout(100);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.press('KeyF');
+  await page.waitForTimeout(100);
+  const abil = await page.evaluate(() => ({
+    dash: Vide.game.abilities.dash.cd > 0, beacon: Boolean(Vide.game.state.beacon),
+    buttons: document.querySelectorAll('#abilities .ability:not(.hidden)').length,
+  }));
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'capacites.png') });
+  await page.keyboard.press('KeyR');
+  await page.waitForTimeout(3200);
+  const home = await page.evaluate(() => {
+    const v = Vide.game.state.villages[0];
+    return Math.hypot(Vide.game.state.player.x - v.x, Vide.game.state.player.y - v.y);
+  });
+  check(abil.dash && abil.beacon && abil.buttons === 3 && home < 60, 'ruée, fanal et retour, au clavier ; boutons des capacités');
+
   // Zones et carte : visiter une autre région, puis ouvrir la carte avec M.
   await page.evaluate(() => {
     const p = Vide.game.state.player;

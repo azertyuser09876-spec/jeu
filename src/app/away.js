@@ -28,6 +28,7 @@
     if (report.radiated > 0) lines.push(`Les territoires ont rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
     if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au cœur des villages.`);
     if (report.cities) lines.push(`Des villages se sont rejoints : ${report.cities > 1 ? report.cities + ' cités sont nées' : 'une cité est née'}.`);
+    if (report.beacon > 0) lines.push(`Ton fanal a gardé ✦ ${util.formatNumber(report.beacon)} pour toi.`);
     for (const e of report.expeditions || []) {
       if (e.type === 'settled') lines.push(`Des colons ont fondé ${to(e.village)}.`);
       if (e.type === 'scouted') lines.push('Des éclaireurs ont exploré au loin.');
@@ -109,6 +110,9 @@
     settled: (e) => `Les colons arrivent et fondent ${to(e.village)}.`,
     colonsJoined: (e) => `La place était prise : les colons rejoignent ${to(e.village)} le plus proche.`,
     expeditionLost: (e) => `Les ombres ont dévoré une expédition (${e.kind === 'colons' ? 'colons' : 'éclaireurs'}).`,
+    beacon: () => (seen.beacon ? null : (seen.beacon = true,
+      'Ton fanal brille : il récoltera seul la lumière alentour, même en ton absence. Repasse la reprendre.')),
+    beaconCollected: (e) => `Le fanal te rend ✦ ${util.formatNumber(e.light)}.`,
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       return e.first

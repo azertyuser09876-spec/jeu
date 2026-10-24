@@ -27,6 +27,12 @@
     };
     if (applied <= 0) return report;
 
+    // Le fanal a récolté pendant ce temps.
+    if (state.beacon) {
+      report.beacon = Vide.Abilities.beaconRate(state, stats) * applied;
+      state.beacon.light += report.beacon;
+    }
+
     // Les ressources se produisent et circulent le long des routes.
     Vide.Trade.offline(state, applied);
 

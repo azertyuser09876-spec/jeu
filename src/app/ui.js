@@ -74,6 +74,7 @@
       bossSeals: $('boss-seals'),
       bossStagger: $('boss-stagger'),
       orderButtons: [...document.querySelectorAll('#orders button')],
+      abilityButtons: [...document.querySelectorAll('#abilities .ability')],
       shop: $('shop'),
       tabsEl: $('shop-tabs'),
       list: $('shop-list'),
@@ -92,6 +93,11 @@
     ui.pulseBtn.addEventListener('click', () => {
       if (ui.hooks.onPulse) ui.hooks.onPulse();
     });
+    for (const btn of ui.abilityButtons) {
+      btn.addEventListener('click', () => {
+        if (ui.hooks.onAbility) ui.hooks.onAbility(btn.dataset.ability);
+      });
+    }
     return ui;
   }
 
@@ -126,6 +132,26 @@
   }
 
   const RING = 2 * Math.PI * 29; // périmètre de l'anneau SVG du bouton de pulsation
+
+  // Capacités : visibles une fois acquises ; le cercle se remplit pendant la recharge.
+  function updateAbilities(ui) {
+    const { game } = ui;
+    for (const btn of ui.abilityButtons) {
+      const id = btn.dataset.ability;
+      const level = game.stats[id] || 0;
+      setClass(btn, 'hidden', level <= 0);
+      if (level <= 0) continue;
+      const a = game.abilities[id];
+      const base = { dash: 'dashCooldown', beacon: 'beaconCooldown', recall: 'recallCooldown' }[id];
+      const full = Vide.Abilities.cooldown(Vide.CONFIG.abilities[base], level);
+      const ready = Math.round((1 - a.cd / full) * 40) / 40;
+      if (btn.dataset.ready !== String(ready)) {
+        btn.dataset.ready = String(ready);
+        btn.style.setProperty('--ready', String(ready));
+      }
+      setClass(btn, 'ready', a.cd <= 0);
+    }
+  }
 
   function updatePulse(ui) {
     const { game } = ui;
@@ -223,6 +249,7 @@
 
     updateShop(ui);
     updatePulse(ui);
+    updateAbilities(ui);
     updateBoss(ui);
   }
 

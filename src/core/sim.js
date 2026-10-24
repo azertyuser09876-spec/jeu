@@ -7,7 +7,7 @@
   //   move  direction souhaitée, de longueur 0 à 1
   //   pulse demande ponctuelle de pulsation (remise à false une fois traitée)
   function emptyInput() {
-    return { move: { x: 0, y: 0 }, pulse: false };
+    return { move: { x: 0, y: 0 }, pulse: false, dash: false, beacon: false, recall: false };
   }
 
   function create(state) {
@@ -46,6 +46,7 @@
     Vide.Combat.create(game);
     Vide.Colossus.create(game);
     Vide.Trade.create(game);
+    Vide.Abilities.create(game);
     // Une partie déjà avancée (venue d'une version sans récit) remplit son journal d'un coup,
     // sans faire défiler chaque fragment.
     const known = Vide.Lore.check(state);
@@ -92,6 +93,12 @@
     const k = util.damp(CONFIG.player.acceleration, dt);
     v.x += (move.x * speed - v.x) * k;
     v.y += (move.y * speed - v.y) * k;
+    // Une ruée impose sa vitesse.
+    const dash = Vide.Abilities.dashVelocity(game);
+    if (dash) {
+      v.x = dash.x;
+      v.y = dash.y;
+    }
     // Le courant de la zone emporte la lumière.
     const current = game.region.current;
     player.x += (v.x + current.x) * dt;
@@ -154,6 +161,7 @@
       pulse(game);
     }
 
+    Vide.Abilities.update(game, dt, input);
     movePlayer(game, dt, input.move);
     updateRegion(game, false);
     announceZone(game);
