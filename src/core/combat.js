@@ -88,6 +88,9 @@
         }
         break;
       }
+      case 'convoy':
+        Vide.Trade.hurt(game, target.ref, amount);
+        break;
       case 'creature':
         Vide.Creatures.hit(game, target.ref, amount, { side: 'shadow', faction: shadow.faction || null, owner: null, creature: shadow.creature ? shadow : null });
         break;
@@ -137,9 +140,12 @@
       s.lastWave = id;
       Shadows.damage(s, game.stats.pulseDamage);
     }
-    // Les bêtes des ombres (ta sous-faction peut les retourner), une fois par onde.
+    // Les bêtes des ombres (ta sous-faction peut les retourner), une fois par onde ; la faune, seulement si ta
+    // sous-faction l'apprivoise (sinon l'onde la traverse sans mal).
+    const tames = (Vide.Factions.def(game.state.faction) || { convert: [] }).convert.includes('wild');
     for (const c of game.creatures.list.slice()) {
-      if (c.lastWave === id || c.side !== 'shadow' || (c.x - x) ** 2 + (c.y - y) ** 2 > (radius + c.radius) ** 2) continue;
+      if (c.lastWave === id || (c.side !== 'shadow' && !(c.side === 'wild' && tames))) continue;
+      if ((c.x - x) ** 2 + (c.y - y) ** 2 > (radius + c.radius) ** 2) continue;
       c.lastWave = id;
       Vide.Creatures.hit(game, c, game.stats.pulseDamage, { side: 'light', faction: game.state.faction, owner: null, creature: null });
     }

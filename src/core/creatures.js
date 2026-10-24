@@ -14,6 +14,7 @@
   //             anneau) ; antlers : des bois
   //   hp, speed, damage, cooldown, radius ; echoes : échos laissés à la lumière qui l'abat
   //   baseCost, baseEchoes : si présents, elle s'achète (un gardien par village, deux chez les Éleveurs)
+  //   wild      si présent, la faune du vide : { zones, weight, shy (elle fuit la lumière à cette distance), max }
   Vide.CREATURES = [
     { id: 'loup', name: 'Loup', body: 'quadruped', length: 44, hp: 320, speed: 95, damage: 12, cooldown: 0.9,
       radius: 16, echoes: 8 },
@@ -21,6 +22,14 @@
       damage: 26, cooldown: 1.6, radius: 24, echoes: 25 },
     { id: 'cerf', name: 'Cerf', body: 'quadruped', antlers: true, length: 56, hp: 700, speed: 82, damage: 20,
       cooldown: 1.2, radius: 22, echoes: 15, baseCost: 20000, baseEchoes: 20 },
+    // La faune du vide : neutre, elle ne fait de mal à personne ; les Éleveurs et les Meutes l'apprivoisent.
+    { id: 'lucioles', name: 'Lucioles', plural: true, fem: true, body: 'swarm', length: 26, hp: 70, speed: 115,
+      damage: 3, cooldown: 0.8, radius: 18, echoes: 2,
+      wild: { zones: ['calme', 'brume', 'courants', 'murmure'], weight: 4, shy: 230 } },
+    { id: 'raie', name: 'Raie de lumière', fem: true, body: 'ray', length: 42, hp: 160, speed: 55, damage: 7,
+      cooldown: 1.2, radius: 22, echoes: 4, wild: { zones: ['brume', 'courants', 'murmure', 'eclat'], weight: 3 } },
+    { id: 'baleine', name: 'Baleine du vide', fem: true, body: 'whale', length: 230, hp: 3000, speed: 26,
+      damage: 30, cooldown: 2.5, radius: 70, echoes: 60, wild: { zones: ['eclat', 'gouffre'], weight: 1, max: 1 } },
   ];
 
   function kind(id) {
@@ -32,7 +41,7 @@
   const hostile = (a, b) => (a === 'light' && b === 'shadow') || (a === 'shadow' && b === 'light');
 
   function create(game) {
-    game.creatures = { list: [], nextId: 1, rng: util.rng(game.state.seed ^ 0x62657374) };
+    game.creatures = { list: [], nextId: 1, rng: util.rng(game.state.seed ^ 0x62657374), faunaClock: 0 };
     sync(game);
   }
 
@@ -250,10 +259,80 @@
     return d;
   }
 
+  // --- La faune du vide ---
+
+  // Autour de la lumière, quelques bêtes sauvages selon la zone ; celles restées loin derrière s'effacent. Celles
+  // qui errent dans le territoire d'une base de Meutes finissent dans la meute.
+  function fauna(game, dt) {
+    const { state } = game;
+    const g = game.creatures;
+    const c = CONFIG.creatures;
+    for (const w of g.list.slice()) {
+      if (w.side !== 'wild') continue;
+      const nest = Vide.Nests.darkAt(state, w.x, w.y);
+      const f = nest && Vide.Factions.def(nest.faction);
+      if (f && f.convert.includes('wild')) {
+        w.taming = (w.taming || 0) + dt;
+        if (w.taming >= c.packTame) convert(game, w, { side: 'shadow', faction: nest.faction, owner: nest }, f);
+      }
+    }
+    g.faunaClock -= dt;
+    if (g.faunaClock > 0 || !game.region) return;
+    g.faunaClock = c.faunaEvery;
+    const p = state.player;
+    for (let i = g.list.length - 1; i >= 0; i--) {
+      const w = g.list[i];
+      if (w.side === 'wild' && Math.hypot(w.x - p.x, w.y - p.y) > c.faunaFar) g.list.splice(i, 1);
+    }
+    const zone = game.region.zone.id;
+    const wanted = c.fauna[zone] || 0;
+    const near = g.list.filter((w) => w.side === 'wild' && Math.hypot(w.x - p.x, w.y - p.y) < c.faunaNear).length;
+    if (near >= wanted) return;
+    const kinds = Vide.CREATURES.filter((k) => k.wild && k.wild.zones.includes(zone)
+      && !(k.wild.max && g.list.filter((w) => w.kind === k.id && w.side === 'wild').length >= k.wild.max));
+    if (!kinds.length) return;
+    let roll = g.rng() * kinds.reduce((s, k) => s + k.wild.weight, 0);
+    const k = kinds.find((x) => (roll -= x.wild.weight) < 0) || kinds[0];
+    const a = g.rng() * Math.PI * 2;
+    const d = c.faunaSpawn[0] + g.rng() * (c.faunaSpawn[1] - c.faunaSpawn[0]);
+    const x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+    if (Villages.at(state, x, y) || Vide.Nests.darkAt(state, x, y)) return;
+    const w = spawn(game, k.id, 'wild', null, x, y);
+    w.anchor = { x, y };
+  }
+
+  // Une bête sauvage erre autour de son lieu, le déplace peu à peu ; les plus farouches fuient la lumière, et toutes
+  // fuient ce qui vient de les frapper.
+  function roam(game, c, k, dt) {
+    const p = game.state.player;
+    const g = game.creatures;
+    if (c.lastBy && c.flash > 0.3) {
+      c.fleeing = 3;
+      c.fleeFrom = { x: c.lastBy.creature ? c.lastBy.creature.x : p.x, y: c.lastBy.creature ? c.lastBy.creature.y : p.y };
+    }
+    c.fleeing = Math.max(0, (c.fleeing || 0) - dt);
+    const shy = k.wild.shy && Math.hypot(p.x - c.x, p.y - c.y) < k.wild.shy;
+    if (c.fleeing > 0 || shy) {
+      const from = c.fleeing > 0 ? c.fleeFrom : p;
+      const dx = c.x - from.x, dy = c.y - from.y;
+      const d = Math.hypot(dx, dy) || 1;
+      return { x: c.x + (dx / d) * 300, y: c.y + (dy / d) * 300, speed: k.speed };
+    }
+    if (!c.goal || Math.hypot(c.goal.x - c.x, c.goal.y - c.y) < 30 || g.rng() < dt * 0.05) {
+      const anchor = c.anchor || (c.anchor = { x: c.x, y: c.y });
+      anchor.x += (g.rng() - 0.5) * 200;
+      anchor.y += (g.rng() - 0.5) * 200;
+      const a = g.rng() * Math.PI * 2, r = 120 + g.rng() * 380;
+      c.goal = { x: anchor.x + Math.cos(a) * r, y: anchor.y + Math.sin(a) * r };
+    }
+    return { x: c.goal.x, y: c.goal.y, speed: k.speed * 0.45 };
+  }
+
   function update(game, dt) {
     const { state } = game;
     const g = game.creatures;
     sync(game);
+    fauna(game, dt);
     for (const c of g.list.slice()) {
       if (c.hp <= 0) continue;
       const k = kind(c.kind);
@@ -311,7 +390,12 @@
           }
         }
       }
-      const speed = k.speed;
+      let speed = k.speed;
+      if (c.side === 'wild') {
+        const r = roam(game, c, k, dt);
+        goal = { x: r.x, y: r.y };
+        speed = r.speed * 2; // (goal se suit à mi-vitesse)
+      }
       if (enemy) {
         const reach = k.radius + (enemy.radius || (enemy.type === 'building' ? 16 : enemy.type === 'heart' ? 24 : 8)) + 6;
         let tx = enemy.x, ty = enemy.y;
@@ -450,5 +534,6 @@
 
   Vide.Creatures = {
     kind, hostile, create, spawn, sync, hit, convert, die, nearestEnemy, by, update, garrison, reinforce, raid, count,
+    fauna,
   };
 })(globalThis.Vide);

@@ -94,6 +94,24 @@
     return amount > 0;
   }
 
+  // Un convoi frappé ; à bout de forces, il tombe et sa charge est perdue (elle quitte l'expéditeur pour de bon :
+  // des matières, des savoirs, un soldat). Renvoie vrai s'il vient de tomber.
+  function hurt(game, c, amount) {
+    const tr = game.trade;
+    if (!tr.caravans.includes(c)) return false;
+    c.hp -= amount;
+    c.flash = 1;
+    if (c.hp > 0) return false;
+    tr.caravans.splice(tr.caravans.indexOf(c), 1);
+    if (c.kind === 'soldat') {
+      if (c.from.beings.gardien > 0) c.from.beings.gardien--;
+    } else if (c.from.stock) {
+      c.from.stock[c.kind] = Math.max(0, c.from.stock[c.kind] - c.amount);
+    }
+    Vide.Sim.emit(game, 'convoyLost', { kind: c.kind, from: c.from.type, to: c.to.type, x: c.x, y: c.y });
+    return true;
+  }
+
   function create(game) {
     game.trade = { caravans: [], clock: 0, trainClock: 0 };
   }
@@ -113,7 +131,13 @@
 
     for (let i = tr.caravans.length - 1; i >= 0; i--) {
       const c = tr.caravans[i];
-      c.t += dt;
+      // Attaqué, un convoi s'arrête pour faire face (sans quoi il distancerait toutes les ombres).
+      c.halted = c.x !== undefined && Boolean(Vide.Shadows.nearest(game, c.x, c.y, t.convoyEngage));
+      if (!c.halted) c.t += dt;
+      // Il roule sur sa route (sa position sert aux ombres qui le guettent, et au dessin).
+      const at = Roads.along(Roads.route(state, c.from, c.to), Math.min(1, c.t / c.duration));
+      c.x = at.x;
+      c.y = at.y;
       if (c.t < c.duration) continue;
       tr.caravans.splice(i, 1);
       if (deliver(state, c)) Vide.Sim.emit(game, 'caravan', { kind: c.kind, from: c.from.type, to: c.to.type });
@@ -130,7 +154,8 @@
         const load = shipment(state, from, to);
         if (!load) continue;
         const duration = Vide.Roads.pathLength(Vide.Roads.route(state, from, to)) / t.caravanSpeed;
-        tr.caravans.push({ from, to, ...load, t: 0, duration });
+        const hp = load.kind === 'soldat' ? t.soldierConvoyHp : t.convoyHp;
+        tr.caravans.push({ from, to, ...load, t: 0, duration, x: from.x, y: from.y, hp, maxHp: hp, flash: 0 });
         Vide.Sim.emit(game, 'caravanOut', { kind: load.kind, from: from.type, to: to.type });
       }
     }
@@ -155,5 +180,5 @@
     }
   }
 
-  Vide.Trade = { hasType, armyIn, need, modify, produce, train, shipment, deliver, create, update, offline };
+  Vide.Trade = { hasType, armyIn, need, modify, produce, train, shipment, deliver, hurt, create, update, offline };
 })(globalThis.Vide);

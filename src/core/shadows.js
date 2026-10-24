@@ -134,6 +134,7 @@
     if (t.type === 'heart') return game.state.villages.includes(t.ref);
     if (t.type === 'expedition') return game.state.expeditions.includes(t.ref);
     if (t.type === 'creature') return t.ref.hp > 0 && t.ref.side === 'light' && game.creatures.list.includes(t.ref);
+    if (t.type === 'convoy') return game.trade.caravans.includes(t.ref);
     return false;
   }
 
@@ -163,6 +164,8 @@
     }
     for (const e of game.state.expeditions) consider('expedition', e, e.x, e.y, pref('beings'));
     for (const c of game.creatures.list) if (c.side === 'light' && c.hp > 0) consider('creature', c, c.x, c.y, pref('beings'));
+    // Les convois sur les routes.
+    for (const c of game.trade.caravans) consider('convoy', c, c.x, c.y, pref('structures'));
 
     candidates.sort((a, b) => a.score - b.score);
     return candidates[0] || null;
@@ -171,6 +174,7 @@
   function reachOf(t) {
     if (t.type === 'building') return Structures.def(t.ref.type).size;
     if (t.type === 'creature') return t.ref.radius;
+    if (t.type === 'convoy') return 14;
     if (t.type === 'heart') return 24;
     return 8;
   }

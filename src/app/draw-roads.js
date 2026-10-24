@@ -168,10 +168,29 @@
   function drawCaravans(r, game) {
     const { ctx } = r;
     for (const c of game.trade.caravans) {
-      const { x, y } = Roads.along(Roads.route(game.state, c.from, c.to), c.t / c.duration);
+      // Un convoi : quelques chariots à la file sur le tracé (un seul pour des soldats), qui vacillent s'il est frappé.
+      const path = Roads.route(game.state, c.from, c.to);
+      const len = Roads.pathLength(path) || 1;
+      const k = c.t / c.duration;
+      const wagons = c.kind === 'soldat' ? 1 : 3;
+      const flicker = c.flash > 0 ? 0.5 + 0.5 * Math.abs(Math.sin(r.time * 30)) : 1;
+      c.flash = Math.max(0, (c.flash || 0) - 1 / 30);
+      for (let w = 0; w < wagons; w++) {
+        const at = Roads.along(path, Math.max(0, k - (w * 22) / len));
+        const bob = Math.sin(r.time * 5 + c.duration + w) * 2;
+        Render.drawGlow(ctx, glowOf(r, c.kind), at.x, at.y + bob, w ? 13 : 18, 0.55 * flicker);
+        Render.drawGlow(ctx, glowOf(r, c.kind), at.x, at.y + bob, w ? 4.5 : 6, flicker);
+      }
+      const { x, y } = Roads.along(path, k);
       const bob = Math.sin(r.time * 5 + c.duration) * 2;
-      Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 18, 0.55);
-      Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 6, 1);
+      if (c.hp < c.maxHp) {
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = '#ffe7b0';
+        ctx.lineWidth = 1.5 / r.camera.scale;
+        ctx.beginPath();
+        ctx.arc(x, y + bob, 14, -Math.PI / 2, -Math.PI / 2 + (Math.max(0, c.hp) / c.maxHp) * Math.PI * 2);
+        ctx.stroke();
+      }
       if (c.kind === 'soldat') {
         ctx.globalAlpha = 0.6;
         ctx.strokeStyle = '#ffecaa';

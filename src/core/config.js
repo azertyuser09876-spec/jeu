@@ -87,6 +87,13 @@
       scolopendreFrom: 7, // …et une scolopendre dès celui-ci
       raidFrom: 4,        // ses raids lâchent une meute dès ce niveau…
       raidChance: 0.5,    // …une fois sur deux
+      // La faune du vide : combien de bêtes sauvages autour de la lumière, selon la zone…
+      fauna: { calme: 2, brume: 3, courants: 3, murmure: 2, eclat: 3, gouffre: 2 },
+      faunaEvery: 2,      // …regardé toutes les 2 s ;
+      faunaNear: 2200,    // elles comptent à cette distance…
+      faunaSpawn: [1300, 1800], // …naissent à cette distance (hors de la vue)…
+      faunaFar: 3600,     // …et s'effacent au-delà de celle-ci
+      packTame: 6,        // secondes dans le territoire d'une base de Meutes avant d'être prise par la meute
     },
 
     // Sous-factions (voir factions.js).
@@ -144,6 +151,9 @@
       load: 15,              // charge d'une caravane
       every: 10,             // une caravane au plus toutes les 10 s, par route et par sens
       caravanSpeed: 140,
+      convoyHp: 150,         // solidité d'un convoi (les ombres peuvent s'en prendre à lui)…
+      soldierConvoyHp: 260,  // …et d'un convoi de soldats ;
+      convoyEngage: 90,      // une ombre à cette distance l'arrête
       trainEvery: 45,        // un bastion forme un gardien toutes les 45 s (s'il peut le payer)
       soldierPrice: 0.6,     // part du prix d'un gardien payée par le village qui le reçoit
     },

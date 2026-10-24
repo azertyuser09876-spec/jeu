@@ -153,14 +153,19 @@
     nestBuilt: (e) => (e.kind === 'rempart' ? 'Une base d’ombre se ceint d’un rempart : il arrête la lumière. Ton armée devra l’abattre.' : null),
     workDown: (e) => `${Vide.darkWork(e.kind).name} d’ombre abattue. ◆ ${util.formatNumber(e.echoes)}.`,
     darkBreach: () => 'Une brèche dans le rempart d’ombre.',
+    convoyLost: (e) => (e.kind === 'soldat'
+      ? `Un convoi de soldats tombe sous les ombres, entre ${to(e.from)} et ${to(e.to)}.`
+      : `Un convoi tombe sous les ombres, entre ${to(e.from)} et ${to(e.to)} : sa charge est perdue.`),
     converted: (e) => {
       const k = Vide.Creatures.kind(e.kind);
-      const [un, ee] = k.fem ? ['Une', 'e'] : ['Un', ''];
+      const [un, ee] = k.plural ? ['Des', k.fem ? 'es' : 's'] : k.fem ? ['Une', 'e'] : ['Un', ''];
+      const joins = k.plural ? 'rejoignent' : 'rejoint';
       const f = Vide.Factions.def(e.faction);
       const what = e.faction === 'illumines' ? 'purifié' : e.faction === 'corrupteurs' ? 'corrompu' : 'apprivoisé';
-      return e.to === 'light'
-        ? `${un} ${k.name.toLowerCase()} ${what}${ee} par les ${f.name} rejoint ${to(e.owner)}.`
-        : `${un} ${k.name.toLowerCase()} de lumière, ${what}${ee} par les ${f.name}, passe à l’ombre.`;
+      const name = k.name.charAt(0).toLowerCase() + k.name.slice(1);
+      if (e.to === 'light') return `${un} ${name} ${what}${ee} par les ${f.name} ${joins} ${to(e.owner)}.`;
+      if (e.from === 'wild') return `${un} ${name}, ${what}${ee} par les ${f.name}, ${joins} une base d’ombre.`;
+      return `${un} ${name} de lumière, ${what}${ee} par les ${f.name}, passe${k.plural ? 'nt' : ''} à l’ombre.`;
     },
     creatureDown: (e) => {
       if (e.side !== 'shadow' || !e.echoes) return null;
