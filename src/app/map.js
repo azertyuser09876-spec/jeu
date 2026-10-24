@@ -287,6 +287,16 @@
       ctx.arc(X(e.x), Y(e.y), 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
+    // Nids d'ombre : un disque sombre cerné de violet.
+    for (const nest of state.nests) {
+      ctx.fillStyle = 'rgba(8, 2, 18, 0.9)';
+      ctx.strokeStyle = 'rgba(160, 110, 240, 0.8)';
+      ctx.beginPath();
+      ctx.arc(X(nest.x), Y(nest.y), Math.max(3, Vide.Nests.radius(nest) * scale), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
     // Le point choisi pour une expédition.
     if (map.target) {
       const tx = X(map.target.x), ty = Y(map.target.y);

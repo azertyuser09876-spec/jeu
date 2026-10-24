@@ -273,7 +273,7 @@
       switch (e.type) {
         case 'birth': play('birth'); break;
         case 'built': case 'repaired': play('built'); break;
-        case 'tide': play('tide'); break;
+        case 'tide': case 'raid': play('tide'); break;
         case 'shadowDown': play('shadowDown'); break;
         case 'dispersed': play('dispersed'); break;
         case 'footfall': {

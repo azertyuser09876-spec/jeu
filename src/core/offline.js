@@ -27,6 +27,9 @@
     };
     if (applied <= 0) return report;
 
+    // Les nids vieillissent (mais ne lancent pas de raid : pas d'ombres pendant l'absence).
+    for (const nest of state.nests) nest.age += applied;
+
     // Le fanal a récolté pendant ce temps.
     if (state.beacon) {
       report.beacon = Vide.Abilities.beaconRate(state, stats) * applied;

@@ -136,6 +136,31 @@
       recallCooldown: 60,
     },
 
+    // Nids d'ombre (voir nests.js).
+    nests: {
+      firstAfter: 2,              // un nid naît quand tu as fondé ce nombre de villages…
+      firstDelay: 120,            // …un peu après…
+      every: 900,                 // …puis un autre toutes les 15 min de jeu
+      max: 6,                     // nids près de tes villages, au plus
+      spawnDistance: [2600, 3800], // distance au village choisi
+      farChance: 0.35,            // part des régions dangereuses lointaines qui abritent un nid…
+      farFrom: 7000,              // …au-delà de cette distance de l'origine
+      levelEvery: 300,            // un niveau de plus toutes les 5 min (jusqu'à maxLevel)
+      maxLevel: 8,
+      hp: 500,
+      hpPerLevel: 250,
+      regen: 4,                   // points de vie regagnés par seconde
+      radius: 260,                // rayon de l'obscurité au niveau 1…
+      radiusPerLevel: 60,         // …et à chaque niveau
+      raidEvery: 140,
+      raidJitter: 30,
+      raidRange: 7000,
+      raidBase: 2,
+      raidPerLevel: 1.2,
+      drain: 3,                   // vitalité perdue par seconde dans l'obscurité (hors de tes territoires)
+      darkField: 0.2,             // le vide y fait naître si peu de particules
+    },
+
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
     renaissance: {
       threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître

@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 16;
+  const FORMAT = 17;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -59,6 +59,8 @@
     14: (data) => ({ ...data, expeditions: [] }),
     // 1.5 : le fanal.
     15: (data) => ({ ...data, beacon: null }),
+    // 1.6 : les nids d'ombre.
+    16: (data) => ({ ...data, nests: [], cleared: [], nestTimer: null }),
   };
 
   function serialize(state, now) {
@@ -160,6 +162,20 @@
         members, hp: Math.min(positive(e.hp, 1), Vide.Expeditions.hpOf(members)) || 1, back: e.back === true,
       });
     }
+
+    const nests = Array.isArray(raw.nests) ? raw.nests : [];
+    for (const n of nests) {
+      if (!isObject(n) || !Number.isInteger(n.id) || !Number.isFinite(n.x) || !Number.isFinite(n.y)) continue;
+      if (state.nests.some((o) => o.id === n.id) || state.nests.length >= Vide.CONFIG.nests.max * 3) continue;
+      const nest = { id: n.id, x: n.x, y: n.y, hp: 0, age: positive(n.age, 0), region: typeof n.region === 'string' ? n.region : null };
+      nest.hp = Math.min(positive(n.hp, Vide.Nests.maxHp(nest)), Vide.Nests.maxHp(nest)) || 1;
+      state.nests.push(nest);
+    }
+    const cleared = Array.isArray(raw.cleared) ? raw.cleared : [];
+    for (const key of cleared) {
+      if (typeof key === 'string' && /^-?\d+,-?\d+$/.test(key) && !state.cleared.includes(key)) state.cleared.push(key);
+    }
+    state.nestTimer = Number.isFinite(raw.nestTimer) ? Math.max(0, raw.nestTimer) : null;
 
     const beacon = isObject(raw.beacon) ? raw.beacon : null;
     if (beacon && Number.isFinite(beacon.x) && Number.isFinite(beacon.y)) {

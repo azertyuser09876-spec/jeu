@@ -113,6 +113,12 @@
     beacon: () => (seen.beacon ? null : (seen.beacon = true,
       'Ton fanal brille : il récoltera seul la lumière alentour, même en ton absence. Repasse la reprendre.')),
     beaconCollected: (e) => `Le fanal te rend ✦ ${util.formatNumber(e.light)}.`,
+    nest: (e) => (e.first
+      ? (e.far
+        ? 'Un nid d’ombre, ici, au loin : les ombres bâtissent aussi. Son obscurité épuise ta lumière.'
+        : 'Les ombres bâtissent aussi : un nid d’ombre est né non loin de tes villages. Il lancera des raids.')
+      : (e.far ? 'Un nid d’ombre, dans cette région.' : 'Un nouveau nid d’ombre est né.')),
+    raid: (e) => `Un raid d’ombres part d’un nid vers ${to(e.village)} (${e.count}).`,
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       return e.first

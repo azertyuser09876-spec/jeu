@@ -342,6 +342,7 @@
     ctx.globalCompositeOperation = 'lighter';
 
     Vide.Draw.territory(r, game);
+    Vide.Draw.nests(r, game);
     Vide.Draw.roads(r, game);
     Vide.Draw.structures(r, game);
     drawReach(r, game);
@@ -357,6 +358,7 @@
 
     // Retour aux coordonnées d'écran pour les effets plein écran.
     ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
+    Vide.Draw.nestsOverlay(r, game);
     drawFog(r, game, dt);
     Vide.Draw.colossiOverlay(r, game);
     Vide.Draw.combatOverlay(r, game);

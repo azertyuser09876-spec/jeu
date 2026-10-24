@@ -47,6 +47,7 @@
     Vide.Colossus.create(game);
     Vide.Trade.create(game);
     Vide.Abilities.create(game);
+    Vide.Nests.create(game);
     // Une partie déjà avancée (venue d'une version sans récit) remplit son journal d'un coup,
     // sans faire défiler chaque fragment.
     const known = Vide.Lore.check(state);
@@ -58,7 +59,10 @@
   // Effets de la zone pour le champ de particules.
   function zoneMods(game) {
     const { zone, current } = game.region;
-    return { density: zone.density, rare: zone.rare, current };
+    // Dans l'obscurité d'un nid, le vide fait naître bien moins de lumière.
+    const { player } = game.state;
+    const dark = game.state.nests.length && Vide.Nests.darkAt(game.state, player.x, player.y);
+    return { density: zone.density * (dark ? CONFIG.nests.darkField : 1), rare: zone.rare, current };
   }
 
   // Suit la région traversée : visite, découverte, annonce (avec un peu d'hystérésis aux frontières).
@@ -208,6 +212,7 @@
     Vide.Trade.update(game, dt);
     Vide.Cities.update(game, dt);
     Vide.Expeditions.update(game, dt);
+    Vide.Nests.update(game, dt);
     for (const r of Vide.Roads.advance(state, (v) => Vide.Villages.statsOf(game, v), dt)) {
       const [a, b] = Vide.Roads.ends(state, r);
       emit(game, 'road', { a: a.type, b: b.type, first: state.roads.filter((x) => Vide.Roads.isDone(state, x)).length === 1 });
