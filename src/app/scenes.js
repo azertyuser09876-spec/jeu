@@ -439,7 +439,7 @@
     };
   }
 
-  // Les colosses apaisés dans le ciel (sauf `except`), sur un ciel étoilé.
+  // Les colosses apaisés dans le ciel (sauf `except` ; '*' : aucun), sur un ciel étoilé.
   function sky(g, except, alpha) {
     const { ctx, w, h } = g;
     const bg = ctx.createLinearGradient(0, 0, 0, h);
@@ -449,7 +449,7 @@
     ctx.fillRect(0, 0, w, h);
     stars(g, 110, 0.6, 3);
     for (const d of Vide.COLOSSI) {
-      if (d.id === except || g.state.colossi[d.id] !== 'tamed') continue;
+      if (except === '*' || d.id === except || g.state.colossi[d.id] !== 'tamed') continue;
       const at = skySpot(g, d);
       colossus(g, d, at.x, at.y, at.scale, { angle: -0.3, alpha: 0.55 * (alpha === undefined ? 1 : alpha), gold: 1, time: g.time * 0.4 });
     }
@@ -562,6 +562,140 @@
       },
     ],
   }));
+
+  // --- La renaissance ---
+  // La lumière se dissout en étincelles ; ses villages s'éteignent. Mais les colosses apaisés restent au ciel, et
+  // sous eux, à l'aube, une lueur se rallume.
+
+  register('renaissance', {
+    shots: [
+      {
+        d: 3.2,
+        sound: 'dispersed',
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          ctx.fillStyle = 'rgb(4, 4, 9)';
+          ctx.fillRect(0, 0, w, h);
+          stars(g, 40, 0.3, 0);
+          // Ses villages, des lueurs chaudes, qui s'éteignent.
+          for (let i = 0; i < 5; i++) {
+            const a = rand(i, 61) * Math.PI * 2;
+            const r = (140 + rand(i, 62) * 220) * u;
+            dot(g, [255, 220, 170], cx + Math.cos(a) * r * 1.4, cy + Math.sin(a) * r * 0.8, (50 + rand(i, 63) * 40) * u, 0.5 * (1 - p));
+          }
+          const k = ease(p);
+          dot(g, [255, 250, 240], cx, cy, 40 * u * (1 - k), 1 - k);
+          for (let i = 0; i < 70; i++) {
+            const a = rand(i, 64) * Math.PI * 2;
+            const d = k * (120 + rand(i, 65) * 380) * u;
+            dot(g, i % 4 ? [214, 234, 255] : GOLD, cx + Math.cos(a) * d, cy + Math.sin(a) * d - k * 120 * u * rand(i, 66),
+              (3 + 3 * rand(i, 67)) * u, (1 - k) * 0.9);
+          }
+        },
+      },
+      {
+        d: 3.4,
+        sound: 'birth',
+        draw(g) {
+          const { ctx, w, h, cx, u, p } = g;
+          sky(g, null);
+          // L'aube monte du bas de l'écran.
+          ctx.globalCompositeOperation = 'lighter';
+          const dawn = ctx.createLinearGradient(0, h, 0, h * 0.4);
+          dawn.addColorStop(0, `rgba(120, 80, 40, ${0.5 * ease(p)})`);
+          dawn.addColorStop(1, 'rgba(120, 80, 40, 0)');
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = dawn;
+          ctx.fillRect(0, 0, w, h);
+          // Des étincelles reviennent, et une lueur se rallume.
+          const y = h * 0.78;
+          for (let i = 0; i < 30; i++) {
+            const a = rand(i, 71) * Math.PI * 2;
+            const d = (1 - ease(p)) * (150 + rand(i, 72) * 300) * u;
+            dot(g, [214, 234, 255], cx + Math.cos(a) * d, y + Math.sin(a) * d * 0.6, 4 * u, 0.8 * (1 - p * 0.7));
+          }
+          const on = ease(clamp01((p - 0.35) / 0.5));
+          dot(g, [255, 250, 240], cx, y, 34 * u * on, on);
+          dot(g, [255, 255, 255], cx, y, 8 * u, on);
+        },
+      },
+    ],
+  });
+
+  // --- L'épilogue ---
+  // Quand le Dormeur s'éveille, les sept constellations quittent leur place, se rejoignent, et la lumière d'avant
+  // renaît en leur milieu : le vide est plein de nouveau. Tout près d'elle, une lueur minuscule — toi.
+
+  register('epilogue', {
+    shots: [
+      {
+        d: 3.8,
+        sound: 'tamed',
+        draw(g) {
+          const { cx, cy, u, p } = g;
+          sky(g, '*'); // le ciel seul ; les colosses sont peints en mouvement ci-dessous
+          const k = ease(p);
+          Vide.COLOSSI.forEach((d, i) => {
+            const from = skySpot(g, d);
+            const a = (i / Vide.COLOSSI.length) * Math.PI * 2 + g.time * 0.15;
+            const to = { x: cx + Math.cos(a) * 230 * u * 1.3, y: cy + Math.sin(a) * 230 * u * 0.75 };
+            colossus(g, d, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k, from.scale * (1 - 0.2 * k),
+              { angle: a + Math.PI / 2, alpha: 0.65, gold: 1, eyes: 0.4, time: g.time * 0.4 });
+          });
+        },
+      },
+      {
+        d: 4,
+        sound: 'lore',
+        fadeIn: 0,
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          const warm = ease(p);
+          const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+          bg.addColorStop(0, rgb(mix([4, 5, 14], [46, 36, 24], warm)));
+          bg.addColorStop(1, 'rgb(6, 6, 12)');
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'lighter';
+          stars(g, 80, 0.5 * (1 - warm), 3);
+          plenty(g, 1, 1, warm);
+          // Les constellations tournent, se resserrent et se fondent en elle.
+          const k = ease(p);
+          Vide.COLOSSI.forEach((d, i) => {
+            const a = (i / Vide.COLOSSI.length) * Math.PI * 2 + g.time * 0.15;
+            const R = 230 * u * (1 - 0.7 * k);
+            const at = skySpot(g, d);
+            colossus(g, d, cx + Math.cos(a) * R * 1.3, cy + Math.sin(a) * R * 0.75, at.scale * 0.8 * (1 - 0.6 * k),
+              { angle: a + Math.PI / 2, alpha: 0.65 * (1 - k), gold: 1, time: g.time * 0.4 });
+          });
+          dot(g, WARM, cx, cy, 200 * u * k, 0.9 * k);
+          dot(g, [255, 255, 255], cx, cy, 70 * u * k, k);
+        },
+      },
+      {
+        d: 3.6,
+        fadeIn: 0,
+        draw(g) {
+          const { ctx, w, h, cx, cy, u } = g;
+          const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+          bg.addColorStop(0, 'rgb(46, 36, 24)');
+          bg.addColorStop(1, 'rgb(6, 6, 12)');
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'lighter';
+          plenty(g, 1, 1, 1);
+          const beat = 1 + 0.04 * Math.sin(g.time * 2);
+          dot(g, WARM, cx, cy, 200 * u * beat, 0.9);
+          dot(g, [255, 255, 255], cx, cy, 70 * u * beat, 1);
+          // Toi.
+          const x = cx + 330 * u, y = cy + 170 * u;
+          const flicker = 0.75 + 0.25 * Math.sin(g.time * 7);
+          dot(g, [214, 234, 255], x, y, 22 * u, flicker);
+          dot(g, [255, 255, 255], x, y, 6 * u, 1);
+        },
+      },
+    ],
+  });
 
   Vide.Scenes = {
     GOLD, BLUE, glow, rgb, mix, ease, clamp01, rand, dot, path, stars, figure, colossus, fit, skySpot, sky, headOf, register,

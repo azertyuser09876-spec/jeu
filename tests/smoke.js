@@ -397,6 +397,11 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(400);
   const life = await page.evaluate(() => ({ r: Vide.game.state.renaissances, m: Vide.game.state.memories, l: Vide.game.state.light }));
   check(life.r === 1 && life.m > 0 && (await page.isVisible('#memories')), `la renaissance (confirmée) donne des souvenirs (${life.m} ✧)`);
+  // Elle se joue en tableau ; on le passe.
+  const rebirthScene = await page.evaluate(() => Vide.cinema.current && Vide.cinema.current.id);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  check(rebirthScene === 'renaissance', 'la renaissance se joue en tableau');
 
   // Menu : Échap l'ouvre et met le jeu en pause.
   await page.keyboard.press('Escape');
@@ -427,6 +432,15 @@ const { chromium } = require('playwright');
   const c2 = await page.evaluate(() => ({ t: Vide.game.state.stats.playTime, shown: !document.getElementById('cinema').hidden }));
   check(c1.shown && c1.t === c0 && !c2.shown && c2.t > c1.t && !(await page.isVisible('#menu')),
     'un tableau met le monde en pause, plein écran, et Échap le passe');
+  await page.keyboard.press('Escape');
+  // Les tableaux vus se revoient depuis le menu.
+  await page.click('#tableaux summary');
+  await page.click('#tableaux-list button');
+  await page.waitForTimeout(200);
+  const replay = await page.evaluate(() => ({ id: Vide.cinema.current && Vide.cinema.current.id, menu: !document.getElementById('menu').hidden }));
+  check(replay.id === 'ouverture' && !replay.menu, 'le menu permet de revoir un tableau');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(100);
   await page.keyboard.press('Escape');
 
   // Sauvegarde : exporter donne un code ; un code illisible est refusé ; un bon code remplace la partie.
