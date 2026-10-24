@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 13;
+  const FORMAT = 14;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -49,6 +49,11 @@
     12: (data) => ({
       ...data,
       villages: (Array.isArray(data.villages) ? data.villages : []).map((v) => ({ ...v, stock: { matiere: 0, savoir: 0 } })),
+    }),
+    // 1.4 : les cités (spécialités en plus, quartiers).
+    13: (data) => ({
+      ...data,
+      villages: (Array.isArray(data.villages) ? data.villages : []).map((v) => ({ ...v, extra: [], districts: [] })),
     }),
   };
 
@@ -195,7 +200,18 @@
       steward: Vide.Steward.SHARES.includes(raw.steward) ? raw.steward : 0,
       funds: positive(raw.funds, 0),
       stock: { matiere: 0, savoir: 0 },
+      extra: [],
+      districts: [],
     };
+    const known = (t) => Vide.VILLAGE_TYPES.some((x) => x.id === t);
+    for (const t of Array.isArray(raw.extra) ? raw.extra : []) {
+      if (known(t) && t !== type && !village.extra.includes(t)) village.extra.push(t);
+    }
+    for (const d of Array.isArray(raw.districts) ? raw.districts : []) {
+      if (isObject(d) && Number.isFinite(d.x) && Number.isFinite(d.y) && known(d.type) && village.districts.length < 40) {
+        village.districts.push({ x: d.x, y: d.y, type: d.type });
+      }
+    }
     const stock = isObject(raw.stock) ? raw.stock : {};
     for (const res of Vide.RESOURCES) village.stock[res.id] = Math.min(Vide.CONFIG.trade.cap, positive(stock[res.id], 0));
     const beings = isObject(raw.beings) ? raw.beings : {};

@@ -27,6 +27,7 @@
     }
     if (report.radiated > 0) lines.push(`Les territoires ont rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
     if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au cœur des villages.`);
+    if (report.cities) lines.push(`Des villages se sont rejoints : ${report.cities > 1 ? report.cities + ' cités sont nées' : 'une cité est née'}.`);
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
       const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
@@ -92,6 +93,8 @@
     },
     trained: (e) => (seen.trained ? null : (seen.trained = true,
       'Le bastion forme un soldat avec la réserve de son intendant. En trop, ses soldats iront aux villages reliés.')),
+    city: (e) => `Deux villages se rejoignent : une cité naît (${e.types.map((t) => Vide.Villages.type(t).name).join(' · ')}). `
+      + 'Elle garde leurs spécialités.',
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       return e.first

@@ -13,6 +13,7 @@
 //   rate       lumière/s rapportée par ses êtres (mesurée, sert pendant l'absence)
 //   steward    part de la lumière produite confiée à son intendant (0 à 0,5), funds : sa réserve
 //   stock      ressources du village : { matiere, savoir } (voir trade.js)
+//   extra      spécialités en plus de son type (une cité), districts : anciens cœurs devenus quartiers
 (function (Vide) {
   'use strict';
   const { CONFIG, Catalog, Territory } = Vide;
@@ -146,6 +147,7 @@
     };
     Vide.Structures.modify(village, l);
     type(village.type).modify(l);
+    for (const t of village.extra || []) type(t).modify(l); // une cité cumule ses spécialités
     if (Vide.Trade && village.stock) Vide.Trade.modify(village, l);
     return l;
   }
@@ -198,6 +200,8 @@
       steward: 0,
       funds: 0,
       stock: { matiere: 0, savoir: 0 },
+      extra: [],
+      districts: [],
     };
     Territory.grow(village);
     if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;

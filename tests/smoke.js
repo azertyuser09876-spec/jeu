@@ -202,6 +202,34 @@ const { chromium } = require('playwright');
     Vide.renderer.zoom = 1;
   });
 
+  // Cité : deux villages dont les territoires se touchent fusionnent, et la cité se dessine.
+  const cityCheck = await page.evaluate(() => {
+    const s = Vide.game.state;
+    const keep = { x: s.player.x, y: s.player.y };
+    const mk = (type, x) => {
+      s.player.x = x; s.player.y = -30000;
+      const v = Vide.Villages.found(s, type);
+      v.area = Math.PI * 350 * 350; v.cells = []; Vide.Territory.grow(v);
+      return v;
+    };
+    mk('jardins', 0); mk('observatoire', 600);
+    s.player.x = 300; s.player.y = -30000;
+    window.keepPlayer = keep;
+    return s.villages.length;
+  });
+  await page.waitForTimeout(2600);
+  const city = await page.evaluate(() => {
+    const s = Vide.game.state;
+    const c = s.villages.find((v) => v.extra.length);
+    const out = { n: s.villages.length, extra: c ? c.extra : null, districts: c ? c.districts.length : 0 };
+    s.villages.splice(s.villages.indexOf(c), 1);
+    Object.assign(s.player, window.keepPlayer);
+    return out;
+  });
+  // (Le plus vaste absorbe l'autre : l'observatoire, qui grandit plus vite, garde son cœur.)
+  check(city.n === cityCheck - 1 && city.extra && city.extra.length === 1 && city.districts === 1 && errors.length === 0,
+    'deux villages qui se touchent deviennent une cité');
+
   // Zones et carte : visiter une autre région, puis ouvrir la carte avec M.
   await page.evaluate(() => {
     const p = Vide.game.state.player;

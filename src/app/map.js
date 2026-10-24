@@ -178,6 +178,11 @@
       ctx.beginPath();
       ctx.arc(X(v.x), Y(v.y), 2.5, 0, Math.PI * 2);
       ctx.fill();
+      for (const d of v.districts || []) {
+        ctx.beginPath();
+        ctx.arc(X(d.x), Y(d.y), 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.beginPath();

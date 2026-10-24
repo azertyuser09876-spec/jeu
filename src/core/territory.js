@@ -125,7 +125,8 @@
   // (chantiers compris).
   function appeal(v, i, j) {
     const t = CONFIG.territory;
-    const noise = t.noise * shapeOf(v).noise;
+    // Une cité a des contours plus nets.
+    const noise = t.noise * shapeOf(v).noise * (v.extra && v.extra.length ? 0.5 : 1);
     let score = noise * (0.8 * smoothNoise(i, j, seedOf(v, 0)) + 0.2 * util.hash2(i, j, seedOf(v, 1)));
     const x = center(i), y = center(j);
     for (const b of v.buildings) score += t.pull * Math.exp(-Math.hypot(b.x - x, b.y - y) / t.pullRange);

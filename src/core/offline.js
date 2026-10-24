@@ -43,6 +43,7 @@
       report.steward.push(...Vide.Steward.catchUp(state, v));
     }
     report.roads = Vide.Roads.advance(state, (v) => Villages.local(state, v, stats), applied).length;
+    report.cities = Vide.Cities.fuse(state).length;
     const light = report.radiated + report.brought;
     state.light += light;
     state.totalLight += light;

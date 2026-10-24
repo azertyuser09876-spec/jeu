@@ -104,6 +104,13 @@
       soldierPrice: 0.6,     // part du prix d'un gardien payée par le village qui le reçoit
     },
 
+    // Cités : un village devenu immense peut ajouter une spécialité (les villages qui se touchent fusionnent).
+    cities: {
+      radius: 700,       // rayon à partir duquel un village peut se spécialiser davantage
+      cost: 5e6,         // prix de la première spécialité ajoutée…
+      growth: 8,         // …×8 pour chacune des suivantes
+    },
+
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
     renaissance: {
       threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître

@@ -86,6 +86,12 @@
     ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.05)`;
     ctx.lineWidth = 12 / r.camera.scale;
     ctx.stroke(shape.area);
+    if (v.extra && v.extra.length) {
+      // Une cité : un bord net et dense, comme un rempart de lumière.
+      ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.16)`;
+      ctx.lineWidth = 5 / r.camera.scale;
+      ctx.stroke(shape.area);
+    }
     ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.24)`;
     ctx.lineWidth = 1.2 / r.camera.scale;
     ctx.stroke(shape.area);
@@ -192,7 +198,7 @@
       ctx.stroke();
       const alpha = ctx.globalAlpha;
       for (let k = 0; k < 3; k++) {
-        const p = (t * 0.25 + k / 3) % 1;
+        const p = (((t * 0.25 + k / 3) % 1) + 1) % 1; // toujours entre 0 et 1, même si t est négatif
         ctx.globalAlpha = alpha * (1 - p);
         ctx.beginPath();
         ctx.arc(x, y, 20 + p * 34, 0, Math.PI * 2);
@@ -212,6 +218,47 @@
     ctx.strokeStyle = `rgb(${mix(Villages.type(v.type).tint, 0.6)})`;
     ctx.lineWidth = 1 / r.camera.scale;
     HEARTS[v.type](ctx, v.x, v.y, r.time + v.id * 7, breath);
+    if (v.extra && v.extra.length) {
+      // Une cité : un anneau de plus, autant de points que de spécialités.
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, 52, 0, Math.PI * 2);
+      ctx.stroke();
+      [v.type, ...v.extra].forEach((t, k, all) => {
+        const a = r.time * 0.05 + (k / all.length) * Math.PI * 2;
+        ctx.strokeStyle = `rgb(${mix(Villages.type(t).tint, 0.7)})`;
+        ctx.beginPath();
+        ctx.arc(v.x + Math.cos(a) * 52, v.y + Math.sin(a) * 52, 3, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+  }
+
+  // Les quartiers d'une cité (anciens cœurs) : plus petits, reliés au cœur par une avenue de lumière.
+  function drawDistricts(r, v) {
+    const { ctx } = r;
+    const s = r.camera.scale;
+    for (const d of v.districts || []) {
+      ctx.globalAlpha = 0.08;
+      ctx.strokeStyle = '#eef4ff';
+      ctx.lineWidth = 10 / s;
+      ctx.beginPath();
+      ctx.moveTo(v.x, v.y);
+      ctx.lineTo(d.x, d.y);
+      ctx.stroke();
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 1 / s;
+      ctx.stroke();
+      Render.drawGlow(ctx, r.glows.white, d.x, d.y, 80, 0.14);
+      Render.drawGlow(ctx, r.glows.light, d.x, d.y, 22, 0.6);
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.scale(0.6, 0.6);
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = `rgb(${mix(Villages.type(d.type).tint, 0.6)})`;
+      ctx.lineWidth = 1 / (s * 0.6);
+      HEARTS[d.type](ctx, 0, 0, r.time + Math.abs(d.x % 97), 0.5);
+      ctx.restore();
+    }
   }
 
   // L'origine, où naît la lumière : un simple anneau qui respire faiblement.
@@ -236,6 +283,7 @@
       if (v.x + radius < view.left || v.x - radius > view.right || v.y + radius < view.top || v.y - radius > view.bottom) continue;
       drawArea(r, v);
       drawMotes(r, v, state.seed + v.id * 31);
+      drawDistricts(r, v);
       drawHeart(r, v, game.colony.glows.get(v) || 0, game.heartHurt.get(v) || 0);
     }
   };
