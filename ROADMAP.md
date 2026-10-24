@@ -86,7 +86,7 @@ qui pousse selon ses habitants (pas un disque), son cœur qui blanchit lentement
 qui fusionnent, plusieurs spécialisations). Plus tard, ou trop loin, **les ombres bâtissent aussi**.
 Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'origine.
 
-### [ ] 1.1 — Retouches et caméra
+### [x] 1.1 — Retouches et caméra
 1. Carte peinte : zones en dégradés fondus, brouillard sur l'inexploré, plus de texte sur les zones.
 2. Pattes des colosses : genoux toujours pliés du même côté, pas limités, rotation sur place (plus de
    pattes qui virevoltent).

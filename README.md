@@ -18,9 +18,11 @@ Ouvre `index.html` dans un navigateur. C'est tout.
 | Acheter | clic sur une carte | 1 à 9 (Tab : onglet suivant) |
 | Ordres de l’armée | barre sous le compteur | G garder · E escorter · C chasser |
 | Carte | ◎ en haut à droite | M |
-| Menu / pause, son, journal | ≡ en haut à droite | Échap |
+| Zoom | molette, pincement à deux doigts | + / − |
+| Menu / pause, options, journal | ≡ en haut à droite | Échap |
 
 La partie est sauvegardée automatiquement dans le navigateur ; le monde continue pendant ton absence.
+Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'appareil) et l'**importer**.
 
 ## Ce qui t'attend
 

@@ -1,5 +1,22 @@
 # Historique des versions
 
+## 1.1.0 — Retouches et caméra
+
+Premiers retours de jeu sur la 1.0.
+
+- **Carte peinte** : les régions se fondent en dégradés, l'inexploré reste dans le brouillard, plus aucun
+  texte sur la carte (les colosses y sont marqués d'un simple anneau doré).
+- **Pattes des colosses** : les genoux restent toujours tournés vers l'extérieur du corps, chaque pas est
+  limité en longueur, et les colosses tournent plus lentement — fini les pattes qui virevoltaient.
+- **Caméra** : zoom à la molette, au pincement (deux doigts) ou avec + et −, gardé d'une session à l'autre ;
+  la caméra **recule d'elle-même** quand un colosse approche, pour qu'on le voie en entier.
+- **Éveil** : une animation sans un mot au lancement — un point s'allume dans le noir, des éclats
+  convergent vers lui, puis une onde dévoile le monde. Un clic ou une touche l'abrège.
+- **Options** dans le menu : secousses réduites (suit par défaut « réduire les animations » du système),
+  **exporter / importer** la partie sous forme de code.
+- Le menu défile sur petit écran.
+- 199 tests de logique, 29 vérifications navigateur.
+
 ## 1.0.0 — Renaissance
 
 - **Renaissance** (onglet souvenirs) : après 4 M de lumière récoltée depuis le dernier départ, se dissoudre
