@@ -136,6 +136,34 @@
     assert.ok(Math.abs(mid(other) - mid(path)) > 1);
   });
 
+  test('des routes qui sortent par la même porte partagent un tronc, puis se séparent', () => {
+    const state = State.create(4);
+    const a = village(state, { radius: 400 });
+    // Deux villages dans des directions voisines, de part et d'autre d'une avenue de `a` : la même porte.
+    const t = Vide.Plan.turn(a);
+    const b = village(state, { x: Math.cos(t - 0.3) * 3000, y: Math.sin(t - 0.3) * 3000, radius: 300 });
+    const c = village(state, { x: Math.cos(t + 0.3) * 3000, y: Math.sin(t + 0.3) * 3000, radius: 300 });
+    assert.equal(Roads.network(state).trunks.length, 0);
+    for (const o of [b, c]) {
+      const road = Roads.plan(state, a, o);
+      road.work = Roads.length(state, road);
+    }
+    const ab = Roads.route(state, a, b), ac = Roads.route(state, a, c);
+    const trunks = Roads.trunks(state);
+    assert.equal(trunks.length, 1);
+    assert.equal(trunks[0].roads.length, 2);
+    // Le même tronc (sortie, carrefour), puis deux chemins.
+    assert.deepEqual(ab.slice(0, 3), ac.slice(0, 3));
+    assert.deepEqual(ab[2], trunks[0].points[1]);
+    assert.ok(Math.hypot(ab[ab.length - 2].x - ac[ac.length - 2].x, ab[ab.length - 2].y - ac[ac.length - 2].y) > 500);
+    // Une route seule ne part pas d'un carrefour.
+    const d = village(state, { x: -Math.cos(t) * 2500, y: -Math.sin(t) * 2500, radius: 300 });
+    const ad = Roads.plan(state, a, d);
+    ad.work = Roads.length(state, ad);
+    assert.equal(Roads.trunks(state).length, 1);
+    assert.ok(Roads.onRoad(state, trunks[0].points[1].x, trunks[0].points[1].y));
+  });
+
   test('pendant l’absence, les routes avancent', () => {
     const { state, a, b } = three();
     const road = Roads.plan(state, a, b);

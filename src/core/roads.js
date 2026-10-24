@@ -4,70 +4,61 @@
 // comptée sur la distance entre les deux cœurs).
 // Son tracé (route) : de chaque cœur, l'avenue la mieux tournée vers l'autre village jusqu'à sa sortie (passé son
 // enceinte, au bord du territoire) ; entre les deux sorties, une grande route qui part dans l'axe de chaque avenue,
-// serpente à sa façon (chaque route a son dessin) et contourne les villages sur son chemin.
+// ondule à peine (chaque route a son dessin) et contourne les villages sur son chemin. Les routes qui sortent par
+// la même porte partagent un tronc, puis se séparent à un carrefour (voir network).
 // Sur une route achevée, la lumière du joueur file plus vite ; les caravanes la suivent (voir trade.js).
 (function (Vide) {
   'use strict';
   const { CONFIG, Catalog, Villages, Plan, Territory } = Vide;
 
-  // Sortie d'un village vers un autre : au bout de l'avenue la mieux tournée, passé son enceinte.
-  function exit(v, toward) {
-    const a = Plan.nearestAvenue(v, Math.atan2(toward.y - v.y, toward.x - v.x));
+  // --- Le réseau des grandes routes ---
+
+  // La porte (le numéro de l'avenue) par laquelle un village sort vers un point.
+  function gateIndex(v, toward) {
+    const step = (Math.PI * 2) / Plan.AVENUES;
+    const k = Math.round((Math.atan2(toward.y - v.y, toward.x - v.x) - Plan.turn(v)) / step);
+    return ((k % Plan.AVENUES) + Plan.AVENUES) % Plan.AVENUES;
+  }
+
+  // Sortie d'un village par l'avenue k : passé son enceinte, au bord de son territoire.
+  function exitAt(v, k) {
+    const a = Plan.turn(v) + (k * Math.PI * 2) / Plan.AVENUES;
     const walls = v.walls || [];
     const outer = walls.length ? Vide.Walls.radius(walls[walls.length - 1]) + 50 : 0;
     const r = Math.max(outer, Territory.radius(v) * 0.9);
-    return { x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r };
+    return { x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r, ux: Math.cos(a), uy: Math.sin(a) };
   }
 
-  // Tracé de `from` à `to` : [cœur, sortie, …la grande route…, sortie, cœur]. Le même dans les deux sens
-  // (calculé du plus petit numéro au plus grand), gardé tant que rien n'a bougé.
-  const caches = new WeakMap();
-  function route(state, from, to) {
-    if (from.id > to.id) return route(state, to, from).slice().reverse();
-    let routes = caches.get(state);
-    if (!routes) caches.set(state, (routes = new Map()));
-    const key = `${from.id}>${to.id}`;
-    const sig = `${from.x},${from.y},${to.x},${to.y},${Math.round(Territory.radius(from))},${Math.round(Territory.radius(to))},`
-      + `${(from.walls || []).length},${(to.walls || []).length},${state.villages.length}`;
-    const known = routes.get(key);
-    if (known && known.sig === sig) return known.points;
-    const points = trace(state, from, to);
-    if (routes.size > 500) routes.clear();
-    routes.set(key, { sig, points });
-    return points;
+  // Sortie d'un village vers un autre : au bout de l'avenue la mieux tournée.
+  function exit(v, toward) {
+    const e = exitAt(v, gateIndex(v, toward));
+    return { x: e.x, y: e.y };
   }
 
-  function trace(state, from, to) {
-    const A = exit(from, to), B = exit(to, from);
-    const chord = Math.hypot(B.x - A.x, B.y - A.y) || 1;
-    // Courbe de Bézier : on quitte chaque sortie dans l'axe de son avenue.
-    const out = (v, p) => {
-      const d = Math.hypot(p.x - v.x, p.y - v.y) || 1;
-      return { x: (p.x - v.x) / d, y: (p.y - v.y) / d };
-    };
-    const ua = out(from, A), ub = out(to, B);
+  // La grande route entre deux points S et T, qu'elle quitte dans les directions us et ut : une courbe de Bézier,
+  // quelques méandres doux (propres à chaque route, nuls aux deux bouts), et un détour autour des autres villages.
+  function bend(state, a, b, S, us, T, ut) {
+    const chord = Math.hypot(T.x - S.x, T.y - S.y) || 1;
     const k = chord * 0.35;
-    const P1 = { x: A.x + ua.x * k, y: A.y + ua.y * k }, P2 = { x: B.x + ub.x * k, y: B.y + ub.y * k };
-    // Ses méandres : propres à la route, nuls aux deux bouts.
-    const seed = Math.imul(from.id, 0x9e3779b1) ^ Math.imul(to.id, 0x85ebca6b);
+    const P1 = { x: S.x + us.x * k, y: S.y + us.y * k }, P2 = { x: T.x + ut.x * k, y: T.y + ut.y * k };
+    const seed = Math.imul(a.id, 0x9e3779b1) ^ Math.imul(b.id, 0x85ebca6b);
     const phase = ((seed >>> 0) / 4294967296) * Math.PI * 2;
-    const waves = 1 + Math.floor(chord / 1800);
-    const amp = Math.min(160, chord * 0.07) * (((seed >>> 8) & 1) ? 1 : -1);
-    const nx = -(B.y - A.y) / chord, ny = (B.x - A.x) / chord;
+    const amp = Math.min(70, chord * 0.03) * (((seed >>> 8) & 1) ? 1 : -1);
+    const nx = -(T.y - S.y) / chord, ny = (T.x - S.x) / chord;
     const n = Math.max(8, Math.min(60, Math.round(chord / 70)));
     const pts = [];
     for (let i = 0; i <= n; i++) {
       const t = i / n, u = 1 - t;
-      const x = u * u * u * A.x + 3 * u * u * t * P1.x + 3 * u * t * t * P2.x + t * t * t * B.x;
-      const y = u * u * u * A.y + 3 * u * u * t * P1.y + 3 * u * t * t * P2.y + t * t * t * B.y;
-      const off = amp * Math.sin(Math.PI * t) * Math.sin(Math.PI * 2 * waves * t + phase);
+      const x = u * u * u * S.x + 3 * u * u * t * P1.x + 3 * u * t * t * P2.x + t * t * t * T.x;
+      const y = u * u * u * S.y + 3 * u * u * t * P1.y + 3 * u * t * t * P2.y + t * t * t * T.y;
+      const off = amp * Math.sin(Math.PI * t) * Math.sin(Math.PI * 2 * t + phase);
       pts.push({ x: x + nx * off, y: y + ny * off });
     }
-    // Elle contourne les autres villages (deux passes, adoucies), sans toucher à ses deux bouts.
+    // Le détour autour des autres villages (trois passes, adoucies), sans toucher aux deux bouts.
     for (let pass = 0; pass < 3; pass++) {
       for (let i = 1; i < pts.length - 1; i++) {
         for (const o of state.villages) {
-          if (o === from || o === to) continue;
+          if (o === a || o === b) continue;
           const clear = Territory.radius(o) + 120;
           const dx = pts[i].x - o.x, dy = pts[i].y - o.y;
           const d = Math.hypot(dx, dy);
@@ -83,7 +74,77 @@
         }
       }
     }
-    return [{ x: from.x, y: from.y }, ...pts, { x: to.x, y: to.y }];
+    return pts;
+  }
+
+  // Le réseau : les routes qui quittent un village par la même porte en sortent ensemble — un tronc commun, plus
+  // large, dans l'axe de l'avenue, jusqu'à un carrefour d'où chacune part de son côté.
+  // { paths: Map('a>b' → [cœur, sortie, (carrefour), …, (carrefour), sortie, cœur]), trunks: [{ points, roads }] },
+  // recalculé quand une route, un village, son rayon ou ses enceintes changent.
+  const caches = new WeakMap();
+  function network(state) {
+    let sig = '';
+    for (const r of state.roads) sig += `${r.a}-${r.b};`;
+    for (const v of state.villages) sig += `${v.id}:${v.x},${v.y},${Math.round(Territory.radius(v) / 4)},${(v.walls || []).length};`;
+    const known = caches.get(state);
+    if (known && known.sig === sig) return known;
+
+    const groups = new Map();
+    for (const road of state.roads) {
+      const [a, b] = ends(state, road);
+      if (!a || !b) continue;
+      for (const [v, o] of [[a, b], [b, a]]) {
+        const k = gateIndex(v, o);
+        const key = `${v.id}:${k}`;
+        if (!groups.has(key)) groups.set(key, { v, k, list: [] });
+        groups.get(key).list.push({ road, o });
+      }
+    }
+    const joints = new Map();
+    const trunks = [];
+    for (const { v, k, list } of groups.values()) {
+      const E = exitAt(v, k);
+      let J = null;
+      if (list.length >= 2) {
+        // Le carrefour : assez loin pour se voir, jamais plus loin que le tiers du trajet le plus court.
+        let reach = Infinity;
+        for (const { o } of list) reach = Math.min(reach, Math.hypot(o.x - E.x, o.y - E.y) - Territory.radius(o));
+        const L = Math.max(120, Math.min(600, reach * 0.3));
+        J = { x: E.x + E.ux * L, y: E.y + E.uy * L };
+        trunks.push({ points: [{ x: E.x, y: E.y }, J], roads: list.map((x) => x.road) });
+      }
+      for (const { road } of list) joints.set(`${road.a}>${road.b}@${v.id}`, { E: { x: E.x, y: E.y }, J, u: { x: E.ux, y: E.uy } });
+    }
+    const paths = new Map();
+    for (const road of state.roads) {
+      const [a, b] = ends(state, road);
+      if (!a || !b) continue;
+      const ja = joints.get(`${road.a}>${road.b}@${a.id}`), jb = joints.get(`${road.a}>${road.b}@${b.id}`);
+      const curve = bend(state, a, b, ja.J || ja.E, ja.u, jb.J || jb.E, jb.u);
+      paths.set(`${road.a}>${road.b}`, [
+        { x: a.x, y: a.y }, ...(ja.J ? [ja.E] : []), ...curve, ...(jb.J ? [jb.E] : []), { x: b.x, y: b.y },
+      ]);
+    }
+    const net = { sig, paths, trunks };
+    caches.set(state, net);
+    return net;
+  }
+
+  // Tracé de `from` à `to` : [cœur, sortie, …la grande route…, sortie, cœur], le même dans les deux sens.
+  // Hors du réseau (pas de route entre eux), un tracé seul.
+  function route(state, from, to) {
+    const [lo, hi] = from.id < to.id ? [from, to] : [to, from];
+    let path = network(state).paths.get(`${lo.id}>${hi.id}`);
+    if (!path) {
+      const ea = exitAt(lo, gateIndex(lo, hi)), eb = exitAt(hi, gateIndex(hi, lo));
+      path = [{ x: lo.x, y: lo.y }, ...bend(state, lo, hi, ea, { x: ea.ux, y: ea.uy }, eb, { x: eb.ux, y: eb.uy }), { x: hi.x, y: hi.y }];
+    }
+    return from === lo ? path : path.slice().reverse();
+  }
+
+  // Les troncs communs du réseau : [{ points: [sortie, carrefour], roads }].
+  function trunks(state) {
+    return network(state).trunks;
   }
 
   function pathLength(points) {
@@ -249,6 +310,6 @@
 
   Vide.Roads = {
     ends, length, isDone, between, neighbors, candidate, cost, plan, advance, toSegment, onRoad,
-    exit, route, pathLength, along, slice,
+    exit, route, trunks, network, pathLength, along, slice,
   };
 })(globalThis.Vide);

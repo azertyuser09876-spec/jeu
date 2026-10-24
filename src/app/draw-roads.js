@@ -80,6 +80,23 @@
         }
       }
     }
+    // Les troncs communs (plusieurs routes sortent par la même porte) : une route plus large, dont les routes
+    // qu'elle porte deviennent les voies.
+    for (const trunk of Roads.trunks(state)) {
+      const n = trunk.roads.filter((road) => Roads.isDone(state, road)).length;
+      if (n < 2) continue;
+      const w = 6.5 + 5 * (n - 1);
+      ctx.globalAlpha = 0.07;
+      ctx.strokeStyle = '#fff1d8';
+      ctx.lineWidth = w * 2 + 14;
+      polyline(ctx, trunk.points);
+      ctx.globalAlpha = 0.05;
+      ctx.lineWidth = w * 2;
+      polyline(ctx, trunk.points);
+      ctx.globalAlpha = 0.36;
+      ctx.lineWidth = 1.4 / s;
+      edges(ctx, trunk.points, w);
+    }
     drawCaravans(r, game);
     drawExpeditions(r, game);
     ctx.globalAlpha = 1;
