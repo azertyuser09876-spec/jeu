@@ -105,13 +105,17 @@
     assert.equal(wolf.owner, v);
   });
 
-  test('les bases mûres ont une garnison de bêtes, et leurs raids lâchent des meutes (plus grosses chez les Meutes)', () => {
+  test('les bases mûres ont une garnison de bêtes ; avec la guerre, leurs raids lâchent des meutes (plus grosses chez les Meutes)', () => {
     const { state } = world('lames');
     const nest = Nests.add(state, 4000, 0, CONFIG.nests.levelEvery * 7);
     assert.ok(nest.creatures.loup >= 1);
     assert.equal(nest.creatures.scolopendre, 1);
     const game = Sim.create(state);
     assert.ok(game.creatures.list.filter((c) => c.owner === nest).length >= 2, 'la garnison est là');
+    // (Les meutes viennent avec la guerre, une fois la tension passée.)
+    assert.equal(Creatures.raid(game, nest, state.villages[0]), 0, 'pas sans guerre');
+    Vide.War.begin(state);
+    state.war.age = CONFIG.war.ramp;
     const pack = (faction) => {
       nest.faction = faction;
       let n = 0;
@@ -135,6 +139,17 @@
     assert.equal(Catalog.get('cerf').blocked(state), 'deux cerfs par village');
     const game = Sim.create(state);
     assert.equal(game.creatures.list.filter((c) => c.kind === 'cerf' && c.owner === v).length, 2);
+  });
+
+  test('dans tes territoires, la lumière ronge les bêtes des ombres', () => {
+    const { state, v } = world('lames', {});
+    const game = Sim.create(state);
+    const wolf = Creatures.spawn(game, 'loup', 'shadow', null, v.x + 50, v.y);
+    wolf.home = v;
+    run(game, 5);
+    assert.ok(wolf.hp < wolf.maxHp);
+    run(game, Creatures.kind('loup').hp / CONFIG.shadows.territoryBurn);
+    assert.ok(!game.creatures.list.includes(wolf), 'elle a fini par s’éteindre');
   });
 
   test('sauvegarde : les créatures attachées se gardent ; nombres nettoyés', () => {

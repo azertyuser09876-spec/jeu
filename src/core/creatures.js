@@ -261,6 +261,17 @@
       c.flash = Math.max(0, c.flash - dt * 3);
       c.turned = Math.max(0, c.turned - dt * 0.6);
       c.retarget -= dt;
+      // Dans tes territoires, la lumière ronge les bêtes des ombres (lentement), comme les ombres.
+      if (c.side === 'shadow') {
+        const over = Villages.at(state, c.x, c.y);
+        if (over) {
+          c.hp -= CONFIG.shadows.territoryBurn * Villages.statsOf(game, over).burn * dt;
+          if (c.hp <= 0) {
+            die(game, c, { side: 'light', faction: over.faction, owner: over, creature: null });
+            continue;
+          }
+        }
+      }
       let goal = null;
       let enemy = null;
       if (c.side === 'light') {
@@ -386,11 +397,13 @@
     return null;
   }
 
-  // Un raid d'une base mûre lâche une meute (et, plus mûre encore, une scolopendre). Renvoie le nombre de bêtes.
+  // Un raid d'une base mûre lâche une meute (et, plus mûre encore, une scolopendre) — avec la guerre seulement,
+  // une fois la tension passée. Renvoie le nombre de bêtes.
   function raid(game, nest, target) {
     const c = CONFIG.creatures;
     const l = Vide.Nests.level(nest);
     const rng = game.creatures.rng;
+    if (!game.state.war || Vide.War.calm(game.state)) return 0;
     if (l < c.raidFrom || rng() > c.raidChance) return 0;
     const packs = (Vide.Factions.def(nest.faction) || {}).packs || 1;
     let n = 0;
@@ -414,8 +427,8 @@
   const CERF = kind('cerf');
   Catalog.register({
     id: 'cerf',
-    tab: 'etres',
-    order: 40,
+    tab: 'village',
+    group: 'créatures',
     name: 'Cerf de lumière',
     desc: 'Une grande bête de lumière, gardienne du village : elle combat les ombres et leurs bêtes. Un par village '
       + '(deux chez les Éleveurs). À bout de forces face à des Corrupteurs, elle pourrait passer à l’ombre.',
