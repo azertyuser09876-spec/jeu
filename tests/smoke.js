@@ -21,6 +21,14 @@ const { chromium } = require('playwright');
   await page.goto('file://' + path.join(__dirname, '..', 'index.html'));
   await page.waitForTimeout(500);
 
+  // Une partie neuve s'ouvre sur un tableau ; une touche le passe.
+  const opening = await page.evaluate(() => ({ id: Vide.cinema.current && Vide.cinema.current.id, shown: !document.getElementById('cinema').hidden }));
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'ouverture.png') });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const closed = await page.evaluate(() => document.getElementById('cinema').hidden);
+  check(opening.id === 'ouverture' && opening.shown && closed, 'une partie neuve s’ouvre sur un tableau, qu’une touche passe');
+
   // Éveil : au lancement, le monde attend la fin de l'animation ; une touche l'abrège.
   const launch = await page.evaluate(() => ({ time: Vide.game.time, on: document.body.classList.contains('launching') }));
   check(launch.on && launch.time === 0, 'au lancement, l’éveil se joue avant que le monde ne bouge');

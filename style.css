@@ -94,7 +94,7 @@ button { font: inherit; letter-spacing: inherit; }
 #intro.returning .hint { display: none; }
 
 /* Pendant l'éveil (animation de lancement), seule la scène compte. */
-body.launching > :not(#view):not(#vignette) {
+body.launching > :not(#view):not(#vignette):not(#cinema) {
   opacity: 0 !important;
   pointer-events: none !important;
 }
@@ -102,7 +102,7 @@ body.launching #intro .title,
 body.launching #intro .hint { animation: none; }
 
 /* Pendant une dispersion, l'interface s'efface ; seul le message reste, dans le noir. */
-body.dispersing > :not(#view):not(#vignette):not(#toast) {
+body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
   opacity: 0 !important;
   pointer-events: none !important;
   transition: opacity 0.5s ease !important;

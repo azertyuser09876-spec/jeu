@@ -250,6 +250,158 @@
     return order.filter((id) => state.cinematics.includes(id) && get(id));
   }
 
+  // --- L'ouverture ---
+  // Le vide était plein : une lumière immense, et autour d'elle, les colosses. Elle se brise ; ses éclats filent
+  // au loin, et chaque colosse s'endort autour de l'un d'eux. Il ne reste qu'une lueur.
+
+  const WARM = [255, 240, 212];
+  const SHARD_ANGLE = (i) => (i / 7) * Math.PI * 2 + 0.35;
+
+  // Le champ de lumière du vide plein (tourne lentement ; `spread` l'écarte, `alpha` l'efface).
+  function plenty(g, zoom, spread, alpha) {
+    const { cx, cy, u } = g;
+    for (let i = 0; i < 420; i++) {
+      const r0 = (0.06 + 0.94 * Math.sqrt(rand(i, 21))) * 520 * u;
+      const a = rand(i, 22) * Math.PI * 2 + g.time * (0.04 + 0.12 * (1 - r0 / (520 * u)));
+      const r = r0 * zoom * spread;
+      const tw = 0.6 + 0.4 * Math.sin(g.time * (1 + rand(i, 23) * 2) + i);
+      const roll = rand(i, 24);
+      const color = roll < 0.35 ? GOLD : roll < 0.7 ? WARM : BLUE;
+      dot(g, color, cx + Math.cos(a) * r * 1.5, cy + Math.sin(a) * r * 0.85, (2 + rand(i, 25) * 4) * u, alpha * tw * 0.8);
+    }
+  }
+
+  register('ouverture', {
+    shots: [
+      { // Le plein.
+        d: 4.8,
+        sound: 'lore',
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+          bg.addColorStop(0, 'rgb(46, 36, 24)');
+          bg.addColorStop(1, 'rgb(6, 6, 12)');
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'lighter';
+          const zoom = 1 + 0.15 * ease(p);
+          plenty(g, zoom, 1, 1);
+          // Les colosses font cercle autour d'elle, petits, dorés.
+          Vide.COLOSSI.forEach((d, i) => {
+            const a = SHARD_ANGLE(i) + g.time * 0.05;
+            const R = 330 * u * zoom;
+            colossus(g, d, cx + Math.cos(a) * R * 1.3, cy + Math.sin(a) * R * 0.8, fit(g, d, 0.09) * zoom,
+              { angle: a + Math.PI / 2, alpha: 0.5, gold: 1 });
+          });
+          const beat = 1 + 0.04 * Math.sin(g.time * 2);
+          dot(g, WARM, cx, cy, 200 * u * zoom * beat, 0.9);
+          dot(g, [255, 255, 255], cx, cy, 70 * u * zoom * beat, 1);
+        },
+      },
+      { // La brisure.
+        d: 3.8,
+        sound: 'quake',
+        fadeIn: 0,
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          const dark = clamp01((p - 0.35) / 0.4);
+          const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+          bg.addColorStop(0, rgb(mix([46, 36, 24], [2, 2, 6], dark)));
+          bg.addColorStop(1, 'rgb(4, 4, 8)');
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, w, h);
+          ctx.globalCompositeOperation = 'lighter';
+          plenty(g, 1.15, 1 + 2.5 * ease(clamp01((p - 0.4) / 0.6)), 1 - dark);
+          if (p < 0.42) {
+            // Elle se fend : des failles qui courent depuis son cœur.
+            const k = ease(clamp01(p / 0.35));
+            const shake = (Math.sin(g.time * 60) * 3 * k) * u;
+            dot(g, WARM, cx + shake, cy, 200 * u * 1.15, 0.9);
+            dot(g, [255, 255, 255], cx + shake, cy, 70 * u * 1.15, 1);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2 * u;
+            for (let i = 0; i < 7; i++) {
+              const a = SHARD_ANGLE(i);
+              ctx.globalAlpha = 0.9;
+              ctx.beginPath();
+              ctx.moveTo(cx, cy);
+              let x = cx, y = cy;
+              for (let j = 1; j <= 5; j++) {
+                const len = (j / 5) * 230 * u * k;
+                const jag = (rand(i * 7 + j, 31) - 0.5) * 0.5;
+                x = cx + Math.cos(a + jag) * len;
+                y = cy + Math.sin(a + jag) * len;
+                ctx.lineTo(x, y);
+              }
+              ctx.stroke();
+            }
+          }
+          // L'éclair, puis les éclats qui filent au loin.
+          const flash = 1 - Math.abs((p - 0.42) / 0.08);
+          if (flash > 0) {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = flash;
+            ctx.fillStyle = '#fff8ec';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'lighter';
+          }
+          if (p > 0.42) {
+            const k = ease(clamp01((p - 0.42) / 0.58));
+            for (let i = 0; i < 7; i++) {
+              const a = SHARD_ANGLE(i);
+              const d = k * Math.max(w, h) * 0.55;
+              const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * 0.7;
+              ctx.globalAlpha = 0.5 * (1 - k * 0.5);
+              ctx.strokeStyle = rgb(GOLD);
+              ctx.lineWidth = 2 * u;
+              ctx.beginPath();
+              ctx.moveTo(cx + Math.cos(a) * d * 0.55, cy + Math.sin(a) * d * 0.55 * 0.7);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+              dot(g, GOLD, x, y, 30 * u, 1);
+              dot(g, [255, 255, 255], x, y, 8 * u, 1);
+            }
+          }
+        },
+      },
+      { // Les gardiens : chaque colosse s'endort autour d'un éclat.
+        d: 5,
+        sound: 'heartbeat',
+        draw(g) {
+          const { ctx, w, h, u, p } = g;
+          ctx.fillStyle = 'rgb(3, 4, 9)';
+          ctx.fillRect(0, 0, w, h);
+          stars(g, 70, 0.5, 6);
+          const spots = [[0.18, 0.32], [0.42, 0.24], [0.74, 0.3], [0.13, 0.7], [0.41, 0.72], [0.68, 0.68], [0.88, 0.52]];
+          const pan = (p - 0.5) * 40 * u;
+          Vide.COLOSSI.forEach((d, i) => {
+            const [sx, sy] = spots[i % spots.length];
+            const appear = clamp01((p * 1.6 - i * 0.12) / 0.4);
+            const breath = 1 + 0.02 * Math.sin(g.time * 1.2 + i);
+            const x = sx * w + pan * (0.5 + (i % 3) * 0.3), y = sy * h;
+            colossus(g, d, x, y, fit(g, d, d.stays ? 0.3 : 0.2) * breath,
+              { angle: rand(i, 41) * Math.PI * 2, alpha: 0.55 * appear, time: g.time * 0.3 });
+            // L'éclat qu'il garde, en son cœur.
+            dot(g, GOLD, x, y, 26 * u * breath, appear);
+            dot(g, [255, 255, 255], x, y, 6 * u, appear);
+          });
+        },
+      },
+      { // La dernière lueur.
+        d: 3.4,
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, w, h);
+          const on = clamp01((p - 0.15) / 0.3);
+          const flicker = 0.55 + 0.45 * Math.sin(g.time * 11) * Math.sin(g.time * 3.3);
+          dot(g, WARM, cx, cy, 26 * u, on * flicker * 0.8);
+          dot(g, [255, 255, 255], cx, cy, 7 * u, on * flicker);
+        },
+      },
+    ],
+  });
+
   Vide.Scenes = {
     GOLD, BLUE, glow, rgb, mix, ease, clamp01, rand, dot, path, stars, figure, colossus, fit, register, get, title, seen,
   };
