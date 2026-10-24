@@ -45,8 +45,10 @@
       const level = (up.legacy ? state.legacy : state.upgrades)[up.id] || 0;
       if (level > 0) up.modify(stats, level);
     }
-    // Puis les colosses apaisés. (Les bâtiments et le type de chaque village n'agissent que sur ce village :
-    // voir Villages.local.)
+    // Les bâtiments à portée globale (Archive, Fonderie, Lunette…). Les autres, et le type de chaque village,
+    // n'agissent que sur leur village : voir Villages.local.
+    if (Vide.Structures) Vide.Structures.modifyGlobal(state, stats);
+    // Puis les colosses apaisés.
     if (Vide.Colossus) Vide.Colossus.modify(state, stats);
     return stats;
   }

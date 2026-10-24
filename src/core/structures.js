@@ -177,10 +177,33 @@
   // Effets des bâtiments achevés d'un village sur ses caractéristiques (appelé par Villages.local).
   function modify(village, stats) {
     for (const d of Vide.BUILDINGS) {
-      if (!d.modify) continue;
+      if (!d.modify || d.scope === 'global') continue;
       const n = working(village, d.id);
       if (n > 0) d.modify(stats, n);
     }
+  }
+
+  // Effets des bâtiments dont la portée est globale (Archive, Fonderie, Lunette…), tous villages confondus
+  // (appelé par Stats.compute).
+  function modifyGlobal(state, stats) {
+    for (const d of Vide.BUILDINGS) {
+      if (!d.modify || d.scope !== 'global') continue;
+      let n = 0;
+      for (const v of state.villages) n += working(v, d.id);
+      if (n > 0) d.modify(stats, n);
+    }
+  }
+
+  // Ralentissement des ombres en (x, y) par les remparts (1 : aucun).
+  function wardAt(state, x, y) {
+    let slow = 1;
+    for (const v of state.villages) {
+      for (const b of v.buildings) {
+        const ward = def(b.type).ward;
+        if (ward && isWorking(b) && Math.hypot(b.x - x, b.y - y) <= ward.radius) slow = Math.min(slow, ward.slow);
+      }
+    }
+    return slow;
   }
 
   // Pendant l'absence, les bâtisseurs d'un village continuent ses chantiers dans l'ordre.
@@ -201,18 +224,24 @@
   }
 
   for (const d of Vide.BUILDINGS) {
+    // « propre aux ateliers », « propre aux jardins »…
+    const onlyName = d.only ? Villages.type(d.only).name.toLowerCase().replace(/([^s])$/, '$1s') : null;
     Catalog.register({
       id: d.id,
       tab: 'batiments',
+      // Rangés par famille : économie, vie, savoir, défense.
+      order: Vide.BUILDING_FAMILIES.indexOf(d.family),
       name: d.name,
       desc: d.desc,
       revealed: (state) => count(state, d.id, true) > 0 ||
-        (Villages.count(state, 'lueur') > 0 && (!d.requires || d.requires(state)) && state.totalLight >= d.baseCost * 0.4),
+        (Villages.count(state, 'lueur') > 0 && (!d.requires || d.requires(state)) &&
+          (!d.only || state.villages.some((v) => v.type === d.only)) && state.totalLight >= d.baseCost * 0.4),
       cost: (state) => cost(state, d),
       // Un plan se pose dans le village où l'on se trouve.
       blocked: (state) => {
         const village = Villages.current(state);
         if (!village) return 'rejoins un village';
+        if (d.only && village.type !== d.only) return `propre aux ${onlyName}`;
         if (!(village.beings.batisseur > 0)) return 'il faut un bâtisseur';
         if (Territory.radius(village) < MIN_TERRITORY) return 'territoire trop petit';
         return null;
@@ -230,6 +259,6 @@
 
   Vide.Structures = {
     def, isDone, isWorking, count, countIn, all, working, sites, cost, site, plan, addWork, nearestSite, nearestDeposit,
-    modify, advanceOffline, hp, damage, repair, mostDamaged, MIN_TERRITORY,
+    modify, modifyGlobal, wardAt, advanceOffline, hp, damage, repair, mostDamaged, MIN_TERRITORY,
   };
 })(globalThis.Vide);

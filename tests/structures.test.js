@@ -34,17 +34,81 @@
   });
 
   test('un plan est placé dans le territoire, à la distance voulue du cœur', () => {
-    const state = colonyState(400, { lueur: 1, batisseur: 1 });
-    state.player.x = 0;
-    state.stats.shadows = 1; // la tour de lumière exige d'avoir déjà vaincu une ombre…
-    state.echoes = 1e6;      // … et se paie aussi en échos
     for (const d of Vide.BUILDINGS) {
+      // Chaque bâtiment dans un village du type qu'il exige, le cas échéant.
+      const state = State.create(5);
+      village(state, { radius: 400, beings: { lueur: 4, batisseur: 1 }, type: d.only || 'jardins' });
+      state.light = state.totalLight = 1e7;
+      state.stats.shadows = 1; // la tour de lumière exige d'avoir déjà vaincu une ombre…
+      state.echoes = 1e6;      // … et se paie aussi en échos
+      assert.ok(Catalog.get(d.id).revealed(state), d.id);
       assert.ok(Catalog.buy(state, d.id), d.id);
-      const b = state.villages[0].buildings[state.villages[0].buildings.length - 1];
+      const b = state.villages[0].buildings[0];
       const dist = Math.hypot(b.x, b.y);
-      assert.near(dist, Math.max(50, d.ring * 400), 1e-6, d.id);
+      assert.near(dist, Math.min(400 * 0.9, Math.max(50, d.ring * 400)), 1e-6, d.id);
       assert.equal(b.work, 0);
     }
+  });
+
+  test('chaque bâtiment achevé change quelque chose', () => {
+    for (const d of Vide.BUILDINGS) {
+      const state = State.create(5);
+      const v = village(state, { radius: 400, type: d.only || 'jardins' });
+      const before = JSON.stringify([Vide.Stats.compute(state), Villages.local(state, v)]);
+      v.buildings.push({ type: d.id, x: 100, y: 0, work: d.work });
+      const after = JSON.stringify([Vide.Stats.compute(state), Villages.local(state, v)]);
+      assert.ok(before !== after || d.tower || d.ward || d.deposit, d.id);
+    }
+  });
+
+  test('un bâtiment propre à un type ne se bâtit que dans un village de ce type', () => {
+    const state = State.create(5);
+    village(state, { radius: 400, beings: { lueur: 4, batisseur: 1 } });
+    village(state, { x: 4000, radius: 400, beings: { batisseur: 1 }, type: 'atelier' });
+    state.light = state.totalLight = 1e7;
+    assert.ok(Catalog.get('fonderie').revealed(state), 'un atelier existe');
+    assert.equal(Catalog.get('fonderie').blocked(state), 'propre aux ateliers');
+    assert.equal(Catalog.get('serre').revealed(state), true);
+    state.player.x = 4000;
+    assert.equal(Catalog.get('fonderie').blocked(state), null);
+    assert.equal(Catalog.get('serre').blocked(state), 'propre aux jardins');
+    assert.equal(Catalog.get('citadelle').revealed(state), false, 'aucun bastion');
+  });
+
+  test('une fonderie (atelier) accélère les chantiers de tous les villages', () => {
+    const state = State.create(5);
+    const jardins = village(state, { radius: 400 });
+    const atelier = village(state, { x: 4000, radius: 400, type: 'atelier' });
+    const rate = Villages.local(state, jardins).buildRate;
+    atelier.buildings.push({ type: 'fonderie', x: 4100, y: 0, work: Structures.def('fonderie').work });
+    assert.near(Villages.local(state, jardins).buildRate, rate * 1.25, 1e-9);
+  });
+
+  test('un rempart ralentit les ombres qui le longent', () => {
+    const state = State.create(5);
+    const v = village(state, { radius: 400 });
+    const rempart = { type: 'rempart', x: 360, y: 0, work: Structures.def('rempart').work };
+    v.buildings.push(rempart);
+    assert.equal(Structures.wardAt(state, 400, 0), 0.5);
+    assert.equal(Structures.wardAt(state, -400, 0), 1);
+    rempart.broken = true;
+    assert.equal(Structures.wardAt(state, 400, 0), 1, 'éteint, il ne retient plus rien');
+  });
+
+  test('une source rallume plus tôt les êtres éteints de son village', () => {
+    const fall = (withSource) => {
+      const state = State.create(5);
+      const v = village(state, { radius: 300, beings: { gardien: 1 } });
+      if (withSource) v.buildings.push({ type: 'source', x: 50, y: 0, work: 999 });
+      state.player.x = 50000;
+      const game = newGame(state);
+      const g = game.colony.beings[0];
+      Vide.Combat.hurtBeing(game, g, 1e6);
+      let t = 0;
+      while (g.down > 0 && t < 60) { Sim.step(game, dt, Sim.emptyInput()); t += dt; }
+      return t;
+    };
+    assert.ok(fall(true) < fall(false) * 0.75);
   });
 
   test("l'emplacement est déterministe et s'écarte des autres bâtiments", () => {

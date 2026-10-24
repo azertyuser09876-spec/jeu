@@ -10,12 +10,19 @@
 //   hp         solidité face aux ombres (à zéro, le bâtiment s'éteint jusqu'à sa réparation)
 //   tower      si présent : { range, damage, cooldown } — tire sur les ombres
 //   baseEchoes si présent : prix en échos du premier plan (croissance echoGrowth)
+//   family     économie, vie, savoir ou défense (ordre dans la boutique)
+//   only       si présent : type de village où seul il peut se bâtir
+//   scope      'global' : son effet (modify) vaut pour tous les villages ; sinon pour le sien seulement
+//   ward       si présent : { radius, slow } — les ombres qui passent à portée sont ralenties
 (function (Vide) {
   'use strict';
+
+  Vide.BUILDING_FAMILIES = ['economie', 'vie', 'savoir', 'defense'];
 
   Vide.BUILDINGS = [
     {
       id: 'nid',
+      family: 'vie',
       name: 'Nid',
       desc: 'Un abri lumineux : quatre êtres de plus peuvent vivre dans ce village.',
       baseCost: 1500,
@@ -29,6 +36,7 @@
     },
     {
       id: 'prisme',
+      family: 'economie',
       name: 'Prisme',
       desc: 'Un relais loin du cœur : les lueurs y déposent leur charge, trajets plus courts, lumière ×1,25.',
       baseCost: 2500,
@@ -42,6 +50,7 @@
     },
     {
       id: 'phare',
+      family: 'economie',
       name: 'Phare',
       desc: 'Son faisceau pousse le territoire du village à grandir plus vite.',
       baseCost: 3000,
@@ -55,6 +64,7 @@
     },
     {
       id: 'tour',
+      family: 'defense',
       name: 'Tour de lumière',
       desc: 'Tire des traits de lumière sur les ombres qui approchent.',
       baseCost: 5000,
@@ -68,6 +78,154 @@
       effectText: 'tire sur les ombres',
       tower: { range: 240, damage: 6, cooldown: 0.8 },
       requires: (state) => state.stats.shadows > 0,
+    },
+
+    // --- Nouveaux bâtiments (1.3) ---
+    {
+      id: 'fontaine',
+      family: 'economie',
+      name: 'Fontaine',
+      desc: 'Une source de lumière calme : le jardin du village y naît plus dense.',
+      baseCost: 4000,
+      growth: 2,
+      work: 60,
+      ring: 0.45,
+      size: 13,
+      hp: 140,
+      effectText: 'jardin +25 %',
+      modify: (stats, n) => { stats.gardenDensity *= 1 + 0.25 * n; },
+      requires: (state) => Vide.Villages.count(state, 'lueur') >= 4,
+    },
+    {
+      id: 'source',
+      family: 'vie',
+      name: 'Source',
+      desc: 'Une eau de lumière : ta lumière et les êtres du village s’y soignent plus vite, '
+        + 'et ses êtres éteints s’y rallument plus tôt.',
+      baseCost: 6000,
+      growth: 2,
+      work: 70,
+      ring: 0.25,
+      size: 12,
+      hp: 160,
+      effectText: 'soins +50 %',
+      modify: (stats, n) => { stats.regen *= 1 + 0.5 * n; stats.rekindle *= 1 + 0.5 * n; },
+      requires: (state) => state.stats.shadows > 0,
+    },
+    {
+      id: 'archive',
+      family: 'savoir',
+      scope: 'global',
+      name: 'Archive',
+      desc: 'La mémoire du vide, gardée sur des fils de lumière : tout ton monde se souvient d’une heure de plus '
+        + 'pendant ton absence.',
+      baseCost: 8000,
+      growth: 2.2,
+      work: 90,
+      ring: 0.35,
+      size: 13,
+      hp: 120,
+      effectText: '+1 h d’absence',
+      modify: (stats, n) => { stats.offlineCap += 3600 * n; },
+      requires: (state) => state.totalLight >= 2e4,
+    },
+    {
+      id: 'rempart',
+      family: 'defense',
+      name: 'Rempart',
+      desc: 'Un arc de lumière dense au bord du territoire : les ombres qui le longent sont ralenties de moitié.',
+      baseCost: 7000,
+      growth: 1.8,
+      baseEchoes: 6,
+      echoGrowth: 1.4,
+      work: 80,
+      ring: 0.95,
+      size: 16,
+      hp: 600,
+      effectText: 'ralentit les ombres',
+      ward: { radius: 160, slow: 0.5 },
+      requires: (state) => state.stats.shadows > 0,
+    },
+
+    // --- Propres à un type de village ---
+    {
+      id: 'serre',
+      only: 'jardins',
+      family: 'economie',
+      name: 'Serre',
+      desc: 'Propre aux jardins : la lumière y naît bien plus dense, et plus souvent dorée.',
+      baseCost: 12000,
+      growth: 2.4,
+      work: 100,
+      ring: 0.5,
+      size: 15,
+      hp: 160,
+      effectText: 'jardin +50 % · or',
+      modify: (stats, n) => { stats.gardenDensity *= 1 + 0.5 * n; stats.gardenRare *= 1 + 0.5 * n; },
+    },
+    {
+      id: 'citadelle',
+      only: 'bastion',
+      family: 'defense',
+      name: 'Citadelle',
+      desc: 'Propre aux bastions : une tour massive, dont les traits portent loin et frappent fort.',
+      baseCost: 15000,
+      growth: 2.2,
+      baseEchoes: 20,
+      echoGrowth: 1.5,
+      work: 140,
+      ring: 0.6,
+      size: 18,
+      hp: 900,
+      effectText: 'tire loin et fort',
+      tower: { range: 340, damage: 16, cooldown: 1.1 },
+    },
+    {
+      id: 'fonderie',
+      only: 'atelier',
+      scope: 'global',
+      family: 'economie',
+      name: 'Fonderie',
+      desc: 'Propre aux ateliers : ses outils servent partout ; les chantiers de tous tes villages avancent plus vite.',
+      baseCost: 12000,
+      growth: 2.4,
+      work: 110,
+      ring: 0.4,
+      size: 15,
+      hp: 200,
+      effectText: 'chantiers +25 % partout',
+      modify: (stats, n) => { stats.buildRate *= 1 + 0.25 * n; },
+    },
+    {
+      id: 'lunette',
+      only: 'observatoire',
+      scope: 'global',
+      family: 'savoir',
+      name: 'Lunette',
+      desc: 'Propre aux observatoires : elle voit loin, et tous tes territoires grandissent plus vite.',
+      baseCost: 14000,
+      growth: 2.5,
+      work: 120,
+      ring: 0.7,
+      size: 14,
+      hp: 140,
+      effectText: 'croissance +15 % partout',
+      modify: (stats, n) => { stats.territoryGrowth *= 1 + 0.15 * n; },
+    },
+    {
+      id: 'autel',
+      only: 'sanctuaire',
+      family: 'vie',
+      name: 'Autel',
+      desc: 'Propre aux sanctuaires : le blanc s’y répand deux fois plus vite, et y brûle davantage les ombres.',
+      baseCost: 12000,
+      growth: 2.4,
+      work: 100,
+      ring: 0.2,
+      size: 14,
+      hp: 180,
+      effectText: 'blanc ×2',
+      modify: (stats, n) => { stats.whitening *= 1 + n; stats.burn *= 1 + 0.5 * n; },
     },
   ];
 })(globalThis.Vide);

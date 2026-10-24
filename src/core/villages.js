@@ -136,9 +136,13 @@
   // Celles du joueur (améliorations, souvenirs, colosses), puis les bâtiments du village, puis son type.
   // Clés propres aux villages : structureArmor (les coups sur ses bâtiments sont divisés d'autant),
   // burn (brûlure des ombres dans son territoire), pulseBoost (recharge de la pulsation), regen (soins),
-  // whitening (vitesse du blanc).
+  // whitening (vitesse du blanc), rekindle (vitesse à laquelle ses êtres éteints se rallument),
+  // gardenRare (fréquence de la lumière dorée dans son jardin).
   function local(state, village, stats) {
-    const l = { ...(stats || Vide.Stats.compute(state)), structureArmor: 1, burn: 1, pulseBoost: 1, regen: 1, whitening: 1 };
+    const l = {
+      ...(stats || Vide.Stats.compute(state)),
+      structureArmor: 1, burn: 1, pulseBoost: 1, regen: 1, whitening: 1, rekindle: 1, gardenRare: 1,
+    };
     Vide.Structures.modify(village, l);
     type(village.type).modify(l);
     return l;

@@ -80,6 +80,171 @@
     },
   };
 
+  function line(r, alpha, color, width) {
+    const { ctx } = r;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = (width || 1.2) / r.camera.scale;
+  }
+
+  Object.assign(SHAPES, {
+    // Fontaine : des ronds dans l'eau qui s'élargissent sans fin.
+    fontaine(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.light, x, y, s * 2, 0.2 + f * 0.3);
+      for (let k = 0; k < 3; k++) {
+        const p = (t * 0.35 + k / 3) % 1;
+        line(r, (1 - p) * 0.55, '#d6f0ff');
+        ctx.beginPath();
+        ctx.arc(x, y, s * (0.3 + p * 1.2), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      Render.drawGlow(ctx, r.glows.light, x, y, 6, 0.9);
+    },
+
+    // Source : une goutte de lumière d'où montent de petites bulles.
+    source(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.light, x, y, s * 2.2, 0.22 + f * 0.3);
+      line(r, 0.55, '#c8ffe8');
+      ctx.beginPath();
+      ctx.moveTo(x, y - s);
+      ctx.quadraticCurveTo(x + s * 0.8, y + s * 0.2, x, y + s * 0.6);
+      ctx.quadraticCurveTo(x - s * 0.8, y + s * 0.2, x, y - s);
+      ctx.stroke();
+      for (let k = 0; k < 4; k++) {
+        const p = (t * 0.4 + k / 4) % 1;
+        Render.drawGlow(ctx, r.glows.light, x + Math.sin(k * 2.1 + t) * s * 0.4, y - s - p * s * 1.6, 4, (1 - p) * 0.8);
+      }
+    },
+
+    // Archive : des lignes de mémoire empilées, qui s'allument tour à tour.
+    archive(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 2, 0.15 + f * 0.3);
+      for (let k = 0; k < 5; k++) {
+        const lit = 0.25 + 0.5 * Math.max(0, Math.sin(t * 1.2 - k * 0.9));
+        line(r, lit, '#fff1d6');
+        const yy = y - s * 0.8 + k * s * 0.4;
+        const w = s * (0.6 + 0.3 * Math.sin(k * 1.7));
+        ctx.beginPath();
+        ctx.moveTo(x - w, yy);
+        ctx.lineTo(x + w, yy);
+        ctx.stroke();
+      }
+    },
+
+    // Rempart : un arc dense tourné vers le dehors, hérissé de piquets.
+    rempart(r, x, y, s, t, f, v) {
+      const { ctx } = r;
+      const out = v ? Math.atan2(y - v.y, x - v.x) : 0;
+      const R = s * 2.6;
+      const cx = x - Math.cos(out) * R, cy = y - Math.sin(out) * R; // centre de l'arc, côté cœur
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 2.4, 0.14 + f * 0.3);
+      line(r, 0.55, '#ffeccc', 2);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, out - 0.55, out + 0.55);
+      ctx.stroke();
+      line(r, 0.3, '#ffeccc', 1);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R - 6, out - 0.5, out + 0.5);
+      ctx.stroke();
+      for (let k = -2; k <= 2; k++) {
+        const a = out + k * 0.24;
+        Render.drawGlow(ctx, r.glows.white, cx + Math.cos(a) * R, cy + Math.sin(a) * R, 5, 0.7);
+      }
+    },
+
+    // Serre : un hexagone où poussent de petites feuilles de lumière.
+    serre(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.light, x, y, s * 2.2, 0.2 + f * 0.3);
+      line(r, 0.5, '#c8ffdc');
+      ctx.beginPath();
+      for (let k = 0; k <= 6; k++) {
+        const a = Math.PI / 6 + (k / 6) * Math.PI * 2;
+        if (k === 0) ctx.moveTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
+        else ctx.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
+      }
+      ctx.stroke();
+      for (let k = 0; k < 3; k++) {
+        const a = t * 0.2 + (k / 3) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(x + Math.cos(a) * s * 0.4, y + Math.sin(a) * s * 0.4, s * 0.35, s * 0.15, a, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    },
+
+    // Citadelle : une tour massive, double losange et anneau lent.
+    citadelle(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 2.6, 0.24 + f * 0.4);
+      line(r, 0.65, '#fff3d6', 1.6);
+      for (const k of [1, 0.6]) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - s * k);
+        ctx.lineTo(x + s * k, y);
+        ctx.lineTo(x, y + s * k);
+        ctx.lineTo(x - s * k, y);
+        ctx.closePath();
+        ctx.stroke();
+      }
+      line(r, 0.3, '#fff3d6');
+      ctx.beginPath();
+      ctx.arc(x, y, s * 1.5, -t * 0.6, -t * 0.6 + Math.PI * 1.5);
+      ctx.stroke();
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 0.7, 1);
+    },
+
+    // Fonderie : un carré au feu doux, d'où jaillissent des étincelles.
+    fonderie(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.rare, x, y, s * 2.2, 0.22 + f * 0.3);
+      line(r, 0.55, '#ffd2a0');
+      ctx.strokeRect(x - s * 0.7, y - s * 0.7, s * 1.4, s * 1.4);
+      for (let k = 0; k < 5; k++) {
+        const p = (t * 0.9 + k / 5) % 1;
+        const a = -Math.PI / 2 + Math.sin(k * 3.7) * 0.9;
+        Render.drawGlow(ctx, r.glows.rare, x + Math.cos(a) * p * s * 1.8, y + Math.sin(a) * p * s * 1.8, 3.5, (1 - p) * 0.9);
+      }
+    },
+
+    // Lunette : une longue vue qui balaie lentement le ciel, et sa lentille.
+    lunette(r, x, y, s, t, f) {
+      const { ctx } = r;
+      const a = Math.sin(t * 0.15) * 1.2 - Math.PI / 2;
+      Render.drawGlow(ctx, r.glows.light, x, y, s * 2, 0.18 + f * 0.3);
+      line(r, 0.55, '#d6e4ff', 1.4);
+      ctx.beginPath();
+      ctx.moveTo(x - Math.cos(a) * s * 0.6, y - Math.sin(a) * s * 0.6);
+      ctx.lineTo(x + Math.cos(a) * s * 1.8, y + Math.sin(a) * s * 1.8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * s * 1.8, y + Math.sin(a) * s * 1.8, s * 0.35, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, s * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+    },
+
+    // Autel : un cercle pâle et une colonne de lumière qui monte.
+    autel(r, x, y, s, t, f) {
+      const { ctx } = r;
+      const grad = ctx.createLinearGradient(x, y, x, y - s * 6);
+      grad.addColorStop(0, 'rgba(255, 235, 250, 0.35)');
+      grad.addColorStop(1, 'rgba(255, 235, 250, 0)');
+      ctx.globalAlpha = 0.6 + 0.2 * Math.sin(t * 0.8);
+      ctx.fillStyle = grad;
+      ctx.fillRect(x - s * 0.3, y - s * 6, s * 0.6, s * 6);
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 2.4, 0.2 + f * 0.3);
+      line(r, 0.55, '#ffe6f6');
+      ctx.beginPath();
+      ctx.arc(x, y, s * 0.8, 0, Math.PI * 2);
+      ctx.stroke();
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 0.5, 1);
+    },
+  });
+
   // Chantier : contour en pointillés et arc d'avancement.
   function drawSite(r, b, d, progress, t) {
     const { ctx } = r;
@@ -122,7 +287,7 @@
       if (b.broken) {
         // Éteint par les ombres : presque gris, avec un cerne violet, jusqu'à sa réparation.
         Render.setGlowScale(0.2);
-        SHAPES[d.id](r, b.x, b.y, d.size, t, 0);
+        SHAPES[d.id](r, b.x, b.y, d.size, t, 0, v);
         Render.setGlowScale(1);
         const ctx = r.ctx;
         ctx.globalAlpha = 0.35;
@@ -137,7 +302,7 @@
         const f = game.colony.flashes.get(b) || 0;
         // Frappé par une ombre (éclat négatif) : il vacille.
         if (f < 0) Render.setGlowScale(0.5 + 0.5 * Math.abs(Math.sin(t * 30)));
-        SHAPES[d.id](r, b.x, b.y, d.size, t, Math.max(0, f));
+        SHAPES[d.id](r, b.x, b.y, d.size, t, Math.max(0, f), v);
         Render.setGlowScale(1);
       } else {
         drawSite(r, b, d, b.work / d.work, t);

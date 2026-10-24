@@ -18,14 +18,15 @@
 
   // Une particule naît en un point du territoire, jamais collée au cœur. La lumière dorée est plus fréquente
   // là où le territoire a blanchi.
-  function spawn(garden, village, visible) {
+  function spawn(garden, village, visible, rareMult) {
     const g = CONFIG.garden;
     const r = garden.rng;
     if (Territory.radius(village) <= g.foyerGap) return null;
     for (let tries = 0; tries < 10; tries++) {
       const at = Territory.randomPoint(village, r);
       if (Math.hypot(at.x - village.x, at.y - village.y) < g.foyerGap) continue;
-      const rare = r() < g.rareChance * (1 + (CONFIG.territory.whiteRare - 1) * at.white);
+      const chance = g.rareChance * (rareMult || 1) * (1 + (CONFIG.territory.whiteRare - 1) * at.white);
+      const rare = r() < Math.min(0.5, chance); // jamais plus d'une particule dorée sur deux
       const p = Field.place(garden, at.x, at.y, rare, visible);
       p.vx *= 0.3; // le jardin est calme : presque aucune dérive
       p.vy *= 0.3;
@@ -47,9 +48,10 @@
     const { garden } = game;
     const n = counts(garden);
     for (const v of game.state.villages) {
-      const target = targetCount(v, Vide.Villages.statsOf(game, v));
+      const stats = Vide.Villages.statsOf(game, v);
+      const target = targetCount(v, stats);
       let have = n.get(v.id) || 0;
-      for (let guard = 0; have < target && guard < target * 4; guard++) if (spawn(garden, v, true)) have++;
+      for (let guard = 0; have < target && guard < target * 4; guard++) if (spawn(garden, v, true, stats.gardenRare)) have++;
     }
   }
 
@@ -59,7 +61,8 @@
     const result = Field.attract(garden.particles, state.player, game.stats, dt, Infinity);
     const n = counts(garden);
     for (const v of state.villages) {
-      const target = targetCount(v, Vide.Villages.statsOf(game, v));
+      const stats = Vide.Villages.statsOf(game, v);
+      const target = targetCount(v, stats);
       let have = n.get(v.id) || 0;
       if (have >= target) {
         garden.budgets.set(v.id, 0);
@@ -68,7 +71,7 @@
       let budget = Math.min((garden.budgets.get(v.id) || 0) + (target / CONFIG.garden.refillTime) * dt, 5);
       while (budget >= 1 && have < target) {
         budget--;
-        if (spawn(garden, v, false)) have++;
+        if (spawn(garden, v, false, stats.gardenRare)) have++;
       }
       garden.budgets.set(v.id, budget);
     }

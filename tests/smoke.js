@@ -171,6 +171,37 @@ const { chromium } = require('playwright');
   check(falling.kind === 'respawn' && falling.dark && Math.abs(falling.cam - fallAt) < 5 && stillPaused === falling.time &&
     reborn.done && reborn.d < 60, 'dispersée, la lumière éclate sur place puis renaît au village (animation)');
 
+  // Tous les bâtiments, achevés puis éteints, se dessinent sans erreur (dans un village du bon type).
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    const keep = { x: s.player.x, y: s.player.y };
+    Vide.BUILDINGS.forEach((d, k) => {
+      s.player.x = 20000 + k * 900; s.player.y = 20000;
+      const v = Vide.Villages.found(s, d.only || 'jardins');
+      v.buildings.push({ type: d.id, x: v.x + 60, y: v.y, work: d.work });
+      v.buildings.push({ type: d.id, x: v.x - 60, y: v.y, work: d.work, broken: true });
+    });
+    s.player.x = 20000; s.player.y = 20000;
+    Vide.Render.snapCamera(Vide.renderer, Vide.game);
+    Vide.renderer.zoom = 0.55;
+    window.keepPlayer = keep;
+  });
+  await page.waitForTimeout(800);
+  for (let k = 0; k < 13; k += 3) {
+    await page.evaluate((k) => {
+      const p = Vide.game.state.player;
+      p.x = 20000 + k * 900; p.y = 20000;
+    }, k);
+    await page.waitForTimeout(150);
+  }
+  check(errors.length === 0, 'chaque bâtiment se dessine, achevé ou éteint');
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    s.villages.length = 1;
+    Object.assign(s.player, window.keepPlayer);
+    Vide.renderer.zoom = 1;
+  });
+
   // Zones et carte : visiter une autre région, puis ouvrir la carte avec M.
   await page.evaluate(() => {
     const p = Vide.game.state.player;

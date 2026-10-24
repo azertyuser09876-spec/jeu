@@ -223,8 +223,8 @@
       const dx = tx - s.x, dy = ty - s.y;
       const d = Math.hypot(dx, dy) || 1;
       const reach = s.target ? k.radius + reachOf(s.target) : 0;
-      // Mouvement lourd et ondulant, qui s'arrête au contact.
-      const speed = d > reach ? k.speed : 0;
+      // Mouvement lourd et ondulant, qui s'arrête au contact (et ralentit le long d'un rempart).
+      const speed = d > reach ? k.speed * Structures.wardAt(state, s.x, s.y) : 0;
       const kk = util.damp(3, dt);
       const wobble = Math.sin(s.age * 2 + s.phase) * 0.35;
       const ux = dx / d, uy = dy / d;

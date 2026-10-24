@@ -374,7 +374,7 @@
       const max = maxHp(game, b);
       if (b.hp === null) b.hp = max;
       if (b.down > 0) {
-        b.down -= dt;
+        b.down -= dt * stats.rekindle; // une source les rallume plus tôt
         if (b.down <= 0) {
           // Se rallume au cœur de son village, intact.
           b.down = 0;
