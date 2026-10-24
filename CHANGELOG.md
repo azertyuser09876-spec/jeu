@@ -1,5 +1,21 @@
 # Historique des versions
 
+## 1.6.0 — Les ombres bâtissent
+
+- **Nids d'ombre** : après ton deuxième village, un nid naît à bonne distance de tes villages, puis un autre
+  toutes les 15 minutes de jeu. Loin de l'origine, des régions dangereuses en abritent déjà, découverts en
+  approchant.
+  - Chaque nid grandit avec l'âge : son obscurité s'étend, son cœur se durcit.
+  - Il lance des raids, de plus en plus gros, sur le village le plus proche.
+  - Son obscurité épuise ta lumière hors de tes territoires, et le vide y fait naître bien moins de particules.
+  - Des flèches sombres au bord de l'écran les signalent.
+- **Le siège** : nouvel ordre « assiéger » (B). Ton armée va au nid le plus proche, disperse ses défenseurs et
+  frappe son cœur ; ta pulsation le blesse aussi. Détruit, il rend beaucoup d'échos, et sa région est libérée
+  pour de bon : une clairière où le vide fait naître 30 % de lumière en plus.
+- Deux fragments du récit (24 au total).
+- Sauvegarde au format 17 (nids, régions libérées).
+- 283 tests de logique, 35 vérifications navigateur.
+
 ## 1.5.0 — Expéditions et capacités
 
 - **Expéditions, choisies sur la carte** : toucher un point ouvre un petit panneau.

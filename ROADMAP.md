@@ -120,7 +120,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 1. Expéditions choisies sur la carte : colons (fondent au loin), éclaireurs (révèlent), escortes.
 2. Capacités de la lumière : élan (ruée), fanal (lumière posée), retour (vers un village).
 
-### [ ] 1.6 — Les ombres bâtissent
+### [x] 1.6 — Les ombres bâtissent
 1. Villages d'ombre (territoire d'obscurité, flèches noires) après tes premiers villages ou trop loin ;
    ils lancent les raids.
 2. Les assiéger avec l'armée, les détruire, reprendre le terrain.

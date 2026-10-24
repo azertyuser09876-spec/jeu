@@ -44,6 +44,8 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - **Expéditions** (`expeditions.js`, state.expeditions) : lancées depuis la carte, elles marchent et peuvent être
   attaquées ; les colons en route comptent dans le prix des fondations. **Capacités** (`abilities.js`) : ruée,
   fanal (state.beacon, récolte abstraite selon la zone), retour.
+- **Nids d'ombre** (`nests.js`, state.nests, state.cleared) : apparition, obscurité, raids ; ordre « siege » de
+  l'armée (`Combat.anchor`), cœur ciblé via `Nests.target`, `Nests.hit`.
 - **Performances** : `grid.js` (grille spatiale) pour tout voisinage d'êtres ; ne pas réintroduire de boucle sur
   tous les êtres à chaque pas et pour chaque être (banc d'essai : 400 êtres sous 12 ms par pas, test colony).
 - **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`
