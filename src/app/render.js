@@ -286,6 +286,19 @@
   }
 
   function followCamera(r, game, dt) {
+    // Une animation peut retenir la caméra ailleurs (là où la lumière s'est dispersée).
+    // Relâchée, elle rejoint la lumière d'un coup (le monde est alors dans le noir).
+    if (r.hold) {
+      r.camera.x = r.hold.x;
+      r.camera.y = r.hold.y;
+      r.held = true;
+      return;
+    }
+    if (r.held) {
+      r.held = false;
+      snapCamera(r, game);
+      return;
+    }
     const { player } = game.state;
     // Un saut lointain (lumière dispersée, renvoyée à un village) : la caméra suit d'un coup.
     if (Math.hypot(player.x - r.camera.x, player.y - r.camera.y) > 900) snapCamera(r, game);

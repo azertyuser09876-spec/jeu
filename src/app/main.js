@@ -46,7 +46,7 @@
   Vide.Away.init();
   // Le bilan de l'absence attend la fin de l'animation de lancement.
   let welcomePending = welcome && Vide.Offline.worthShowing(welcome) ? welcome : null;
-  const intro = Vide.Intro.create();
+  let intro = Vide.Intro.create('launch');
 
   const paused = () => menu.open || Vide.Away.open || map.open || Vide.Intro.blocking(intro);
 
@@ -115,6 +115,14 @@
   Vide.intro = intro;
   canvas.addEventListener('pointerdown', () => Vide.Intro.skip(intro));
 
+  // Dispersée, la lumière éclate puis se rassemble au village le plus proche : on rejoue l'éveil.
+  function watchDispersal() {
+    const e = game.events.find((x) => x.type === 'dispersed');
+    if (!e) return;
+    intro = Vide.Intro.create('respawn', e.from);
+    Vide.intro = intro;
+  }
+
   let last = performance.now();
   let accumulator = 0;
   let sinceSave = 0;
@@ -126,6 +134,7 @@
     last = now;
     Vide.Intro.update(intro, state, dt);
     renderer.introZoom = Vide.Intro.zoom(intro);
+    renderer.hold = Vide.Intro.hold(intro);
     if (welcomePending && Vide.Intro.done(intro)) {
       Vide.Away.show(welcomePending);
       welcomePending = null;
@@ -151,6 +160,7 @@
         steps++;
       }
       if (steps === CONFIG.maxStepsPerFrame) accumulator = 0;
+      watchDispersal();
     }
 
     sinceSave += dt;

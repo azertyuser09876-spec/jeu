@@ -144,6 +144,33 @@ const { chromium } = require('playwright');
   const posture = await page.evaluate(() => Vide.game.state.army.posture);
   check(posture === 'escorte', 'la barre d’ordres change l’ordre de l’armée');
 
+  // Dispersion : la lumière éclate où elle tombe, l'écran s'éteint (monde en pause), puis elle renaît
+  // au village le plus proche.
+  const fallAt = await page.evaluate(() => {
+    const g = Vide.game;
+    const v = g.state.villages[0];
+    g.state.player.x = v.x + 1500;
+    g.state.player.y = v.y;
+    const x = g.state.player.x;
+    Vide.Combat.hurtPlayer(g, 1e9, x + 10, v.y);
+    return x;
+  });
+  await page.waitForTimeout(300);
+  const falling = await page.evaluate(() => ({
+    kind: Vide.intro.kind, dark: document.body.classList.contains('dispersing'),
+    time: Vide.game.time, cam: Vide.renderer.camera.x,
+  }));
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'dispersion.png') });
+  await page.waitForTimeout(500);
+  const stillPaused = await page.evaluate(() => Vide.game.time);
+  await page.waitForTimeout(3000);
+  const reborn = await page.evaluate(() => {
+    const v = Vide.game.state.villages[0];
+    return { done: Vide.Intro.done(Vide.intro), d: Math.hypot(Vide.renderer.camera.x - v.x, Vide.renderer.camera.y - v.y) };
+  });
+  check(falling.kind === 'respawn' && falling.dark && Math.abs(falling.cam - fallAt) < 5 && stillPaused === falling.time &&
+    reborn.done && reborn.d < 60, 'dispersée, la lumière éclate sur place puis renaît au village (animation)');
+
   // Zones et carte : visiter une autre région, puis ouvrir la carte avec M.
   await page.evaluate(() => {
     const p = Vide.game.state.player;
