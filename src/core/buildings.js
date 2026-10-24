@@ -1,7 +1,8 @@
 // Catalogue des bâtiments. Ajouter un bâtiment = ajouter une entrée ici.
 //
 //   id         identifiant stable (stocké dans les sauvegardes : ne jamais le renommer)
-//   baseCost   prix du premier plan ; growth : multiplicateur à chaque nouveau plan du même type
+//   baseCost   prix d'un plan (fixe : bâtir ne renchérit jamais ; ce qui limite, c'est la place et `max`)
+//   max        nombre maximal de ce bâtiment dans un même village (chantiers compris)
 //   work       travail nécessaire (secondes de bâtisseur)
 //   ring       distance au cœur du village souhaitée, en fraction du rayon de son territoire
 //   size       taille à l'affichage
@@ -9,7 +10,7 @@
 //   deposit    si présent : relais où les lueurs déposent, avec ce multiplicateur
 //   hp         solidité face aux ombres (à zéro, le bâtiment s'éteint jusqu'à sa réparation)
 //   tower      si présent : { range, damage, cooldown } — tire sur les ombres
-//   baseEchoes si présent : prix en échos du premier plan (croissance echoGrowth)
+//   baseEchoes si présent : prix en échos
 //   family     économie, vie, savoir ou défense (ordre dans la boutique)
 //   only       si présent : type de village où seul il peut se bâtir
 //   scope      'global' : son effet (modify) vaut pour tous les villages ; sinon pour le sien seulement
@@ -22,11 +23,11 @@
   Vide.BUILDINGS = [
     {
       id: 'nid',
+      max: 12,
       family: 'vie',
       name: 'Nid',
       desc: 'Un abri lumineux : quatre êtres de plus peuvent vivre dans ce village.',
       baseCost: 1500,
-      growth: 1.9,
       work: 40,
       ring: 0.3,
       size: 16,
@@ -36,11 +37,11 @@
     },
     {
       id: 'prisme',
+      max: 4,
       family: 'economie',
       name: 'Prisme',
       desc: 'Un relais loin du cœur : les lueurs y déposent leur charge, trajets plus courts, lumière ×1,25.',
       baseCost: 2500,
-      growth: 1.8,
       work: 60,
       ring: 0.6,
       size: 15,
@@ -50,11 +51,11 @@
     },
     {
       id: 'phare',
+      max: 2,
       family: 'economie',
       name: 'Phare',
       desc: 'Son faisceau pousse le territoire du village à grandir plus vite.',
       baseCost: 3000,
-      growth: 2.1,
       work: 90,
       ring: 0.85,
       size: 14,
@@ -64,13 +65,12 @@
     },
     {
       id: 'tour',
+      max: 6,
       family: 'defense',
       name: 'Tour de lumière',
       desc: 'Tire des traits de lumière sur les ombres qui approchent.',
       baseCost: 5000,
-      growth: 1.8,
       baseEchoes: 8,
-      echoGrowth: 1.4,
       work: 70,
       ring: 0.75,
       size: 13,
@@ -79,15 +79,31 @@
       tower: { range: 240, damage: 6, cooldown: 0.8 },
       requires: (state) => state.stats.shadows > 0,
     },
+    {
+      id: 'caserne',
+      max: 4,
+      family: 'defense',
+      name: 'Caserne',
+      desc: 'Des quartiers pour l’armée : quatre soldats de plus peuvent servir dans ce village.',
+      baseCost: 6000,
+      baseEchoes: 5,
+      work: 80,
+      ring: 0.7,
+      size: 15,
+      hp: 320,
+      effectText: '+4 soldats',
+      modify: (stats, n) => { stats.armyCap += 4 * n; },
+      requires: (state) => state.stats.shadows > 0,
+    },
 
     // --- Nouveaux bâtiments (1.3) ---
     {
       id: 'fontaine',
+      max: 3,
       family: 'economie',
       name: 'Fontaine',
       desc: 'Une source de lumière calme : le jardin du village y naît plus dense.',
       baseCost: 4000,
-      growth: 2,
       work: 60,
       ring: 0.45,
       size: 13,
@@ -98,12 +114,12 @@
     },
     {
       id: 'source',
+      max: 2,
       family: 'vie',
       name: 'Source',
       desc: 'Une eau de lumière : ta lumière et les êtres du village s’y soignent plus vite, '
         + 'et ses êtres éteints s’y rallument plus tôt.',
       baseCost: 6000,
-      growth: 2,
       work: 70,
       ring: 0.25,
       size: 12,
@@ -114,13 +130,13 @@
     },
     {
       id: 'archive',
+      max: 2,
       family: 'savoir',
       scope: 'global',
       name: 'Archive',
       desc: 'La mémoire du vide, gardée sur des fils de lumière : tout ton monde se souvient d’une heure de plus '
         + 'pendant ton absence.',
       baseCost: 8000,
-      growth: 2.2,
       work: 90,
       ring: 0.35,
       size: 13,
@@ -131,13 +147,12 @@
     },
     {
       id: 'rempart',
+      max: 3,
       family: 'defense',
       name: 'Rempart',
       desc: 'Un arc de lumière dense au bord du territoire : les ombres qui le longent sont ralenties de moitié.',
       baseCost: 7000,
-      growth: 1.8,
       baseEchoes: 6,
-      echoGrowth: 1.4,
       work: 80,
       ring: 0.95,
       size: 16,
@@ -150,12 +165,12 @@
     // --- Propres à un type de village ---
     {
       id: 'serre',
+      max: 2,
       only: 'jardins',
       family: 'economie',
       name: 'Serre',
       desc: 'Propre aux jardins : la lumière y naît bien plus dense, et plus souvent dorée.',
       baseCost: 12000,
-      growth: 2.4,
       work: 100,
       ring: 0.5,
       size: 15,
@@ -165,14 +180,13 @@
     },
     {
       id: 'citadelle',
+      max: 2,
       only: 'bastion',
       family: 'defense',
       name: 'Citadelle',
       desc: 'Propre aux bastions : une tour massive, dont les traits portent loin et frappent fort.',
       baseCost: 15000,
-      growth: 2.2,
       baseEchoes: 20,
-      echoGrowth: 1.5,
       work: 140,
       ring: 0.6,
       size: 18,
@@ -182,13 +196,13 @@
     },
     {
       id: 'fonderie',
+      max: 2,
       only: 'atelier',
       scope: 'global',
       family: 'economie',
       name: 'Fonderie',
       desc: 'Propre aux ateliers : ses outils servent partout ; les chantiers de tous tes villages avancent plus vite.',
       baseCost: 12000,
-      growth: 2.4,
       work: 110,
       ring: 0.4,
       size: 15,
@@ -198,13 +212,13 @@
     },
     {
       id: 'lunette',
+      max: 2,
       only: 'observatoire',
       scope: 'global',
       family: 'savoir',
       name: 'Lunette',
       desc: 'Propre aux observatoires : elle voit loin, et tous tes territoires grandissent plus vite.',
       baseCost: 14000,
-      growth: 2.5,
       work: 120,
       ring: 0.7,
       size: 14,
@@ -214,12 +228,12 @@
     },
     {
       id: 'autel',
+      max: 1,
       only: 'sanctuaire',
       family: 'vie',
       name: 'Autel',
       desc: 'Propre aux sanctuaires : le blanc s’y répand deux fois plus vite, et y brûle davantage les ombres.',
       baseCost: 12000,
-      growth: 2.4,
       work: 100,
       ring: 0.2,
       size: 14,

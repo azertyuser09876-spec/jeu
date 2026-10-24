@@ -59,6 +59,36 @@
     },
 
     // Phare : un cœur brillant et un faisceau qui balaie lentement le vide.
+    // Caserne : un enclos carré, des rangs de soldats (points) et deux fanions qui battent.
+    caserne(r, x, y, s, t, f) {
+      const { ctx } = r;
+      const px = 1 / r.camera.scale;
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 2.2, 0.16 + f * 0.4);
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = '#fff3d6';
+      ctx.lineWidth = 1.2 * px;
+      ctx.strokeRect(x - s, y - s * 0.75, s * 2, s * 1.5);
+      ctx.fillStyle = '#fff3d6';
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 2; j++) {
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          ctx.arc(x - s * 0.5 + i * s * 0.5, y - s * 0.25 + j * s * 0.5, 1.6 * px + s * 0.06, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      for (const side of [-1, 1]) {
+        const fx = x + side * s, fy = y - s * 0.75;
+        const wave = Math.sin(t * 4 + side) * s * 0.15;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(fx, fy);
+        ctx.lineTo(fx, fy - s * 0.9);
+        ctx.lineTo(fx + side * s * 0.45, fy - s * 0.75 + wave);
+        ctx.lineTo(fx, fy - s * 0.6);
+        ctx.stroke();
+      }
+    },
     phare(r, x, y, s, t, f) {
       const { ctx } = r;
       const a = t * 0.35;

@@ -20,7 +20,10 @@
     const R = Territory.radius(v);
     const list = [];
     const being = (id) => list.push({ kind: 'being', id, cost: Colony.cost(state, Colony.species(id)) });
-    const building = (id) => list.push({ kind: 'building', id, cost: Structures.cost(state, Structures.def(id)) });
+    const building = (id) => {
+      const d = Structures.def(id);
+      if (!Structures.crowded(v, d)) list.push({ kind: 'building', id, cost: Structures.cost(state, d) });
+    };
 
     if (builders < 1 && builders < l.builderCap) being('batisseur');
     if (pop < l.beingCap) being('lueur');

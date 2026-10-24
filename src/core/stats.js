@@ -22,6 +22,7 @@
       beingSense: 320,      // distance à laquelle une lueur repère la lumière
       buildRate: 1,         // travail fourni par un bâtisseur par seconde
       builderCap: 2,        // nombre maximal de bâtisseurs (ils ne comptent pas dans la population)
+      armyCap: CONFIG.colony.armyCap, // soldats d'un village (casernes) ; l'armée ne compte pas dans la population
       beingHp: 1,           // multiplicateur des points de vie des êtres
       armyDamage: 1,        // multiplicateur des dégâts et soins de l'armée et des tours
       pulseDamage: CONFIG.combat.pulseDamage,

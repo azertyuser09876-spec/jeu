@@ -35,7 +35,7 @@
     }
   });
 
-  test('une lueur s’achète une fois un village fondé, de plus en plus cher', () => {
+  test('une lueur s’achète une fois un village fondé, toujours au même prix', () => {
     const state = State.create(1);
     state.light = state.totalLight = 1e6;
     assert.equal(Catalog.get('lueur').revealed(state), false);
@@ -43,7 +43,7 @@
     const first = Catalog.get('lueur').cost(state).light;
     assert.ok(Catalog.buy(state, 'lueur'));
     assert.equal(v.beings.lueur, 1);
-    assert.ok(Catalog.get('lueur').cost(state).light > first);
+    assert.equal(Catalog.get('lueur').cost(state).light, first);
   });
 
   test('la population est plafonnée', () => {
@@ -51,7 +51,7 @@
     const v = village(state);
     state.light = state.totalLight = 1e12;
     v.beings.lueur = Stats.compute(state).beingCap;
-    assert.equal(Catalog.get('lueur').blocked(state), 'population pleine');
+    assert.equal(Catalog.get('lueur').blocked(state), 'population pleine : un nid');
     assert.equal(Catalog.buy(state, 'lueur'), false);
   });
 

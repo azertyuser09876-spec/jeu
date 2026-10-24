@@ -3,14 +3,15 @@
 //
 //   id         identifiant stable (stocké dans les sauvegardes : ne jamais le renommer)
 //   role       comportement : 'gatherer' (récolte), 'builder' (construit), 'guard', 'ranged', 'healer' (armée)
-//   baseCost   prix du premier ; growth : multiplicateur du prix à chaque nouvel être
-//   baseEchoes si présent : prix en échos du premier (même croissance echoGrowth)
+//   baseCost   prix d'un être (fixe : recruter ne renchérit jamais ; ce qui limite, ce sont les places)
+//   baseEchoes si présent : prix en échos
 //   speed      vitesse de base
 //   hp         points de vie (avant améliorations)
 //   damage, cooldown, range   combat (armée)
 //   siege      si présent : multiplicateur des dégâts contre les colosses et les cœurs des nids (troupe de siège)
 //   color      teinte [r, g, b] pour l'affichage
-//   cap        si présent : caractéristique qui limite cette espèce à part (sinon : la population, beingCap)
+//   cap        si présent : caractéristique qui limite cette espèce à part (sinon : la population, beingCap) ;
+//              les espèces qui partagent un même `cap` le partagent (toute l'armée : armyCap, les casernes)
 (function (Vide) {
   'use strict';
 
@@ -21,7 +22,6 @@
       desc: 'Cherche la lumière du jardin de son village, la porte et la dépose en son cœur.',
       role: 'gatherer',
       baseCost: 250,
-      growth: 1.32,
       speed: 70,
       hp: 20,
       color: [130, 255, 200],
@@ -33,7 +33,6 @@
       desc: 'Choisit un emplacement et construit les bâtiments que tu planifies.',
       role: 'builder',
       baseCost: 2000,
-      growth: 1.45,
       speed: 60,
       hp: 30,
       color: [255, 196, 120],
@@ -50,10 +49,9 @@
       desc: 'Combat les ombres au corps à corps. Robuste.',
       role: 'guard',
       army: true,
+      cap: 'armyCap',
       baseCost: 3000,
-      growth: 1.4,
       baseEchoes: 3,
-      echoGrowth: 1.35,
       speed: 80,
       hp: 70,
       damage: 7,
@@ -68,10 +66,9 @@
       desc: 'Lance des traits de lumière sur les ombres, de loin. Fragile.',
       role: 'ranged',
       army: true,
+      cap: 'armyCap',
       baseCost: 4500,
-      growth: 1.42,
       baseEchoes: 5,
-      echoGrowth: 1.35,
       speed: 75,
       hp: 28,
       damage: 4,
@@ -86,10 +83,9 @@
       desc: 'Soigne les êtres blessés et ta lumière, en restant en retrait.',
       role: 'healer',
       army: true,
+      cap: 'armyCap',
       baseCost: 6000,
-      growth: 1.5,
       baseEchoes: 8,
-      echoGrowth: 1.4,
       speed: 70,
       hp: 35,
       heal: 7,
@@ -105,11 +101,10 @@
         + 'les colosses et les cœurs des nids.',
       role: 'ranged',
       army: true,
+      cap: 'armyCap',
       siege: 7,
       baseCost: 15000,
-      growth: 1.5,
       baseEchoes: 25,
-      echoGrowth: 1.45,
       speed: 55,
       hp: 50,
       damage: 4,

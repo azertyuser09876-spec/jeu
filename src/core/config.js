@@ -74,6 +74,7 @@
       gap: 450,          // distance minimale entre le cœur d'un nouveau village et le bord d'un autre
       reach: 40,         // marge autour du territoire où l'on est encore « dans » le village (boutique)
       max: 40,
+      lotArea: 40000,    // un emplacement à bâtir de plus par tant de surface (un carré de 200 de côté)
     },
 
     // Routes entre villages.
@@ -218,7 +219,8 @@
 
     // Êtres de lumière.
     colony: {
-      cap: 6,            // population maximale de départ
+      cap: 6,            // population maximale de départ (logements : nids)
+      armyCap: 3,        // armée maximale de départ d'un village (casernes)
       depositRadius: 16, // distance au cœur (ou au relais) pour déposer une charge
       pickRadius: 7,     // distance pour ramasser une particule
       separation: 14,    // les êtres s'écartent un peu les uns des autres

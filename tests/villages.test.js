@@ -86,9 +86,9 @@
     assert.ok(Catalog.buy(state, 'lueur'));
     assert.deepEqual(b.beings, { lueur: 1 });
     assert.deepEqual(a.beings, {});
-    // Le prix suit le nombre total d'êtres, tous villages confondus.
+    // Le prix ne bouge pas.
     state.player.x = 0;
-    assert.ok(Catalog.get('lueur').cost(state).light > first);
+    assert.equal(Catalog.get('lueur').cost(state).light, first);
     assert.ok(Catalog.buy(state, 'lueur'));
     assert.equal(Colony.count(state, 'lueur'), 2);
   });
@@ -99,7 +99,7 @@
     const a = village(state);
     village(state, { x: 3000 });
     a.beings.lueur = Stats.compute(state).beingCap;
-    assert.equal(Catalog.get('lueur').blocked(state), 'population pleine');
+    assert.equal(Catalog.get('lueur').blocked(state), 'population pleine : un nid');
     state.player.x = 3000;
     assert.equal(Catalog.get('lueur').blocked(state), null, 'l’autre village a de la place');
   });

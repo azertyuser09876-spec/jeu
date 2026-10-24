@@ -16,7 +16,7 @@
     return sp;
   }
 
-  // Nombre d'êtres d'une espèce, tous villages confondus (le prix du suivant en dépend).
+  // Nombre d'êtres d'une espèce, tous villages confondus.
   function count(state, id) {
     return Villages.count(state, id);
   }
@@ -42,19 +42,29 @@
     return n;
   }
 
-  // Occupation et plafond qui s'appliquent à une espèce dans un village.
+  // Nom affiché d'un plafond partagé.
+  const CAP_LABELS = { armyCap: 'armée', builderCap: 'bâtisseurs' };
+
+  // Êtres d'un village qui partagent le plafond `cap` (null : la population).
+  function usedIn(village, cap) {
+    let n = 0;
+    for (const sp of Vide.SPECIES) if ((sp.cap || null) === cap) n += village.beings[sp.id] || 0;
+    return n;
+  }
+
+  // Occupation et plafond qui s'appliquent à une espèce dans un village : la population (logements), l'armée
+  // (casernes) ou les bâtisseurs.
   function room(state, village, sp) {
     const stats = Villages.local(state, village);
     return sp.cap
-      ? { used: village.beings[sp.id] || 0, max: stats[sp.cap], label: sp.name.toLowerCase() + 's' }
+      ? { used: usedIn(village, sp.cap), max: stats[sp.cap], label: CAP_LABELS[sp.cap] || sp.cap }
       : { used: populationIn(village), max: stats.beingCap, label: 'population' };
   }
 
-  // Coût du prochain être d'une espèce : lumière, et échos pour l'armée.
+  // Prix d'un être : toujours le même (lumière, et échos pour l'armée).
   function cost(state, sp) {
-    const n = count(state, sp.id);
-    const price = { light: Math.ceil(sp.baseCost * Math.pow(sp.growth, n)) };
-    if (sp.baseEchoes) price.echoes = Math.ceil(sp.baseEchoes * Math.pow(sp.echoGrowth, n));
+    const price = { light: sp.baseCost };
+    if (sp.baseEchoes) price.echoes = sp.baseEchoes;
     return price;
   }
 
@@ -467,7 +477,8 @@
         const village = Villages.current(state);
         if (!village) return 'rejoins un village';
         const r = room(state, village, sp);
-        return r.used >= r.max ? (sp.cap ? 'complet' : 'population pleine') : null;
+        if (r.used < r.max) return null;
+        return { armyCap: 'armée au complet : une caserne', builderCap: 'complet' }[sp.cap] || 'population pleine : un nid';
       },
       apply: (state) => {
         const village = Villages.current(state);
@@ -487,7 +498,7 @@
   }
 
   Vide.Colony = {
-    species, count, population, populationIn, total, room, cost, statsOf, maxHp, isActive, create, sync, update,
+    species, count, population, populationIn, usedIn, total, room, cost, statsOf, maxHp, isActive, create, sync, update,
     // Pour les comportements définis ailleurs (armée, voir combat.js).
     ROLES, steer, wander, tryDance,
   };

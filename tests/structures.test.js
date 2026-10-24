@@ -127,12 +127,41 @@
     }
   });
 
-  test('le prix monte avec chaque plan, chantiers compris', () => {
+  test('un plan coûte toujours le même prix ; ce qui limite, c’est la place et le maximum par village', () => {
     const state = colonyState(400, { lueur: 1, batisseur: 1 });
     state.player.x = 0;
+    state.light = state.totalLight = 1e9;
+    const v = state.villages[0];
     const first = Catalog.get('nid').cost(state).light;
     Catalog.buy(state, 'nid');
-    assert.ok(Catalog.get('nid').cost(state).light > first);
+    assert.equal(Catalog.get('nid').cost(state).light, first);
+    // Le maximum par village (chantiers compris).
+    const phare = Structures.def('phare');
+    for (let k = 0; k < phare.max; k++) assert.ok(Catalog.buy(state, 'phare'), `phare ${k}`);
+    assert.equal(Catalog.get('phare').blocked(state), `${phare.max} au plus par village`);
+    // La place : un emplacement par lot de surface.
+    assert.equal(Structures.lots(v), 1 + Math.floor(v.area / CONFIG.villages.lotArea));
+    while (v.buildings.length < Structures.lots(v)) v.buildings.push({ type: 'nid', x: 0, y: 0, work: 0 });
+    v.buildings.length = Structures.lots(v);
+    assert.equal(Catalog.get('fontaine').blocked(state), 'plus de place : le territoire doit grandir');
+    v.area += CONFIG.villages.lotArea;
+    assert.equal(Catalog.get('fontaine').blocked(state), null, 'il a grandi : de la place');
+  });
+
+  test('la caserne fait de la place à l’armée, qui a son propre plafond', () => {
+    const state = colonyState(400, { lueur: 1, batisseur: 1 });
+    state.player.x = 0;
+    state.light = state.totalLight = 1e9;
+    state.echoes = 1e6;
+    state.stats.shadows = 1;
+    const v = state.villages[0];
+    const cap = Vide.Villages.local(state, v).armyCap;
+    assert.equal(cap, CONFIG.colony.armyCap);
+    for (let k = 0; k < cap; k++) assert.ok(Catalog.buy(state, 'gardien'), `gardien ${k}`);
+    assert.equal(Catalog.get('etincelle').blocked(state), 'armée au complet : une caserne', 'toute l’armée partage ce plafond');
+    assert.ok(Catalog.get('lueur').blocked(state) === null, 'l’armée ne prend pas de place dans la population');
+    v.buildings.push({ type: 'caserne', x: 0, y: 150, work: 999 });
+    assert.equal(Vide.Villages.local(state, v).armyCap, cap + 4);
   });
 
   test('un bâtisseur construit le chantier, qui est annoncé une fois achevé', () => {
@@ -249,7 +278,7 @@
     assert.equal(Colony.population(state), 2);
     assert.equal(Colony.total(state), 3);
     state.villages[0].beings.lueur = Villages.local(state, state.villages[0]).beingCap;
-    assert.equal(Catalog.get('lueur').blocked(state), 'population pleine');
+    assert.equal(Catalog.get('lueur').blocked(state), 'population pleine : un nid');
     assert.equal(Catalog.get('batisseur').blocked(state), null, 'population pleine : un bâtisseur reste possible');
     state.villages[0].beings.batisseur = Villages.local(state, state.villages[0]).builderCap;
     assert.equal(Catalog.get('batisseur').blocked(state), 'complet');

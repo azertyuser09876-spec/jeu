@@ -2,7 +2,7 @@
 // État persistant : village.buildings = [{ type, x, y, work }] ; un bâtiment est achevé quand work ≥ def.work.
 (function (Vide) {
   'use strict';
-  const { util, Catalog, Territory, Villages } = Vide;
+  const { CONFIG, util, Catalog, Territory, Villages } = Vide;
 
   const MIN_TERRITORY = 80; // rayon minimal pour bâtir
 
@@ -48,11 +48,23 @@
     return village.buildings.filter((b) => !isDone(b));
   }
 
+  // Prix d'un plan : toujours le même.
   function cost(state, d) {
-    const n = count(state, d.id, true);
-    const price = { light: Math.ceil(d.baseCost * Math.pow(d.growth, n)) };
-    if (d.baseEchoes) price.echoes = Math.ceil(d.baseEchoes * Math.pow(d.echoGrowth, n));
+    const price = { light: d.baseCost };
+    if (d.baseEchoes) price.echoes = d.baseEchoes;
     return price;
+  }
+
+  // Emplacements d'un village : un de plus par lot de surface (CONFIG.villages.lotArea).
+  function lots(village) {
+    return 1 + Math.floor(village.area / CONFIG.villages.lotArea);
+  }
+
+  // Raison qui empêche de planifier ce bâtiment dans ce village (place, maximum), ou null.
+  function crowded(village, d) {
+    if (countIn(village, d.id, true) >= d.max) return `${d.max} au plus par village`;
+    if (village.buildings.length >= lots(village)) return 'plus de place : le territoire doit grandir';
+    return null;
   }
 
   // Un bâtiment fonctionne s'il est achevé et n'a pas été éteint par les ombres.
@@ -244,21 +256,27 @@
         if (d.only && village.type !== d.only) return `propre aux ${onlyName}`;
         if (!(village.beings.batisseur > 0)) return 'il faut un bâtisseur';
         if (Territory.radius(village) < MIN_TERRITORY) return 'territoire trop petit';
-        return null;
+        return crowded(village, d);
       },
       apply: (state) => { plan(state, Villages.current(state), d.id); },
       label: (state) => {
         const village = Villages.current(state);
         const built = village ? countIn(village, d.id, false) : count(state, d.id, false);
         const pending = (village ? countIn(village, d.id, true) : count(state, d.id, true)) - built;
-        return pending ? `×${built} · ${pending} en chantier` : `×${built}`;
+        const of = village ? `/${d.max}` : '';
+        return pending ? `×${built}${of} · ${pending} en chantier` : `×${built}${of}`;
       },
-      effect: () => d.effectText,
+      // L'effet, et la place qui reste dans le village.
+      effect: (state) => {
+        const village = Villages.current(state);
+        return village ? `${d.effectText} · place ${village.buildings.length}/${lots(village)}` : d.effectText;
+      },
     });
   }
 
   Vide.Structures = {
-    def, isDone, isWorking, count, countIn, all, working, sites, cost, site, plan, addWork, nearestSite, nearestDeposit,
+    def, isDone, isWorking, count, countIn, all, working, sites, cost, lots, crowded, site, plan, addWork, nearestSite,
+    nearestDeposit,
     modify, modifyGlobal, wardAt, advanceOffline, hp, damage, repair, mostDamaged, MIN_TERRITORY,
   };
 })(globalThis.Vide);

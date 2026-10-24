@@ -38,11 +38,12 @@
     {
       id: 'bastion',
       name: 'Bastion',
-      desc: 'Fonder ici un bastion : remparts solides, territoire qui brûle les ombres deux fois plus, armée plus forte.',
-      effectText: 'armée ×1,25',
+      desc: 'Fonder ici un bastion : remparts solides, territoire qui brûle les ombres deux fois plus, armée plus '
+        + 'nombreuse et plus forte.',
+      effectText: 'armée +4 · ×1,25',
       tint: [255, 222, 150],
       shape: { metric: 'octagon', lobes: 0, depth: 0, sharp: 1, noise: 0.35 },
-      modify: (l) => { l.structureArmor *= 1.6; l.burn *= 2; l.armyDamage *= 1.25; },
+      modify: (l) => { l.structureArmor *= 1.6; l.burn *= 2; l.armyDamage *= 1.25; l.armyCap += 4; },
     },
     {
       id: 'atelier',
@@ -153,6 +154,7 @@
       l.territoryGrowth *= 1 + districts;
       l.beingCap += CONFIG.colony.cap * districts;
       l.builderCap += Vide.Stats.base().builderCap * districts;
+      l.armyCap += CONFIG.colony.armyCap * districts;
     }
     Vide.Structures.modify(village, l);
     type(village.type).modify(l);

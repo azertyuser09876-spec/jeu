@@ -35,7 +35,7 @@
   test('tout révéler est possible (aucune condition impossible)', () => {
     const state = State.create(1);
     state.totalLight = 1e9;
-    const v = VideTest.village(state, { radius: 700, beings: { lueur: 6, gardien: 6, batisseur: 1 } });
+    const v = VideTest.village(state, { radius: 700, beings: { lueur: 8, gardien: 6, batisseur: 1 } });
     v.buildings.push({ type: 'nid', x: 0, y: 100, work: 999 });
     state.stats.shadows = 20;
     state.zones.discovered = Vide.ZONES.map((z) => z.id);
