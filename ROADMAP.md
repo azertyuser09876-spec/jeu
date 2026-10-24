@@ -43,7 +43,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 3. Interactions : les lueurs ravitaillent les chantiers, les êtres se rencontrent et dansent.
 4. Sauvegarde format 4.
 
-### [ ] 0.5 — Les ombres
+### [x] 0.5 — Les ombres
 1. Vitalité de la lumière, ombres qui rôdent (Errante, Rôdeuse, Massive), marées qui visent le territoire.
 2. La pulsation blesse les ombres ; les ombres vaincues laissent des échos (◆), seconde ressource.
 3. L'armée : Gardien (mêlée), Étincelle (distance), Veilleuse (soin) — combat automatique en temps réel.

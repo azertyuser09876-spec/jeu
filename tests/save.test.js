@@ -9,7 +9,7 @@
     state.totalLight = 900;
     state.upgrades = { reach: 3, value: 7 };
     state.player = { x: -120.5, y: 64 };
-    state.stats = { playTime: 321.5, collected: 88 };
+    state.stats = { playTime: 321.5, collected: 88, shadows: 4 };
     return state;
   }
 

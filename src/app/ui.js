@@ -64,6 +64,10 @@
       hud: $('hud'),
       amount: $('light-amount'),
       rate: $('rate-amount'),
+      echoes: $('echoes'),
+      echoAmount: $('echo-amount'),
+      orders: $('orders'),
+      orderButtons: [...document.querySelectorAll('#orders button')],
       shop: $('shop'),
       tabsEl: $('shop-tabs'),
       list: $('shop-list'),
@@ -76,6 +80,9 @@
     };
     for (const tab of Vide.TABS) ui.tabs.set(tab.id, createTab(ui, tab));
     for (const item of Catalog.all()) ui.rows.push(createRow(ui, item));
+    for (const btn of ui.orderButtons) {
+      btn.addEventListener('click', () => Vide.Combat.setPosture(game.state, btn.dataset.posture));
+    }
     ui.pulseBtn.addEventListener('click', () => {
       if (ui.hooks.onPulse) ui.hooks.onPulse();
     });
@@ -168,6 +175,10 @@
     setClass(ui.hud, 'hidden', state.totalLight <= 0);
     setText(ui.amount, util.formatNumber(state.light));
     setText(ui.rate, util.formatRate(game.rate));
+    setClass(ui.echoes, 'hidden', state.echoes <= 0 && state.stats.shadows === 0);
+    setText(ui.echoAmount, util.formatNumber(state.echoes));
+    setClass(ui.orders, 'hidden', Vide.Combat.armySize(state) === 0);
+    for (const btn of ui.orderButtons) setClass(btn, 'active', btn.dataset.posture === state.army.posture);
 
     updateShop(ui);
     updatePulse(ui);

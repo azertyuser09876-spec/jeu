@@ -25,6 +25,8 @@ const dt = CONFIG.step;
 const stepsPerMinute = Math.round(60 / dt);
 let angle = 0;
 const firsts = {};
+// Événements de combat comptés pendant la partie.
+const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, foyerAttacked: 0 };
 
 // Coût total d'un article, toutes ressources confondues (approximation suffisante pour choisir).
 const price = (item) => Object.values(item.cost(state)).reduce((a, b) => a + b, 0);
@@ -44,6 +46,7 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   }
   input.pulse = true;
   Sim.step(game, dt, input);
+  for (const e of game.events) if (e.type in events) events[e.type]++;
   game.events.length = 0;
 
   if (s % 30 === 0) {
@@ -63,9 +66,10 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     const beings = Object.entries(state.beings).map(([k, v]) => `${k} ${v}`).join(' ');
     const built = state.buildings.filter((x) => Vide.Structures.isDone(x)).map((x) => x.type[0]).join('');
     const colony = beings ? `  êtres [${beings}] bâtiments [${built}]` : '';
+    const fights = state.tides ? `  marées ${state.tides} ombres ${state.stats.shadows} ◆${Math.round(state.echoes)} dispersé ${events.dispersed} éteints ${events.beingDown} cassés ${events.broken}` : '';
     console.log(
       `${String(s / stepsPerMinute).padStart(3)} min  total ${util.formatNumber(state.totalLight).padEnd(6)}` +
-        `  débit ${util.formatRate(game.rate).padEnd(6)}/s${territory}${colony}  ${levels}`
+        `  débit ${util.formatRate(game.rate).padEnd(6)}/s${territory}${fights}${colony}  ${levels}`
     );
   }
 }

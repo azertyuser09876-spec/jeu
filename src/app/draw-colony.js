@@ -30,9 +30,36 @@
       ctx.stroke();
     }
 
+    // Signes distinctifs de l'armée : un bouclier pour le gardien, des pointes pour l'étincelle,
+    // un halo doux pour la veilleuse.
+    if (sp.role === 'guard') {
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = `rgb(${sp.color.join(',')})`;
+      ctx.lineWidth = 1.5 / r.camera.scale;
+      ctx.beginPath();
+      ctx.arc(x, y, 11, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (sp.role === 'ranged') {
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = `rgb(${sp.color.join(',')})`;
+      ctx.lineWidth = 1 / r.camera.scale;
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = t * 2 + b.phase + (i * Math.PI) / 2;
+        ctx.moveTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6);
+        ctx.lineTo(x + Math.cos(a) * 12, y + Math.sin(a) * 12);
+      }
+      ctx.stroke();
+    } else if (sp.role === 'healer') {
+      Render.drawGlow(ctx, glow, x, y, 34 * birth, 0.25 + 0.15 * Math.sin(t * 3 + b.phase));
+    }
+    // Blessure : l'être pâlit un instant.
+    if (b.hurt > 0) Render.setGlowScale(1 - b.hurt * 0.6);
+
     Render.drawGlow(ctx, glow, x, y, (24 + b.flash * 12) * birth, 0.75 + b.flash * 0.25);
     Render.drawGlow(ctx, glow, x, y, 9 * birth, 1);
     Render.drawGlow(ctx, r.glows.white, x, y, 4 * birth, 0.9);
+    Render.setGlowScale(1);
 
     // Bâtisseur au travail : des étincelles jaillissent vers le chantier.
     if (b.working && b.site) {
@@ -56,6 +83,7 @@
     const t = r.time;
     for (const being of game.colony.beings) {
       if (being.x < b.left || being.x > b.right || being.y < b.top || being.y > b.bottom) continue;
+      if (being.down > 0) continue; // éteint : il se rallumera au foyer
       drawBeing(r, being, Vide.Colony.species(being.species), t);
     }
   };

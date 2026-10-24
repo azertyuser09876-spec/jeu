@@ -25,8 +25,13 @@
     return up.max !== null && level(state, id) >= up.max;
   }
 
+  // Ressource dans laquelle se paie une amélioration (la lumière par défaut, les échos pour l'armée).
+  function currency(up) {
+    return up.currency || 'light';
+  }
+
   function canBuy(state, id) {
-    return isRevealed(state, id) && !isMaxed(state, id) && state.light >= nextCost(state, id);
+    return isRevealed(state, id) && !isMaxed(state, id) && (state[currency(get(id))] || 0) >= nextCost(state, id);
   }
 
   // Une amélioration se dévoile quand ses conditions sont remplies et qu'on approche de son prix ;
@@ -35,12 +40,13 @@
     const up = get(id);
     if (level(state, id) > 0) return true;
     if (up.requires && !up.requires(state)) return false;
-    return state.totalLight >= up.baseCost * 0.5;
+    // Une amélioration payée en échos se dévoile dès que ses conditions sont remplies.
+    return currency(up) !== 'light' || state.totalLight >= up.baseCost * 0.5;
   }
 
   function buy(state, id) {
     if (!canBuy(state, id)) return false;
-    state.light -= nextCost(state, id);
+    state[currency(get(id))] -= nextCost(state, id);
     state.upgrades[id] = level(state, id) + 1;
     return true;
   }
@@ -62,7 +68,7 @@
       desc: up.desc,
       revealed: (state) => isRevealed(state, up.id),
       maxed: (state) => isMaxed(state, up.id),
-      cost: (state) => ({ light: nextCost(state, up.id) }),
+      cost: (state) => ({ [currency(up)]: nextCost(state, up.id) }),
       apply: (state) => { state.upgrades[up.id] = level(state, up.id) + 1; },
       label: (state) => {
         const l = level(state, up.id);
@@ -75,5 +81,5 @@
     });
   }
 
-  Vide.Economy = { get, level, cost, nextCost, isMaxed, canBuy, isRevealed, buy, preview };
+  Vide.Economy = { get, level, cost, nextCost, currency, isMaxed, canBuy, isRevealed, buy, preview };
 })(globalThis.Vide);

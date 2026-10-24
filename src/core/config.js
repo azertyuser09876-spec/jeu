@@ -77,6 +77,45 @@
       feedWork: 1,       // travail apporté à un chantier par unité de lumière livrée par une lueur
       danceRange: 45,    // deux êtres oisifs plus proches que ça peuvent danser ensemble
       danceTime: 3,
+      repairRate: 6,     // points de structure réparés par seconde de bâtisseur
+      regenDelay: 5,     // secondes sans blessure avant de se régénérer
+      regen: 2,          // points de vie régénérés par seconde
+      downTime: 20,      // secondes avant qu'un être vaincu se rallume au foyer
+    },
+
+    // Combat : vitalité de la lumière, pulsation offensive, projectiles.
+    combat: {
+      vitality: 100,
+      regenDelay: 4,         // secondes sans blessure avant de régénérer
+      regen: 15,             // vitalité regagnée par seconde (×3 dans le territoire)
+      insideRegen: 3,
+      invulnerable: 3,       // secondes d'invulnérabilité après avoir été dispersé
+      dispersalLoss: 0.1,    // fraction de la lumière perdue quand on est dispersé
+      pulseDamage: 15,
+      knockback: 180,
+      projectileSpeed: 380,
+      projectileLife: 1.2,
+      projectileHit: 12,     // distance de touche d'un projectile
+      foyerDrain: 1,         // lumière dévorée par point de dégât infligé au foyer
+    },
+
+    // Ombres : marées qui visent le territoire, rôdeuses du vide lointain.
+    shadows: {
+      firstTideRadius: 160,  // les marées commencent quand le territoire atteint ce rayon
+      tideInterval: 110,
+      tideJitter: 25,
+      tideDistance: 520,     // distance au bord du territoire où naît une marée
+      tideSpread: 90,
+      tideBase: 1.5,         // « budget » d'une marée : base + par marée passée + par rayon
+      tidePerWave: 0.7,
+      tidePerRadius: 1 / 180,
+      territoryBurn: 2,      // la lumière du territoire ronge les ombres qui y entrent (pv par seconde)
+      sense: 380,            // distance à laquelle une ombre repère une proie
+      max: 90,
+      despawn: 2600,         // une ombre trop loin du joueur et du foyer se dissipe
+      roamBeyond: 900,       // au-delà du bord du territoire + cette distance, des ombres errent près du joueur
+      roamRate: 1 / 30,      // apparitions par seconde
+      roamMax: 5,
     },
   };
 })(globalThis.Vide);

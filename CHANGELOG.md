@@ -1,5 +1,26 @@
 # Historique des versions
 
+## 0.5.0 — Les ombres
+
+- **Marées d'ombres** : attirées par le territoire (dès un rayon de 160), elles arrivent d'une direction
+  annoncée (message + flèche violette sur le bord) et grossissent avec le temps.
+  **Errante** (attaque le plus proche), **Rôdeuse** (traque les êtres), **Massive** (vise les bâtiments).
+  Loin du territoire, des ombres errent aussi près de ta lumière.
+- **Le territoire brûle les ombres** qui y entrent : une marée finit toujours par s'éteindre.
+- **Vitalité** : ta lumière peut être blessée (anneau autour d'elle, voile violet), se régénère
+  (plus vite dans le territoire) ; à zéro, elle se **disperse** et renaît au foyer en perdant 10 % de sa lumière.
+- **La pulsation blesse les ombres.** Les ombres vaincues laissent des **échos ◆**, seconde ressource.
+- **L'armée**, en combat automatique : **Gardien** (mêlée), **Étincelle** (traits à distance),
+  **Veilleuse** (soigne les êtres et ta lumière). Ordres de groupe : **garder** le territoire,
+  **escorter** ta lumière, **chasser** au loin (barre d'ordres ou touches G, E, C).
+- **Les êtres et les bâtiments peuvent tomber** : un être vaincu se rallume au foyer après 20 s,
+  un bâtiment éteint ne fonctionne plus jusqu'à ce que les bâtisseurs le réparent. Les ombres au foyer
+  rongent ta réserve de lumière.
+- **Tour de lumière** (bâtiment, lumière + échos) qui tire sur les ombres.
+- **5 améliorations de combat** : Brûlure, Intensité, Vigueur, Tranchant (en échos), Résonance.
+- Sauvegarde au format 5.
+- 131 tests de logique, 19 vérifications navigateur ; robot d'équilibrage avec les combats.
+
 ## 0.4.0 — Vie autonome
 
 - **Les bâtisseurs**, deuxième espèce : ils vivent au foyer (hors population, 2 au plus).

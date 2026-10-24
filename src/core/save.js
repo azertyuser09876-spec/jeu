@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 4;
+  const FORMAT = 5;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -15,6 +15,8 @@
     2: (data) => ({ ...data, beings: {}, colonyRate: 0 }),
     // 0.4 : les bâtiments.
     3: (data) => ({ ...data, buildings: [] }),
+    // 0.5 : les ombres, les échos et l'armée.
+    4: (data) => ({ ...data, echoes: 0, tides: 0, army: { posture: 'garde' } }),
   };
 
   function serialize(state, now) {
@@ -108,12 +110,20 @@
       if (!isObject(b)) continue;
       const def = Vide.BUILDINGS.find((d) => d.id === b.type);
       if (!def || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
-      state.buildings.push({ type: b.type, x: b.x, y: b.y, work: Math.min(positive(b.work, 0), def.work) });
+      const building = { type: b.type, x: b.x, y: b.y, work: Math.min(positive(b.work, 0), def.work) };
+      if (b.broken === true && building.work >= def.work) building.broken = true;
+      state.buildings.push(building);
     }
+
+    state.echoes = positive(raw.echoes, 0);
+    state.tides = Number.isInteger(raw.tides) && raw.tides > 0 ? raw.tides : 0;
+    const army = isObject(raw.army) ? raw.army : {};
+    if (Vide.Combat.POSTURES.includes(army.posture)) state.army.posture = army.posture;
 
     const stats = isObject(raw.stats) ? raw.stats : {};
     state.stats.playTime = positive(stats.playTime, 0);
     state.stats.collected = Math.floor(positive(stats.collected, 0));
+    state.stats.shadows = Math.floor(positive(stats.shadows, 0));
 
     return state;
   }

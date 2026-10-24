@@ -56,8 +56,14 @@
     };
   }
 
+  // Échelle de luminosité appliquée à tous les halos (bâtiment éteint, vacillement…).
+  let glowScale = 1;
+  function setGlowScale(s) {
+    glowScale = s;
+  }
+
   function drawGlow(ctx, glow, x, y, radius, alpha) {
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha * glowScale));
     ctx.drawImage(glow, x - radius, y - radius, radius * 2, radius * 2);
   }
 
@@ -97,18 +103,19 @@
     ctx.globalAlpha = 1;
   }
 
-  // Quand l'origine est hors de l'écran, une petite flèche sur le bord indique sa direction.
-  function drawOriginPointer(r) {
+  // Quand un point du monde est hors de l'écran, une petite flèche sur le bord indique sa direction.
+  // (Coordonnées d'écran : à appeler hors de la transformation du monde.)
+  function edgePointer(r, wx, wy, color, alpha) {
     const { ctx, camera } = r;
-    const sx = (0 - camera.x) * camera.scale + r.width / 2;
-    const sy = (0 - camera.y) * camera.scale + r.height / 2;
+    const sx = (wx - camera.x) * camera.scale + r.width / 2;
+    const sy = (wy - camera.y) * camera.scale + r.height / 2;
     const margin = 30;
     if (sx > -margin && sx < r.width + margin && sy > -margin && sy < r.height + margin) return;
 
     const cx = r.width / 2, cy = r.height / 2;
     const dx = sx - cx, dy = sy - cy;
     const angle = Math.atan2(dy, dx);
-    // Point d'intersection du rayon centre → origine avec le bord de l'écran (moins une marge).
+    // Point d'intersection du rayon centre → cible avec le bord de l'écran (moins une marge).
     const inset = 26;
     const tx = (cx - inset) / Math.abs(dx || 1e-9);
     const ty = (cy - inset) / Math.abs(dy || 1e-9);
@@ -116,10 +123,11 @@
     const px = cx + dx * t, py = cy + dy * t;
 
     ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
     ctx.translate(px, py);
     ctx.rotate(angle);
-    ctx.globalAlpha = 0.3;
-    ctx.strokeStyle = '#fff';
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(-5, -6);
@@ -216,6 +224,9 @@
   }
 
   function followCamera(r, game, dt) {
+    const { player } = game.state;
+    // Un saut lointain (lumière dispersée, renvoyée au foyer) : la caméra suit d'un coup.
+    if (Math.hypot(player.x - r.camera.x, player.y - r.camera.y) > 900) snapCamera(r, game);
     const k = Vide.util.damp(5, dt);
     r.camera.x += (game.state.player.x - r.camera.x) * k;
     r.camera.y += (game.state.player.y - r.camera.y) * k;
@@ -239,7 +250,7 @@
     ctx.fillRect(0, 0, r.width, r.height);
 
     drawDust(r, game.state.seed);
-    drawOriginPointer(r);
+    edgePointer(r, 0, 0, '#fff', 0.3);
 
     // Passage en coordonnées du monde, centrées sur la caméra.
     ctx.translate(r.width / 2, r.height / 2);
@@ -254,14 +265,19 @@
     drawParticles(r, game, game.garden.particles);
     drawParticles(r, game, game.field.particles);
     Vide.Draw.colony(r, game);
+    Vide.Draw.combat(r, game, dt);
     drawTrail(r);
     drawPlayer(r, game);
+
+    // Retour aux coordonnées d'écran pour les effets plein écran.
+    ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
+    Vide.Draw.combatOverlay(r, game);
 
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  Vide.Render = { create, resize, screenToWorld, snapCamera, draw, drawGlow, viewBounds };
+  Vide.Render = { create, resize, screenToWorld, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer };
   // Fonctions de dessin spécialisées (territoire, êtres…), définies dans src/app/draw-*.js.
   Vide.Draw = Vide.Draw || {};
 })(globalThis.Vide);

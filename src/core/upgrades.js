@@ -5,6 +5,7 @@
 //   name/desc texte affiché
 //   baseCost  prix du niveau 1 ; growth : multiplicateur du prix à chaque niveau
 //   max       niveau maximal, ou null si illimité
+//   currency  ressource utilisée (par défaut 'light', ou 'echoes')
 //   effects   { caractéristique: niveau => valeur } ; la valeur au niveau 0 doit être la valeur de base
 //   show      caractéristiques => texte court de l'effet (affiché « actuel → suivant »)
 (function (Vide) {
@@ -164,6 +165,72 @@
       max: 15,
       effects: { buildRate: (l) => 1 + 0.3 * l },
       show: (s) => util.formatMultiplier(s.buildRate),
+    },
+
+    // --- Armée et combat (payées en échos, visibles après la première ombre vaincue) ---
+    {
+      id: 'scorch',
+      tab: 'armee',
+      name: 'Brûlure',
+      desc: 'Ta pulsation blesse davantage les ombres.',
+      currency: 'echoes',
+      requires: (state) => state.stats.shadows > 0,
+      baseCost: 3,
+      growth: 1.5,
+      max: 20,
+      effects: { pulseDamage: (l) => CONFIG.combat.pulseDamage * (1 + 0.3 * l) },
+      show: (s) => String(Math.round(s.pulseDamage)),
+    },
+    {
+      id: 'intensity',
+      tab: 'armee',
+      name: 'Intensité',
+      desc: 'Ta lumière résiste mieux aux coups.',
+      currency: 'echoes',
+      requires: (state) => state.stats.shadows > 0,
+      baseCost: 4,
+      growth: 1.5,
+      max: 12,
+      effects: { vitality: (l) => CONFIG.combat.vitality + 25 * l },
+      show: (s) => String(Math.round(s.vitality)),
+    },
+    {
+      id: 'vigor',
+      tab: 'armee',
+      name: 'Vigueur',
+      desc: 'Tous les êtres résistent mieux aux ombres.',
+      currency: 'echoes',
+      requires: (state) => state.stats.shadows > 0,
+      baseCost: 5,
+      growth: 1.5,
+      max: 15,
+      effects: { beingHp: (l) => 1 + 0.25 * l },
+      show: (s) => util.formatMultiplier(s.beingHp),
+    },
+    {
+      id: 'edge',
+      tab: 'armee',
+      name: 'Tranchant',
+      desc: 'L’armée et les tours frappent plus fort, les veilleuses soignent mieux.',
+      currency: 'echoes',
+      requires: (state) => (state.beings.gardien || 0) > 0,
+      baseCost: 6,
+      growth: 1.55,
+      max: 15,
+      effects: { armyDamage: (l) => 1 + 0.25 * l },
+      show: (s) => util.formatMultiplier(s.armyDamage),
+    },
+    {
+      id: 'resonance',
+      tab: 'armee',
+      name: 'Résonance',
+      desc: 'Les ombres vaincues laissent plus d’échos.',
+      requires: (state) => state.stats.shadows > 0,
+      baseCost: 5000,
+      growth: 2.2,
+      max: 10,
+      effects: { echoGain: (l) => 1 + 0.2 * l },
+      show: (s) => util.formatMultiplier(s.echoGain),
     },
   ];
 })(globalThis.Vide);

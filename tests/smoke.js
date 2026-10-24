@@ -117,6 +117,24 @@ const { chromium } = require('playwright');
   const site = await page.evaluate(() => Vide.game.state.buildings[0]);
   check(site && site.type === 'nid' && site.work > 0, 'un nid planifié est mis en chantier par le bâtisseur');
 
+  // Ombres : la pulsation en blesse une, qui se dissipe et laisse un écho ; l'armée reçoit un ordre.
+  await page.evaluate(() => {
+    const g = Vide.game;
+    const p = g.state.player;
+    const s = Vide.Shadows.spawn(g, 'errante', p.x + 60, p.y, 'roam');
+    s.hp = 1;
+    g.pulse.cooldown = 0;
+  });
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(600);
+  const echoes = await page.evaluate(() => Vide.game.state.echoes);
+  check(echoes > 0 && (await page.isVisible('#echoes')), 'la pulsation dissipe une ombre, qui laisse un écho ◆');
+  await page.evaluate(() => { Vide.game.state.beings.gardien = 1; });
+  await page.waitForTimeout(300);
+  await page.click('#orders button[data-posture="escorte"]');
+  const posture = await page.evaluate(() => Vide.game.state.army.posture);
+  check(posture === 'escorte', 'la barre d’ordres change l’ordre de l’armée');
+
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
   const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
   await page.evaluate(() => {

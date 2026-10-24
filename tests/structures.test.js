@@ -36,6 +36,8 @@
 
   test('un plan est placé dans le territoire, à la distance voulue du foyer', () => {
     const state = colonyState(400, { lueur: 1, batisseur: 1 });
+    state.stats.shadows = 1; // la tour de lumière exige d'avoir déjà vaincu une ombre…
+    state.echoes = 1e6;      // … et se paie aussi en échos
     for (const d of Vide.BUILDINGS) {
       assert.ok(Catalog.buy(state, d.id), d.id);
       const b = state.buildings[state.buildings.length - 1];

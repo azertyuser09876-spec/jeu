@@ -17,9 +17,13 @@
       beings: {},        // nombre d'êtres par espèce
       buildings: [],     // bâtiments : { type, x, y, work }
       colonyRate: 0,     // lumière/s rapportée par la colonie (mesurée, sert pendant l'absence)
+      echoes: 0,         // échos laissés par les ombres vaincues
+      tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
+      army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse
       stats: {
         playTime: 0,     // secondes de jeu actif
         collected: 0,    // particules récoltées
+        shadows: 0,      // ombres vaincues
       },
     };
   }

@@ -55,6 +55,15 @@
     foyer: 'Le foyer s’allume. Ton territoire grandira, même sans toi.',
     birth: (e) => (e.first ? FIRST_BIRTH[e.species] : null),
     built: (e) => `${Vide.Structures.def(e.building).name} achevé.`,
+    tide: (e) => (e.first
+      ? 'Une marée d’ombres approche, attirée par ton territoire. Ta pulsation peut les blesser.'
+      : `Une marée d’ombres approche (${e.count}).`),
+    shadowDown: (e) => (e.first ? 'Une ombre se dissipe et laisse un écho ◆. Les échos éveillent une armée.' : null),
+    dispersed: (e) => `Ta lumière se disperse… et renaît au foyer. ✦ ${util.formatNumber(e.lost)} perdue.`,
+    foyerAttacked: 'Des ombres rongent le foyer !',
+    broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
+    repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
+    beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au foyer.')),
     // Les danses sont fréquentes : on n'en parle qu'une fois par session.
     dance: () => (seen.dance ? null : (seen.dance = true, 'Deux êtres se croisent… et dansent un instant ensemble.')),
   };
@@ -65,6 +74,9 @@
   const FIRST_BIRTH = {
     lueur: 'Une lueur s’éveille. Elle récoltera le jardin pour toi.',
     batisseur: 'Un bâtisseur s’éveille. Planifie un bâtiment : il choisira où le construire.',
+    gardien: 'Un gardien s’éveille. Donne des ordres à l’armée : garder, escorter, chasser.',
+    etincelle: 'Une étincelle s’éveille. Elle frappe les ombres de loin.',
+    veilleuse: 'Une veilleuse s’éveille. Elle soignera les êtres et ta lumière.',
   };
 
   const toast = { queue: [], current: null, until: 0 };

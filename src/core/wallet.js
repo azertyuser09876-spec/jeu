@@ -5,6 +5,7 @@
 
   Vide.CURRENCIES = {
     light: { glyph: '✦', name: 'lumière' },
+    echoes: { glyph: '◆', name: 'échos' },
   };
 
   function has(state, cost) {

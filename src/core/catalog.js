@@ -18,6 +18,7 @@
     { id: 'territoire', name: 'territoire' },
     { id: 'etres', name: 'êtres' },
     { id: 'batiments', name: 'bâtiments' },
+    { id: 'armee', name: 'armée' },
   ];
 
   const items = [];

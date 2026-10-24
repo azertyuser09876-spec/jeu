@@ -120,6 +120,51 @@ button { font: inherit; letter-spacing: inherit; }
   font-variant-numeric: tabular-nums;
 }
 
+#echoes {
+  margin-top: 6px;
+  font-size: 1rem;
+  color: #c9b4ff;
+  text-shadow: 0 0 14px rgba(150, 100, 255, 0.5);
+  font-variant-numeric: tabular-nums;
+  transition: opacity 2s ease;
+}
+
+#echoes .glyph {
+  font-size: 0.75em;
+  margin-right: 0.5em;
+  opacity: 0.7;
+}
+
+/* --- Ordres de l'armée --- */
+
+#orders {
+  position: fixed;
+  top: calc(max(18px, env(safe-area-inset-top)) + 96px);
+  left: max(22px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.75rem;
+  transition: opacity 2s ease;
+}
+
+.orders-label {
+  margin-right: 6px;
+  color: var(--dim);
+}
+
+#orders button {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+#orders button:hover { color: var(--text); }
+#orders button.active { color: var(--text); border-color: rgba(255, 240, 200, 0.4); }
+
 /* --- Pulsation --- */
 
 #pulse-btn {

@@ -31,6 +31,15 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   **et** ajouter la migration `MIGRATIONS[ancien]`, **et** l'adapter dans `sanitize`, **et** ajouter un test.
 - `sanitize` doit accepter n'importe quelle donnée sans planter.
 
+## Équilibrage
+
+- Après tout réglage, lancer `node tests/balance.js 60` : le robot joue une heure sans défendre activement.
+  Vérifier que la progression ne cale pas et ne s'emballe pas.
+- Améliorations sans maximum : pour une même source de revenu, Σ ln(multiplicateur par niveau) / ln(croissance
+  du prix) doit rester < 1 (garde-fou dans tests/economy.test.js — y rattacher toute nouvelle amélioration illimitée).
+- Éviter les impasses : toujours vérifier qu'un joueur ne peut pas se bloquer (ex. population pleine sans bâtisseur
+  possible — d'où les bâtisseurs hors population).
+
 ## Style
 
 - Textes du jeu, commentaires et messages de commit en français.

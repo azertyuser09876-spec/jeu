@@ -23,12 +23,74 @@
     return n;
   }
 
+  // Bâtiments d'un type qui fonctionnent (achevés et non éteints).
+  function working(state, type) {
+    let n = 0;
+    for (const b of state.buildings) if (b.type === type && isWorking(b)) n++;
+    return n;
+  }
+
   function sites(state) {
     return state.buildings.filter((b) => !isDone(b));
   }
 
   function cost(state, d) {
-    return Math.ceil(d.baseCost * Math.pow(d.growth, count(state, d.id, true)));
+    const n = count(state, d.id, true);
+    const price = { light: Math.ceil(d.baseCost * Math.pow(d.growth, n)) };
+    if (d.baseEchoes) price.echoes = Math.ceil(d.baseEchoes * Math.pow(d.echoGrowth, n));
+    return price;
+  }
+
+  // Un bâtiment fonctionne s'il est achevé et n'a pas été éteint par les ombres.
+  function isWorking(building) {
+    return isDone(building) && !building.broken;
+  }
+
+  // --- Solidité (dans game.structureHp, recalculée au chargement : un bâtiment éteint repart de zéro) ---
+
+  function hp(game, building) {
+    const known = game.structureHp.get(building);
+    if (known !== undefined) return known;
+    return building.broken ? 0 : def(building.type).hp;
+  }
+
+  // Blesse un bâtiment achevé. Renvoie vrai s'il vient de s'éteindre.
+  function damage(game, building, amount) {
+    if (!isWorking(building)) return false;
+    const left = hp(game, building) - amount;
+    game.structureHp.set(building, Math.max(0, left));
+    if (left > 0) return false;
+    building.broken = true;
+    return true;
+  }
+
+  // Répare un bâtiment. Renvoie vrai s'il était éteint et fonctionne de nouveau.
+  function repair(game, building, amount) {
+    const max = def(building.type).hp;
+    const now = Math.min(max, hp(game, building) + amount);
+    if (now < max) {
+      game.structureHp.set(building, now);
+      return false;
+    }
+    game.structureHp.delete(building);
+    if (!building.broken) return false;
+    building.broken = false;
+    return true;
+  }
+
+  // Bâtiment achevé le plus abîmé à réparer (les éteints d'abord, puis le plus proche), ou null.
+  function mostDamaged(game, x, y) {
+    let best = null;
+    let bestScore = Infinity;
+    for (const b of game.state.buildings) {
+      if (!isDone(b) || hp(game, b) >= def(b.type).hp) continue;
+      const score = (b.broken ? 0 : 1e9) + Math.hypot(b.x - x, b.y - y);
+      if (score < bestScore) {
+        bestScore = score;
+        best = b;
+      }
+    }
+    return best;
   }
 
   // Choisit un emplacement : à la distance voulue du foyer, le plus loin possible des autres bâtiments.
@@ -88,7 +150,7 @@
     let bestD2 = x * x + y * y;
     for (const b of state.buildings) {
       const d = def(b.type);
-      if (!d.deposit || !isDone(b)) continue;
+      if (!d.deposit || !isWorking(b)) continue;
       const d2 = (b.x - x) ** 2 + (b.y - y) ** 2;
       if (d2 < bestD2) {
         bestD2 = d2;
@@ -102,7 +164,7 @@
   function modify(state, stats) {
     for (const d of Vide.BUILDINGS) {
       if (!d.modify) continue;
-      const n = count(state, d.id, false);
+      const n = working(state, d.id);
       if (n > 0) d.modify(stats, n);
     }
   }
@@ -130,8 +192,8 @@
       name: d.name,
       desc: d.desc,
       revealed: (state) => count(state, d.id, true) > 0 ||
-        ((state.beings.lueur || 0) > 0 && state.totalLight >= d.baseCost * 0.4),
-      cost: (state) => ({ light: cost(state, d) }),
+        ((state.beings.lueur || 0) > 0 && (!d.requires || d.requires(state)) && state.totalLight >= d.baseCost * 0.4),
+      cost: (state) => cost(state, d),
       blocked: (state) => {
         if (!(state.beings.batisseur > 0)) return 'il faut un bâtisseur';
         if (Territory.radius(state) < MIN_TERRITORY) return 'territoire trop petit';
@@ -148,6 +210,7 @@
   }
 
   Vide.Structures = {
-    def, isDone, count, sites, cost, site, plan, addWork, nearestSite, nearestDeposit, modify, advanceOffline,
+    def, isDone, isWorking, count, working, sites, cost, site, plan, addWork, nearestSite, nearestDeposit,
+    modify, advanceOffline, hp, damage, repair, mostDamaged,
   };
 })(globalThis.Vide);

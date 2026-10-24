@@ -23,6 +23,7 @@
         cooldown: 0,  // secondes restantes avant la prochaine pulsation
         duration: 1,  // durée totale de la recharge en cours (pour l'affichage)
         wave: -1,     // rayon actuel de l'onde, -1 si aucune onde en cours
+        id: 0,        // numéro de l'onde (une ombre n'est blessée qu'une fois par onde)
       },
       // Événements de ce qui vient de se passer ({ type, … }), lus puis vidés par l'interface.
       events: [],
@@ -32,6 +33,9 @@
     game.garden = Vide.Garden.create(state.seed);
     Vide.Garden.fill(game.garden, state, game.stats);
     Vide.Colony.create(game);
+    game.structureHp = new Map(); // solidité des bâtiments abîmés (voir structures.js)
+    Vide.Shadows.create(game);
+    Vide.Combat.create(game);
     return game;
   }
 
@@ -60,6 +64,7 @@
     if (!pulseReady(game)) return false;
     game.pulse.cooldown = game.pulse.duration = game.stats.pulseCooldown;
     game.pulse.wave = 0;
+    game.pulse.id++;
     return true;
   }
 
@@ -79,6 +84,7 @@
     p.wave = Math.min(p.wave + CONFIG.pulse.waveSpeed * dt, game.stats.pulseRadius);
     Vide.Field.catchWithin(game.field, player.x, player.y, p.wave);
     Vide.Field.catchList(game.garden.particles, player.x, player.y, p.wave);
+    Vide.Combat.pulseHit(game, player.x, player.y, p.wave);
     if (p.wave >= game.stats.pulseRadius) p.wave = -1;
   }
 
@@ -122,6 +128,8 @@
       gainLight(game, brought);
       gained += brought;
     }
+    Vide.Shadows.update(game, dt);
+    Vide.Combat.update(game, dt);
     game.glow *= 1 - util.damp(4, dt);
     game.rate += (gained / dt - game.rate) * util.damp(1 / 3, dt);
   }

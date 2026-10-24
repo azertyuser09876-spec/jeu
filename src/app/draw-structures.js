@@ -37,6 +37,27 @@
       }
     },
 
+    // Tour de lumière : un losange veillé par un anneau qui tourne.
+    tour(r, x, y, s, t, f) {
+      const { ctx } = r;
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 2.4, 0.2 + f * 0.4);
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = '#fff3d6';
+      ctx.lineWidth = 1.2 / r.camera.scale;
+      ctx.beginPath();
+      ctx.moveTo(x, y - s);
+      ctx.lineTo(x + s * 0.6, y);
+      ctx.lineTo(x, y + s);
+      ctx.lineTo(x - s * 0.6, y);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.arc(x, y, s * 1.4, t * 1.2, t * 1.2 + Math.PI * 1.2);
+      ctx.stroke();
+      Render.drawGlow(ctx, r.glows.white, x, y, s * 0.6, 1);
+    },
+
     // Phare : un cœur brillant et un faisceau qui balaie lentement le vide.
     phare(r, x, y, s, t, f) {
       const { ctx } = r;
@@ -92,8 +113,26 @@
     for (const b of game.state.buildings) {
       if (b.x < view.left || b.x > view.right || b.y < view.top || b.y > view.bottom) continue;
       const d = Structures.def(b.type);
-      if (Structures.isDone(b)) {
-        SHAPES[d.id](r, b.x, b.y, d.size, t, game.colony.flashes.get(b) || 0);
+      if (b.broken) {
+        // Éteint par les ombres : presque gris, avec un cerne violet, jusqu'à sa réparation.
+        Render.setGlowScale(0.2);
+        SHAPES[d.id](r, b.x, b.y, d.size, t, 0);
+        Render.setGlowScale(1);
+        const ctx = r.ctx;
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = '#a080ff';
+        ctx.lineWidth = 1 / r.camera.scale;
+        ctx.setLineDash([2 / r.camera.scale, 4 / r.camera.scale]);
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, d.size + 8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (Structures.isDone(b)) {
+        const f = game.colony.flashes.get(b) || 0;
+        // Frappé par une ombre (éclat négatif) : il vacille.
+        if (f < 0) Render.setGlowScale(0.5 + 0.5 * Math.abs(Math.sin(t * 30)));
+        SHAPES[d.id](r, b.x, b.y, d.size, t, Math.max(0, f));
+        Render.setGlowScale(1);
       } else {
         drawSite(r, b, d, b.work / d.work, t);
       }

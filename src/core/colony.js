@@ -36,8 +36,21 @@
       : { used: population(state), max: stats.beingCap, label: 'population' };
   }
 
+  // Coût du prochain être d'une espèce : lumière, et échos pour l'armée.
   function cost(state, sp) {
-    return Math.ceil(sp.baseCost * Math.pow(sp.growth, count(state, sp.id)));
+    const n = count(state, sp.id);
+    const price = { light: Math.ceil(sp.baseCost * Math.pow(sp.growth, n)) };
+    if (sp.baseEchoes) price.echoes = Math.ceil(sp.baseEchoes * Math.pow(sp.echoGrowth, n));
+    return price;
+  }
+
+  function maxHp(game, b) {
+    return species(b.species).hp * game.stats.beingHp;
+  }
+
+  // Un être éteint (vaincu par une ombre) ne fait rien jusqu'à son retour au foyer.
+  function isActive(b) {
+    return !(b.down > 0);
   }
 
   // --- Êtres vivants ---
@@ -66,6 +79,10 @@
       age: 0,
       phase: r() * Math.PI * 2,
       flash: 0,           // éclat bref après un dépôt (affichage)
+      hp: null,           // points de vie (initialisés au premier pas, selon les améliorations)
+      down: 0,            // secondes avant de se rallumer au foyer après avoir été vaincu
+      lastHurt: -99,      // instant de la dernière blessure
+      cd: 0,              // recharge d'attaque (armée)
     };
     colony.beings.push(being);
     return being;
@@ -258,8 +275,22 @@
       if (!tryDance(game, b, dt)) wander(game, b, speed, dt);
     },
 
-    // Construction : rejoindre le chantier le plus proche et y travailler en tournant autour.
+    // Construction : réparer d'abord les bâtiments abîmés, puis rejoindre le chantier le plus proche
+    // et y travailler en tournant autour.
     builder(game, b, dt, speed) {
+      const damaged = Structures.mostDamaged(game, b.x, b.y);
+      if (damaged) {
+        const a = b.phase + game.time * 0.5;
+        const radius = Structures.def(damaged.type).size + 10;
+        steer(b, damaged.x + Math.cos(a) * radius, damaged.y + Math.sin(a) * radius, speed, dt);
+        b.working = Math.hypot(damaged.x - b.x, damaged.y - b.y) < radius + 14;
+        b.task = b.working ? 'repair' : 'travel';
+        b.site = damaged;
+        if (b.working && Structures.repair(game, damaged, game.stats.buildRate * CONFIG.colony.repairRate * dt)) {
+          Vide.Sim.emit(game, 'repaired', { building: damaged.type });
+        }
+        return;
+      }
       const site = Structures.nearestSite(game.state, b.x, b.y);
       if (site) {
         const a = b.phase + game.time * 0.5;
@@ -286,8 +317,10 @@
     const minD = CONFIG.colony.separation;
     for (let i = 0; i < beings.length; i++) {
       const a = beings[i];
+      if (!isActive(a)) continue;
       for (let j = i + 1; j < beings.length; j++) {
         const b = beings[j];
+        if (!isActive(b)) continue;
         if (a.dance && b.dance) continue; // les danseurs se frôlent
         const dx = b.x - a.x, dy = b.y - a.y;
         const d2 = dx * dx + dy * dy;
@@ -309,8 +342,28 @@
     for (const b of colony.beings) {
       const sp = species(b.species);
       const speed = sp.speed * stats.beingSpeed;
+      const max = maxHp(game, b);
+      if (b.hp === null) b.hp = max;
+      if (b.down > 0) {
+        b.down -= dt;
+        if (b.down <= 0) {
+          // Se rallume au foyer, intact.
+          b.down = 0;
+          b.hp = max;
+          b.x = (colony.rng() - 0.5) * 30;
+          b.y = (colony.rng() - 0.5) * 30;
+          b.vx = b.vy = 0;
+          b.age = 0;
+        }
+        continue;
+      }
+      // Régénération lente loin des combats.
+      if (game.time - b.lastHurt > CONFIG.colony.regenDelay) b.hp = Math.min(max, b.hp + CONFIG.colony.regen * dt);
+      b.hp = Math.min(b.hp, max);
+      b.cd = Math.max(0, b.cd - dt);
       b.age += dt;
       b.flash = Math.max(0, b.flash - dt * 2);
+      b.hurt = Math.max(0, (b.hurt || 0) - dt * 3);
       b.danceCooldown -= dt;
       if (b.dance) {
         b.task = 'idle';
@@ -326,9 +379,10 @@
     [colony.active, colony.activeNow] = [colony.activeNow, colony.active];
 
     colony.foyerGlow *= 1 - util.damp(2, dt);
+    // Éclats des bâtiments : positifs (dépôt, fin de chantier) ou négatifs (coup d'une ombre), qui s'estompent.
     for (const [building, v] of colony.flashes) {
-      const next = v - dt * 1.5;
-      if (next <= 0) colony.flashes.delete(building);
+      const next = v > 0 ? v - dt * 1.5 : v + dt * 1.5;
+      if (next * v <= 0) colony.flashes.delete(building);
       else colony.flashes.set(building, next);
     }
 
@@ -349,7 +403,7 @@
       desc: sp.desc,
       revealed: (state) => count(state, sp.id) > 0 ||
         ((!sp.requires || sp.requires(state)) && state.totalLight >= sp.baseCost * 0.5),
-      cost: (state) => ({ light: cost(state, sp) }),
+      cost: (state) => cost(state, sp),
       blocked: (state) => {
         const r = room(state, sp);
         return r.used >= r.max ? (sp.cap ? 'complet' : 'population pleine') : null;
@@ -363,5 +417,9 @@
     });
   }
 
-  Vide.Colony = { species, count, population, total, room, cost, create, sync, update };
+  Vide.Colony = {
+    species, count, population, total, room, cost, maxHp, isActive, create, sync, update,
+    // Pour les comportements définis ailleurs (armée, voir combat.js).
+    ROLES, steer, wander, tryDance,
+  };
 })(globalThis.Vide);

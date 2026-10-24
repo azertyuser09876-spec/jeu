@@ -22,6 +22,14 @@
   <div id="hud" class="hidden">
     <div id="light"><span class="glyph">✦</span><span id="light-amount">0</span></div>
     <div id="light-rate"><span id="rate-amount">0,0</span> / s</div>
+    <div id="echoes" class="hidden"><span class="glyph">◆</span><span id="echo-amount">0</span></div>
+  </div>
+
+  <div id="orders" class="hidden" role="group" aria-label="Ordres de l’armée">
+    <span class="orders-label">armée</span>
+    <button type="button" data-posture="garde" title="Garder le territoire (G)">garder</button>
+    <button type="button" data-posture="escorte" title="Escorter ta lumière (E)">escorter</button>
+    <button type="button" data-posture="chasse" title="Chasser les ombres au loin (C)">chasser</button>
   </div>
 
   <button id="pulse-btn" class="hidden" type="button" aria-label="Pulsation (Espace)">
@@ -63,6 +71,7 @@
         <dt>se déplacer</dt><dd>maintenir le clic ou le doigt · ZQSD, WASD ou flèches</dd>
         <dt>pulsation</dt><dd>Espace ou le bouton rond</dd>
         <dt>acheter</dt><dd>clic ou touches 1 à 9 · Tab : onglet suivant</dd>
+        <dt>armée</dt><dd>G garder · E escorter · C chasser</dd>
         <dt>menu</dt><dd>Échap</dd>
       </dl>
 
@@ -93,6 +102,8 @@
   <script src="src/core/garden.js"></script>
   <script src="src/core/species.js"></script>
   <script src="src/core/colony.js"></script>
+  <script src="src/core/shadows.js"></script>
+  <script src="src/core/combat.js"></script>
   <script src="src/core/sim.js"></script>
   <script src="src/core/offline.js"></script>
   <script src="src/core/save.js"></script>
@@ -102,6 +113,7 @@
   <script src="src/app/draw-territory.js"></script>
   <script src="src/app/draw-colony.js"></script>
   <script src="src/app/draw-structures.js"></script>
+  <script src="src/app/draw-combat.js"></script>
   <script src="src/app/input.js"></script>
   <script src="src/app/ui.js"></script>
   <script src="src/app/storage.js"></script>
