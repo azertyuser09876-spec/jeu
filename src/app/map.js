@@ -200,7 +200,10 @@
         buf[i + 3] = 1;
       }
     }
-    blur(buf, gw, gh, 2);
+    // Un fondu léger entre régions, jamais plus large que ~120 unités du monde : dézoomée, la carte garde des
+    // frontières nettes (sinon un village proche d'une frontière semblerait changer de région).
+    const reach = (2 * SAMPLE) / scale; // unités du monde couvertes par une passe de flou
+    blur(buf, gw, gh, Math.max(0, Math.min(2, Math.floor(120 / reach))));
     const off = document.createElement('canvas');
     off.width = gw;
     off.height = gh;

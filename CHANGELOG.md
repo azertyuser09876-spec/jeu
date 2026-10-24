@@ -1,5 +1,15 @@
 # Historique des versions
 
+## 2.0.1 — Le monde ne file plus
+
+- **Villages qui semblaient se déplacer** : dans les Courants (et l'Éclat), le courant emportait ta lumière *et*
+  les particules ; comme la caméra te suit, tout cela paraissait immobile et c'était le village, pourtant fixe,
+  qui filait à l'écran. Le courant n'emporte plus que ta lumière ; les particules restent posées, et de longues
+  traînées pâles montrent le sens du flot.
+- **Carte** : le fondu entre régions ne dépasse plus ~120 unités du monde ; dézoomée, la carte garde des
+  frontières nettes (un village proche d'une frontière ne semble plus changer de région).
+- 340 tests de logique, 41 vérifications navigateur.
+
 ## 2.0.0 — Équilibrage et finitions
 
 La boucle est bouclée : du vide plein d'autrefois à la lueur seule, des premiers villages aux sept colosses

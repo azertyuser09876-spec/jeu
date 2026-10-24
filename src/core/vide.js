@@ -3,5 +3,5 @@
 (function (root) {
   'use strict';
   const Vide = root.Vide = root.Vide || {};
-  Vide.VERSION = '2.0.0';
+  Vide.VERSION = '2.0.1';
 })(globalThis);

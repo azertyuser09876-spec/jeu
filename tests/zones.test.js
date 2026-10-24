@@ -79,6 +79,26 @@
     assert.deepEqual(state.zones.discovered, ['calme']);
   });
 
+  test('un courant emporte la lumière, pas les particules ni les villages (le monde ne file pas à l’écran)', () => {
+    // Un village posé dans une région de courant, la lumière en son cœur, immobile.
+    const c = findZone(SEED, 'courants');
+    const state = State.create(SEED);
+    state.player.x = c.x;
+    state.player.y = c.y;
+    const v = Vide.Villages.found(state, 'jardins');
+    const game = Sim.create(state);
+    const before = game.field.particles.slice(0, 50).map((p) => ({ p, x: p.x, y: p.y }));
+    for (let i = 0; i < 60 * 3; i++) Sim.step(game, dt, Sim.emptyInput());
+    const carried = Math.hypot(state.player.x - c.x, state.player.y - c.y);
+    assert.ok(carried > Zones.get('courants').current * 2, `la lumière est emportée (${Math.round(carried)})`);
+    assert.deepEqual([v.x, v.y], [c.x, c.y], 'le village ne bouge pas');
+    // Les particules libres ne dérivent qu'à leur lente vitesse propre, pas avec le courant.
+    for (const { p, x, y } of before) {
+      if (p.gone || p.caught >= 0) continue;
+      assert.ok(Math.hypot(p.x - x, p.y - y) < CONFIG.field.drift * 1.5 * 3 + 1, 'une particule ne suit pas le courant');
+    }
+  });
+
   test("entrer dans une nouvelle zone est annoncé", () => {
     const c = findZone(SEED, 'brume');
     const game = gameAt(0, 0);

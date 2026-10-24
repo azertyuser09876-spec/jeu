@@ -72,9 +72,9 @@
   // poursuite, récolte, et effacement au-delà de despawnRadius (Infinity : jamais).
   // Une particule retirée de la liste est marquée `gone` (utile à qui la visait, comme une lueur).
   // Renvoie la lumière brute récoltée (avant multiplicateur) et le nombre de particules.
-  function attract(list, player, stats, dt, despawnRadius, current) {
-    const cx = current ? current.x : 0;
-    const cy = current ? current.y : 0;
+  // (Le courant d'une zone n'emporte que la lumière du joueur, jamais les particules : si elles dérivaient avec
+  // elle, c'est le monde immobile — les villages — qui semblerait filer à l'écran.)
+  function attract(list, player, stats, dt, despawnRadius) {
     const a = CONFIG.attraction;
     const reach2 = stats.reach * stats.reach;
     const collect2 = a.collectRadius * a.collectRadius;
@@ -112,8 +112,8 @@
         p.x += (dx / d) * move;
         p.y += (dy / d) * move;
       } else {
-        p.x += (p.vx + cx) * dt;
-        p.y += (p.vy + cy) * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
       }
     }
     return { value, count };
@@ -124,7 +124,7 @@
     zone = zone || NO_ZONE;
     const f = CONFIG.field;
     const list = field.particles;
-    const result = attract(list, player, stats, dt, f.despawnRadius, zone.current);
+    const result = attract(list, player, stats, dt, f.despawnRadius);
 
     // Reremplissage progressif : le vide se recharge, mais pas instantanément.
     const target = targetCount(stats, zone);

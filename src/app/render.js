@@ -243,6 +243,41 @@
     ctx.fillRect(0, 0, r.width, r.height);
   }
 
+  // Le courant d'une zone : de longues traînées pâles qui filent dans son sens. Le flot se voit et emporte ta
+  // lumière ; le monde, lui (villages, particules), reste en place.
+  const STREAK_CELL = 240;
+  function drawCurrent(r, game) {
+    const cur = game.region.current;
+    const speed = Math.hypot(cur.x, cur.y);
+    if (speed < 1) return;
+    const { ctx } = r;
+    const view = viewBounds(r, STREAK_CELL);
+    const dx = cur.x / speed, dy = cur.y / speed;
+    const key = game.region.key;
+    const seed = game.state.seed;
+    ctx.strokeStyle = '#cfe8ff';
+    ctx.lineWidth = 1.2 / r.camera.scale;
+    ctx.lineCap = 'round';
+    for (let i = Math.floor(view.left / STREAK_CELL); i <= Math.floor(view.right / STREAK_CELL); i++) {
+      for (let j = Math.floor(view.top / STREAK_CELL); j <= Math.floor(view.bottom / STREAK_CELL); j++) {
+        const h = Vide.util.hash2(i, j, seed + 977);
+        if (h > 0.55) continue;
+        // Chaque traînée naît, file sur une longueur de case, s'efface, et recommence.
+        const phase = (r.time * speed / STREAK_CELL + h * 7) % 1;
+        const x = (i + Vide.util.hash2(i, j, seed + 978)) * STREAK_CELL + dx * phase * STREAK_CELL;
+        const y = (j + Vide.util.hash2(i, j, seed + 979)) * STREAK_CELL + dy * phase * STREAK_CELL;
+        if (Vide.Zones.at(seed, x, y).key !== key) continue;
+        const len = 40 + 50 * h;
+        ctx.globalAlpha = 0.16 * Math.sin(Math.PI * phase);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - dx * len, y - dy * len);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function drawParticles(r, game, list, glowLight) {
     const { ctx } = r;
     const fadeIn = Vide.CONFIG.field.fadeIn;
@@ -368,6 +403,7 @@
     drawReach(r, game);
     drawPulse(r, game);
     drawParticles(r, game, game.garden.particles);
+    drawCurrent(r, game);
     drawParticles(r, game, game.field.particles, zoneGlow(r, game.region.zone));
     Vide.Draw.engines(r, game, dt);
     Vide.Draw.colossi(r, game, dt);
