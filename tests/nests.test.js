@@ -125,4 +125,65 @@
     assert.deepEqual(state.nests, []);
     assert.deepEqual(state.cleared, ['1,1'], 'les régions libérées le restent');
   });
+
+  // --- Siège ---
+
+  test('en siège, l’armée va au nid le plus proche, disperse ses défenseurs et abat son cœur', () => {
+    const state = State.create(8);
+    village(state, { radius: 300, beings: { gardien: 6, etincelle: 4 } });
+    const nest = Nests.add(state, 1400, 0, 0);
+    Vide.Combat.setPosture(state, 'siege');
+    state.player.x = -3000;
+    state.upgrades.edge = 6; // une armée aguerrie
+    const game = Sim.create(state);
+    game.field.particles.length = 0;
+    const echoes = state.echoes;
+    let defended = false;
+    for (let i = 0; i < 60 * 120 && state.nests.length; i++) {
+      Sim.step(game, dt, Sim.emptyInput());
+      defended = defended || game.shadows.list.some((x) => Math.hypot(x.x - nest.x, x.y - nest.y) < 200);
+    }
+    assert.equal(state.nests.length, 0, 'le nid est tombé');
+    assert.ok(defended, 'il s’est défendu');
+    assert.ok(state.echoes > echoes + CONFIG.nests.echoes * 0.9);
+    assert.equal(state.cleared.length, 1);
+    assert.ok(game.events.some((e) => e.type === 'nestDestroyed' && e.first));
+  });
+
+  test('sans nid à portée, une armée en siège garde son village', () => {
+    const state = State.create(8);
+    const v = village(state, { radius: 300, beings: { gardien: 1 } });
+    Vide.Combat.setPosture(state, 'siege');
+    const game = Sim.create(state);
+    const a = Vide.Combat.anchor(game, game.colony.beings[0]);
+    assert.equal(a.x, v.x);
+    assert.equal(a.nest, undefined);
+  });
+
+  test('la pulsation blesse le cœur d’un nid, une fois par onde', () => {
+    const state = twoVillages();
+    const game = Sim.create(state);
+    const nest = Nests.add(state, 5000, 0, 0);
+    state.player.x = 5060;
+    Sim.pulse(game);
+    run(game, 1);
+    const hp = Nests.maxHp(nest) - game.stats.pulseDamage * 2;
+    assert.near(nest.hp, hp, CONFIG.nests.regen * 1.1);
+  });
+
+  test('une région libérée (clairière) fait naître plus de lumière', () => {
+    const state = twoVillages();
+    const game = Sim.create(state);
+    const key = game.region.key;
+    const before = game.region.zone.density;
+    state.cleared.push(key);
+    // (zoneMods est interne : on vérifie par le nombre de particules visé autour du joueur.)
+    game.field.particles.length = 0;
+    run(game, CONFIG.field.refillTime * 1.5);
+    const rich = game.field.particles.length;
+    state.cleared.length = 0;
+    game.field.particles.length = 0;
+    run(game, CONFIG.field.refillTime * 1.5);
+    assert.ok(rich > game.field.particles.length * 1.15, `${rich} contre ${game.field.particles.length} (densité ${before})`);
+  });
 })();

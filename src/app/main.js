@@ -94,7 +94,7 @@
       Vide.Map.toggle(map, true);
       return true;
     }
-    const posture = { KeyG: 'garde', KeyE: 'escorte', KeyC: 'chasse' }[code];
+    const posture = { KeyG: 'garde', KeyE: 'escorte', KeyC: 'chasse', KeyB: 'siege' }[code];
     if (posture && Vide.Combat.armySize(state) > 0) return Vide.Combat.setPosture(state, posture);
     const digit = /^(?:Digit|Numpad)([1-9])$/.exec(code);
     if (digit) return Vide.UI.buyByIndex(ui, Number(digit[1]));

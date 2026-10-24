@@ -62,7 +62,9 @@
     // Dans l'obscurité d'un nid, le vide fait naître bien moins de lumière.
     const { player } = game.state;
     const dark = game.state.nests.length && Vide.Nests.darkAt(game.state, player.x, player.y);
-    return { density: zone.density * (dark ? CONFIG.nests.darkField : 1), rare: zone.rare, current };
+    // Une région libérée d'un nid (clairière) en fait naître davantage.
+    const clearing = game.state.cleared.includes(game.region.key) ? CONFIG.nests.clearing : 1;
+    return { density: zone.density * clearing * (dark ? CONFIG.nests.darkField : 1), rare: zone.rare, current };
   }
 
   // Suit la région traversée : visite, découverte, annonce (avec un peu d'hystérésis aux frontières).

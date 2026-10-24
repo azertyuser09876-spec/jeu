@@ -3,7 +3,7 @@
   'use strict';
   const { CONFIG, util, Colony, Structures, Shadows, Territory, Villages } = Vide;
 
-  const POSTURES = ['garde', 'escorte', 'chasse'];
+  const POSTURES = ['garde', 'escorte', 'chasse', 'siege'];
 
   function create(game) {
     game.vitality = {
@@ -134,8 +134,13 @@
       s.lastWave = id;
       Shadows.damage(s, game.stats.pulseDamage);
     }
-    // Les sceaux des colosses aussi.
+    // Les sceaux des colosses aussi ; et le cœur des nids (deux fois plus), une fois par onde.
     if (Vide.Colossus) Vide.Colossus.pulseHit(game, x, y, radius);
+    for (const nest of game.state.nests.slice()) {
+      if (game.nests.lastWave.get(nest.id) === id || Math.hypot(nest.x - x, nest.y - y) > radius + 28) continue;
+      game.nests.lastWave.set(nest.id, id);
+      Vide.Nests.hit(game, nest, game.stats.pulseDamage * 2);
+    }
   }
 
   // --- Projectiles (traits des étincelles et des tours), légèrement guidés ---
@@ -166,6 +171,14 @@
       p.y += p.vy * dt;
       p.life -= dt;
       // Un trait lancé sur un colosse le frappe dès qu'il atteint son corps.
+      // Un trait lancé sur le cœur d'un nid le frappe en l'atteignant.
+      if (p.target && p.target.nest) {
+        if (Math.hypot(p.target.x - p.x, p.target.y - p.y) <= p.target.radius) {
+          Vide.Nests.hit(game, p.target.nest, p.damage);
+          list.splice(i, 1);
+          continue;
+        }
+      }
       if (p.target && p.target.colossus) {
         if (Math.hypot(p.target.x - p.x, p.target.y - p.y) <= p.target.radius * 0.7) {
           Vide.Colossus.hit(game, p.target.colossus, p.damage);
@@ -226,6 +239,12 @@
     switch (state.army.posture) {
       case 'escorte': return { x: state.player.x, y: state.player.y, radius: 320 };
       case 'chasse': return { x: v.x, y: v.y, radius: R + 1400 };
+      case 'siege': {
+        // Au nid le plus proche de son village (sans nid à portée : il garde son village).
+        const nest = Vide.Nests.nearest(state, v.x, v.y, CONFIG.nests.siegeRange);
+        if (nest) return { x: nest.x, y: nest.y, radius: Vide.Nests.radius(nest) + 250, nest };
+        return { x: v.x, y: v.y, radius: R + 260 };
+      }
       default: return { x: v.x, y: v.y, radius: R + 260 };
     }
   }
@@ -234,6 +253,8 @@
   function enemyFor(game, b, a) {
     const shadow = Shadows.nearest(game, b.x, b.y, Infinity, (s) => Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
     if (shadow) return shadow;
+    // En siège, une fois ses défenseurs dispersés : le cœur du nid.
+    if (a.nest) return Vide.Nests.target(a.nest);
     return Vide.Colossus ? Vide.Colossus.target(game, a.x, a.y, a.radius) : null;
   }
 
@@ -243,6 +264,7 @@
 
   function stillValid(e, a) {
     if (!e) return false;
+    if (e.nest) return a.nest === e.nest && e.nest.hp > 0;
     if (e.colossus) {
       const m = e.colossus.mode;
       return (m === 'hunt' || m === 'kneel') && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius + e.radius;
@@ -259,11 +281,12 @@
   }
 
   function enemyRadius(enemy) {
-    return enemy.colossus ? enemy.radius : Shadows.kind(enemy.kind).radius;
+    return enemy.colossus || enemy.nest ? enemy.radius : Shadows.kind(enemy.kind).radius;
   }
 
   function damageEnemy(game, enemy, amount) {
     if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount);
+    else if (enemy.nest) Vide.Nests.hit(game, enemy.nest, amount);
     else Shadows.damage(enemy, amount);
   }
 

@@ -26,7 +26,9 @@
   }
 
   function create(game) {
-    game.nests = { raids: new Map(), defend: new Map(), rng: util.rng(game.state.seed ^ 0x6e657374) };
+    game.nests = {
+      raids: new Map(), defend: new Map(), lastWave: new Map(), rng: util.rng(game.state.seed ^ 0x6e657374),
+    };
   }
 
   // Le nid dont l'obscurité couvre (x, y), ou null.
@@ -142,5 +144,61 @@
     }
   }
 
-  Vide.Nests = { FAR_ZONES, level, maxHp, radius, create, darkAt, add, spawnNear, discover, raid, update };
+  // --- Siège ---
+
+  // Le cœur d'un nid, vu comme une cible (objet stable : l'armée peut le viser plusieurs fois).
+  const targets = new WeakMap();
+  function target(nest) {
+    let t = targets.get(nest);
+    if (!t) {
+      t = { nest, radius: 28, x: nest.x, y: nest.y };
+      targets.set(nest, t);
+    }
+    t.hp = nest.hp;
+    return t;
+  }
+
+  // Le nid le plus proche de (x, y), à portée de siège, ou null.
+  function nearest(state, x, y, range) {
+    let best = null;
+    let bestD = range === undefined ? Infinity : range;
+    for (const nest of state.nests) {
+      const d = Math.hypot(nest.x - x, nest.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = nest;
+      }
+    }
+    return best;
+  }
+
+  // Frappe le cœur d'un nid. Attaqué, il fait jaillir des défenseurs ; détruit, il rend beaucoup d'échos et sa
+  // région est libérée pour de bon. Renvoie vrai s'il vient d'être détruit.
+  function hit(game, nest, amount) {
+    const { state } = game;
+    const n = CONFIG.nests;
+    if (!state.nests.includes(nest)) return false;
+    nest.hp -= amount;
+    const last = game.nests.defend.get(nest.id);
+    if (last === undefined || game.time - last >= n.defendEvery) {
+      game.nests.defend.set(nest.id, game.time);
+      const rng = game.nests.rng;
+      for (let k = 0; k < n.defenders + level(nest); k++) {
+        const a = rng() * Math.PI * 2;
+        Vide.Shadows.spawn(game, k % 3 ? 'errante' : 'rodeuse', nest.x + Math.cos(a) * 40, nest.y + Math.sin(a) * 40, 'roam');
+      }
+    }
+    if (nest.hp > 0) return false;
+    const echoes = (n.echoes + n.echoesPerLevel * (level(nest) - 1)) * game.stats.echoGain;
+    state.echoes += echoes;
+    const key = nest.region || Zones.at(state.seed, nest.x, nest.y).key;
+    if (!state.cleared.includes(key)) state.cleared.push(key);
+    state.nests.splice(state.nests.indexOf(nest), 1);
+    Vide.Sim.emit(game, 'nestDestroyed', { x: nest.x, y: nest.y, echoes, first: state.cleared.length === 1 });
+    return true;
+  }
+
+  Vide.Nests = {
+    FAR_ZONES, level, maxHp, radius, create, darkAt, add, spawnNear, discover, raid, update, target, nearest, hit,
+  };
 })(globalThis.Vide);

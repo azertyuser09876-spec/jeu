@@ -159,6 +159,12 @@
       raidPerLevel: 1.2,
       drain: 3,                   // vitalité perdue par seconde dans l'obscurité (hors de tes territoires)
       darkField: 0.2,             // le vide y fait naître si peu de particules
+      siegeRange: 9000,           // l'armée assiège un nid jusqu'à cette distance de son village
+      defenders: 3,               // attaqué, un nid fait jaillir ce nombre d'ombres (+ son niveau)…
+      defendEvery: 6,             // …toutes les 6 s au plus
+      echoes: 60,                 // échos rendus par un nid détruit…
+      echoesPerLevel: 30,         // …et par niveau
+      clearing: 1.3,              // une région libérée fait naître plus de lumière
     },
 
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.

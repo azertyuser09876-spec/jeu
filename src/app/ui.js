@@ -246,6 +246,9 @@
     setText(ui.memoryAmount, util.formatNumber(state.memories));
     setClass(ui.orders, 'hidden', Vide.Combat.armySize(state) === 0);
     for (const btn of ui.orderButtons) setClass(btn, 'active', btn.dataset.posture === state.army.posture);
+    // « Assiéger » n'apparaît que lorsqu'il y a un nid d'ombre à assiéger.
+    const siege = ui.orderButtons.find((b) => b.dataset.posture === 'siege');
+    setClass(siege, 'hidden', state.nests.length === 0 && state.army.posture !== 'siege');
 
     updateShop(ui);
     updatePulse(ui);

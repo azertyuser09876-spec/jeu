@@ -117,7 +117,11 @@
       ? (e.far
         ? 'Un nid d’ombre, ici, au loin : les ombres bâtissent aussi. Son obscurité épuise ta lumière.'
         : 'Les ombres bâtissent aussi : un nid d’ombre est né non loin de tes villages. Il lancera des raids.')
-      : (e.far ? 'Un nid d’ombre, dans cette région.' : 'Un nouveau nid d’ombre est né.')),
+      : (e.far ? 'Un nid d’ombre, dans cette région.' : 'Un nouveau nid d’ombre est né.'))
+      + ' Ton armée peut l’assiéger (B).',
+    nestDestroyed: (e) => (e.first
+      ? `Le nid s’effondre. ◆ ${util.formatNumber(e.echoes)}. Sa région est libérée : le vide y fait naître plus de lumière.`
+      : `Un nid d’ombre s’effondre. ◆ ${util.formatNumber(e.echoes)}.`),
     raid: (e) => `Un raid d’ombres part d’un nid vers ${to(e.village)} (${e.count}).`,
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);

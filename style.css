@@ -287,7 +287,8 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
   transition: opacity 1.5s ease, color 0.3s;
 }
 
-.ability.hidden { display: none; }
+.ability.hidden,
+#orders button.hidden { display: none; }
 .ability.ready { color: var(--light); border-color: rgba(214, 234, 255, 0.4); }
 
 #pulse-btn svg {

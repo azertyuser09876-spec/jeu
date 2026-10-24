@@ -41,6 +41,7 @@
     state.zones.discovered = Vide.ZONES.map((z) => z.id);
     for (const d of Vide.COLOSSI) state.colossi[d.id] = 'tamed';
     state.renaissances = 1;
+    state.cleared.push('4,4'); // un nid détruit
     Lore.check(state);
     assert.equal(state.lore.length, LORE.length);
   });

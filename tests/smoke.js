@@ -257,6 +257,25 @@ const { chromium } = require('playwright');
   });
   check(abil.dash && abil.beacon && abil.buttons === 3 && home < 60, 'ruée, fanal et retour, au clavier ; boutons des capacités');
 
+  // Nids d'ombre : un nid près du village fait apparaître l'ordre « assiéger » (touche B).
+  // (La partie a déjà deux villages depuis un moment : un nid a pu naître ; on repart sans.)
+  await page.evaluate(() => { Vide.game.state.nests.length = 0; });
+  await page.waitForTimeout(100);
+  const siegeHidden = await page.isVisible('#orders button[data-posture="siege"]');
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    const v = s.villages[0];
+    Vide.Nests.add(s, v.x + 2500, v.y, 0);
+    v.beings.gardien = (v.beings.gardien || 0) + 2;
+  });
+  await page.waitForTimeout(200);
+  await page.keyboard.press('KeyB');
+  await page.waitForTimeout(100);
+  const sieging = await page.evaluate(() => Vide.game.state.army.posture);
+  const siegeShown = await page.isVisible('#orders button[data-posture="siege"]');
+  check(!siegeHidden && siegeShown && sieging === 'siege', 'un nid d’ombre fait apparaître l’ordre « assiéger » (B)');
+  await page.evaluate(() => { Vide.game.state.nests.length = 0; Vide.Combat.setPosture(Vide.game.state, 'garde'); });
+
   // Zones et carte : visiter une autre région, puis ouvrir la carte avec M.
   await page.evaluate(() => {
     const p = Vide.game.state.player;
