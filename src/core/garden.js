@@ -13,7 +13,7 @@
   // Nombre de particules visé pour un village (selon sa surface et ses caractéristiques locales).
   function targetCount(village, stats) {
     const g = CONFIG.garden;
-    return Math.min(g.max, Math.round(g.density * village.area * stats.gardenDensity));
+    return Math.min(stats.gardenMax || g.max, Math.round(g.density * village.area * stats.gardenDensity));
   }
 
   // Une particule naît en un point du territoire, jamais collée au cœur. La lumière dorée est plus fréquente

@@ -45,6 +45,24 @@
     assert.deepEqual(state.roads, [{ a: city.id, b: bastion.id, work: 4000 }]);
   });
 
+  test('une cité vaut au moins ses villages : croissance, places et jardin de chaque quartier', () => {
+    const { state, jardins, atelier } = neighbors();
+    const a = Villages.local(state, jardins), b = Villages.local(state, atelier);
+    Cities.fuse(state);
+    const city = Villages.local(state, state.villages[0]);
+    assert.ok(city.territoryGrowth >= a.territoryGrowth + b.territoryGrowth * 0.99, 'croissance');
+    assert.ok(city.beingCap >= a.beingCap + b.beingCap - 4 * 0, 'places');
+    assert.ok(city.gardenMax >= 2 * CONFIG.garden.max, 'jardin');
+  });
+
+  test('fusionner ne rend pas la fondation suivante moins chère', () => {
+    const { state } = neighbors();
+    const before = Villages.foundCost(state);
+    Cities.fuse(state);
+    assert.equal(state.villages.length, 2);
+    assert.equal(Villages.foundCost(state), before);
+  });
+
   test('une cité cumule les effets de ses spécialités', () => {
     const { state } = neighbors();
     Cities.fuse(state);

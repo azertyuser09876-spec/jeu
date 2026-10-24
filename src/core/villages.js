@@ -145,6 +145,15 @@
       ...(stats || Vide.Stats.compute(state)),
       structureArmor: 1, burn: 1, pulseBoost: 1, regen: 1, whitening: 1, rekindle: 1, gardenRare: 1,
     };
+    // Une cité vaut au moins ses villages : chaque quartier (ancien village) garde sa croissance, ses places
+    // et son jardin.
+    const districts = (village.districts || []).length;
+    l.gardenMax = CONFIG.garden.max * (1 + districts);
+    if (districts) {
+      l.territoryGrowth *= 1 + districts;
+      l.beingCap += CONFIG.colony.cap * districts;
+      l.builderCap += Vide.Stats.base().builderCap * districts;
+    }
     Vide.Structures.modify(village, l);
     type(village.type).modify(l);
     for (const t of village.extra || []) type(t).modify(l); // une cité cumule ses spécialités
@@ -167,7 +176,10 @@
 
   function foundCost(state) {
     const c = CONFIG.villages;
-    const n = state.villages.length;
+    // Les villages absorbés par une cité (ses quartiers) comptent toujours : fusionner ne rend pas la
+    // fondation suivante moins chère.
+    let n = 0;
+    for (const v of state.villages) n += 1 + (v.districts ? v.districts.length : 0);
     return n === 0 ? c.firstCost : Math.ceil(c.cost * Math.pow(c.growth, n - 1));
   }
 
