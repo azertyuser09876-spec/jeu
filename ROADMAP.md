@@ -160,7 +160,60 @@ Tableaux peints en code qui racontent sans texte : ouverture, première rencontr
    avec tous les colosses et des centaines d'êtres, mobile.
 4. Release 2.0 : présentation du jeu (README), captures, journal.
 
-## Après 2.0 — pistes
+## Après 2.0 — du vide au champ de bataille
+
+Retours sur la 2.0 : le ressenti est bon. Le monde est vide au début ; il doit finir en vrai champ de bataille.
+Réponses du joueur : pendant l'absence, **tout est possible** (on peut perdre des villages, des colosses) ;
+la guerre arrive **avec les premiers avant-postes ennemis**, d'abord douce, sans forcément d'attaques ;
+les murailles **bloquent tout, sauf les colosses** (ta lumière passe par les portes).
+
+### [ ] 2.1 — Les fondations
+1. Prix fixes : seuls les améliorations (de la lumière, générales) renchérissent ; recruter un être ou bâtir
+   coûte toujours le même prix. Ce qui limite désormais : les logements (population), les casernes (armée), la
+   place (des emplacements selon la surface du village) et un nombre maximal de chaque bâtiment par village.
+2. Le blanc en cinq nuances, jusqu'au blanc pur ; plus une cellule est blanche, plus elle tient (prépare la
+   guerre). Affichage du territoire refait.
+3. Équilibrage (robots) de cette nouvelle économie.
+
+### [ ] 2.2 — Des villages bâtis avec logique
+1. Le plan : cœur, rues, îlots ; chaque bâtiment à sa place selon son rôle (économie au centre, logements autour,
+   production plus loin, défense au bord et aux portes). Le gouverneur du village suit ce plan.
+2. Les murailles : des enceintes qui font le tour du village (une couche de plus quand il grandit), avec des
+   portes. Elles bloquent physiquement tout — ta lumière, les êtres, les ombres — sauf les colosses ; les ombres
+   doivent les abattre.
+3. Circuler : les êtres et ta lumière passent par les portes ; de grandes routes (autoroutes) relient les portes
+   de deux villages.
+4. Refonte graphique : bâtiments, rues, enceintes, territoires, carte.
+
+### [ ] 2.3 — Les bases des ombres
+1. De vraies bases : cœur, territoire de noirceur (cinq nuances, dure à reprendre), bâtiments (fosses, tours,
+   murailles d'ombre) ; elles grandissent et se fortifient.
+2. Les avant-postes : une base essaime ; leur apparition ouvre la guerre, d'abord douce (tension, escarmouches),
+   puis de plus en plus rude.
+3. Prendre une base : abattre son cœur rend le terrain au vide, ou à toi s'il touche ton territoire.
+
+### [ ] 2.4 — Le monde vit
+1. De nouvelles unités dans les deux camps.
+2. Des créatures intermédiaires, plus grandes et plus travaillées que les êtres ; des colosses encore plus grands
+   et bien plus solides.
+3. Des convois automatiques entre villages, et une faune neutre dans le vide.
+
+### [ ] 2.5 — Les gouverneurs
+1. Chaque village (et chaque base d'ombre) a un gouverneur et un budget : il bâtit selon le plan, recrute, lance
+   des expéditions, fonde, relie, forme des cités, conquiert.
+2. Les deux camps ont le même cerveau ; leur ambition grandit avec le temps.
+
+### [ ] 2.6 — La guerre
+1. Les fronts : territoire, bâtiments et troupes se gagnent et se perdent, des deux côtés ; le blanc pur et la
+   noirceur profonde tiennent le plus longtemps.
+2. Des colosses disputés : les ombres peuvent corrompre un colosse apaisé, et on peut le reprendre.
+3. La vue stratégique : en dézoomant, le monde passe en mode abstrait (fronts, armées, ordres).
+4. L'absence : la guerre continue (tout peut arriver), et un résumé t'attend au retour.
+
+### [ ] 3.0 — Le champ de bataille
+Équilibrage complet (deux robots qui s'affrontent), performances (des milliers d'unités), finitions.
+
+## Pistes
 
 - Des zones plus rares (une zone inversée où la lumière blesse, un sanctuaire sans ombre…).
 - Une deuxième génération d'êtres (spécialisations, êtres qui en éveillent d'autres).
