@@ -35,6 +35,11 @@
       Vide.Storage.clear();
       window.location.reload();
     },
+    onImport: (imported) => {
+      resetting = true;
+      Vide.Storage.replace(imported);
+      window.location.reload();
+    },
   });
   const map = Vide.Map.create(game);
   Vide.Render.snapCamera(renderer, game);

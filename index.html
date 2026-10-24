@@ -106,6 +106,20 @@
         <button id="sound-toggle" type="button">son : activé</button>
         <input id="sound-volume" type="range" min="0" max="1" step="0.05" aria-label="Volume">
       </div>
+      <div class="sound-row">
+        <button id="shake-toggle" type="button">secousses : normales</button>
+      </div>
+
+      <details class="journal transfer">
+        <summary>sauvegarde · exporter, importer</summary>
+        <textarea id="transfer-code" rows="3" spellcheck="false" autocomplete="off"
+          placeholder="colle ici un code de sauvegarde"></textarea>
+        <div class="transfer-row">
+          <button id="export-btn" type="button">exporter</button>
+          <button id="import-btn" type="button">importer</button>
+          <span id="transfer-status" aria-live="polite"></span>
+        </div>
+      </details>
 
       <details class="journal">
         <summary id="journal-title">journal</summary>

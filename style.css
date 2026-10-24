@@ -609,6 +609,7 @@ body.launching #intro .hint { animation: none; }
   place-items: center;
   padding: 20px;
   background: rgba(0, 0, 0, 0.72);
+  overflow-y: auto; /* petit écran : la carte défile au lieu d'être coupée */
   animation: fade 0.3s ease;
 }
 
@@ -711,6 +712,38 @@ body.launching #intro .hint { animation: none; }
 }
 
 .sound-row input { flex: 1; accent-color: #d6eaff; }
+
+.transfer textarea {
+  display: block;
+  width: 100%;
+  margin: 10px 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--faint);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font: 0.72rem/1.4 ui-monospace, monospace;
+  word-break: break-all;
+  resize: vertical;
+}
+
+.transfer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transfer-row button {
+  padding: 4px 12px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+#transfer-status { font-size: 0.75rem; color: var(--dim); }
 
 .journal {
   margin: 0 0 16px;

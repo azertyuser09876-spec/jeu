@@ -163,5 +163,55 @@
     return state;
   }
 
-  Vide.Save = { FORMAT, serialize, deserialize, sanitize };
+  // --- Codes de sauvegarde (exporter / importer) ---
+  // Un code est « vide: » suivi de la sauvegarde en base64 : une seule ligne, facile à copier et à coller.
+  const CODE_PREFIX = 'vide:';
+  const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+  function encode64(text) {
+    const bytes = unescape(encodeURIComponent(text)); // octets UTF-8, un par caractère
+    let out = '';
+    for (let i = 0; i < bytes.length; i += 3) {
+      const n = (bytes.charCodeAt(i) << 16) | ((bytes.charCodeAt(i + 1) || 0) << 8) | (bytes.charCodeAt(i + 2) || 0);
+      out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63];
+      out += i + 1 < bytes.length ? B64[(n >> 6) & 63] : '=';
+      out += i + 2 < bytes.length ? B64[n & 63] : '=';
+    }
+    return out;
+  }
+
+  function decode64(code) {
+    const clean = code.replace(/[^A-Za-z0-9+/]/g, '');
+    let bytes = '';
+    for (let i = 0; i < clean.length; i += 4) {
+      const chunk = clean.slice(i, i + 4);
+      let n = 0;
+      for (let j = 0; j < 4; j++) n = (n << 6) | (j < chunk.length ? B64.indexOf(chunk[j]) : 0);
+      bytes += String.fromCharCode((n >> 16) & 255);
+      if (chunk.length > 2) bytes += String.fromCharCode((n >> 8) & 255);
+      if (chunk.length > 3) bytes += String.fromCharCode(n & 255);
+    }
+    return decodeURIComponent(escape(bytes));
+  }
+
+  function exportCode(state, now) {
+    return CODE_PREFIX + encode64(serialize(state, now));
+  }
+
+  // Accepte un code (espaces et retours à la ligne tolérés) ou une sauvegarde brute en JSON.
+  // Renvoie le même résultat que deserialize.
+  function importCode(text) {
+    const trimmed = typeof text === 'string' ? text.trim() : '';
+    if (trimmed.startsWith('{')) return deserialize(trimmed);
+    if (!trimmed.startsWith(CODE_PREFIX)) return { ok: false, reason: 'corrupt' };
+    let json;
+    try {
+      json = decode64(trimmed.slice(CODE_PREFIX.length));
+    } catch (e) {
+      return { ok: false, reason: 'corrupt' };
+    }
+    return deserialize(json);
+  }
+
+  Vide.Save = { FORMAT, serialize, deserialize, sanitize, exportCode, importCode, encode64, decode64 };
 })(globalThis.Vide);

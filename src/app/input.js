@@ -78,7 +78,8 @@
     canvas.addEventListener('pointercancel', release);
 
     window.addEventListener('keydown', (e) => {
-      if (e.target instanceof HTMLElement && e.target.closest('input, textarea')) return;
+      // On écrit dans un champ : seules les touches d'Échap (fermer le menu) restent actives.
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea') && e.code !== 'Escape') return;
       input.keys.add(e.code);
       // Le caractère (e.key) est aussi transmis : utile pour les touches qui changent de place selon le clavier (M).
       if (input.onAction && !e.repeat && input.onAction(e.code, e.key)) e.preventDefault();

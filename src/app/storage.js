@@ -58,7 +58,14 @@
     storage.lastSave = null;
   }
 
+  // Remplace la partie enregistrée (import d'un code). Elle reprend « maintenant » : pas d'absence offerte.
+  function replace(state) {
+    storage.readOnly = false;
+    return save(state);
+  }
+
   storage.load = load;
+  storage.replace = replace;
   storage.save = save;
   storage.clear = clear;
   Vide.Storage = storage;

@@ -34,7 +34,18 @@
       showSound();
     });
     volume.addEventListener('input', () => Vide.Audio.setVolume(Number(volume.value)));
-    menu.showSound = showSound;
+    const shakeBtn = $('shake-toggle');
+    const reduced = () => Vide.Settings.get('reduceShake', Vide.Render.REDUCE_DEFAULT);
+    const showOptions = () => {
+      showSound();
+      shakeBtn.textContent = reduced() ? 'secousses : réduites' : 'secousses : normales';
+    };
+    shakeBtn.addEventListener('click', () => {
+      Vide.Settings.set('reduceShake', !reduced());
+      showOptions();
+    });
+    menu.showSound = showOptions;
+    setupTransfer(menu);
     menu.button.addEventListener('click', () => toggle(menu));
     $('menu-close').addEventListener('click', () => toggle(menu, false));
     $('menu-reset').addEventListener('click', () => {
@@ -46,6 +57,29 @@
       if (e.target === menu.root) toggle(menu, false);
     });
     return menu;
+  }
+
+  // Exporter / importer la partie sous forme de code, pour la garder ou changer d'appareil.
+  function setupTransfer(menu) {
+    const area = $('transfer-code');
+    const status = $('transfer-status');
+    const say = (text) => { status.textContent = text; };
+    $('export-btn').addEventListener('click', () => {
+      area.value = Vide.Save.exportCode(menu.game.state, Date.now());
+      area.select();
+      const copied = navigator.clipboard && navigator.clipboard.writeText(area.value);
+      if (copied) copied.then(() => say('code copié'), () => say('code prêt : copie-le'));
+      else say('code prêt : copie-le');
+    });
+    $('import-btn').addEventListener('click', () => {
+      const result = Vide.Save.importCode(area.value);
+      if (!result.ok) {
+        say(result.reason === 'newer' ? 'code d’une version plus récente du jeu' : 'code illisible');
+        return;
+      }
+      const sure = window.confirm('Remplacer la partie en cours par celle de ce code ?');
+      if (sure && menu.hooks.onImport) menu.hooks.onImport(result.state);
+    });
   }
 
   function toggle(menu, open) {

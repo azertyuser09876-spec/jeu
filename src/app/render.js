@@ -53,6 +53,9 @@
     r.camera.scale = r.baseScale * r.zoom * r.autoZoom * r.introZoom;
   }
 
+  // Par défaut, les secousses suivent la préférence du système (« réduire les animations »).
+  const REDUCE_DEFAULT = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
   // Zoom choisi par le joueur (molette, pincement, + / −), gardé dans les réglages.
   const ZOOM_MIN = 0.55;
   const ZOOM_MAX = 1.8;
@@ -313,9 +316,11 @@
     edgePointer(r, 0, 0, '#fff', 0.3);
 
     // Passage en coordonnées du monde, centrées sur la caméra (secouée par les pas des colosses).
+    // Secousses réduites (réglage) : à peine un frisson.
     r.shake = (r.shake || 0) * (1 - Vide.util.damp(6, dt));
-    const shakeX = r.shake > 0.2 ? (Math.random() - 0.5) * r.shake : 0;
-    const shakeY = r.shake > 0.2 ? (Math.random() - 0.5) * r.shake : 0;
+    const shake = r.shake * (Vide.Settings.get('reduceShake', REDUCE_DEFAULT) ? 0.15 : 1);
+    const shakeX = shake > 0.2 ? (Math.random() - 0.5) * shake : 0;
+    const shakeY = shake > 0.2 ? (Math.random() - 0.5) * shake : 0;
     ctx.translate(r.width / 2 + shakeX, r.height / 2 + shakeY);
     ctx.scale(camera.scale, camera.scale);
     ctx.translate(-camera.x, -camera.y);
@@ -345,6 +350,7 @@
 
   Vide.Render = {
     create, resize, screenToWorld, worldToScreen, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer, zoomBy,
+    REDUCE_DEFAULT,
   };
   // Fonctions de dessin spécialisées (territoire, êtres…), définies dans src/app/draw-*.js.
   Vide.Draw = Vide.Draw || {};

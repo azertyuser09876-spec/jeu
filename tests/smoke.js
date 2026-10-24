@@ -229,6 +229,40 @@ const { chromium } = require('playwright');
   check(menuOpen && t1 === t0, 'Échap ouvre le menu et met en pause');
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'menu.png') });
 
+  // Options : secousses réduites, mémorisées.
+  await page.click('#shake-toggle');
+  const calm = await page.evaluate(() => ({ text: document.getElementById('shake-toggle').textContent, kept: Vide.Settings.get('reduceShake') }));
+  check(calm.text.includes('réduites') && calm.kept === true, 'les secousses se réduisent depuis le menu');
+
+  // Sauvegarde : exporter donne un code ; un code illisible est refusé ; un bon code remplace la partie.
+  await page.click('.transfer summary');
+  await page.click('#export-btn');
+  const exported = await page.inputValue('#transfer-code');
+  await page.fill('#transfer-code', 'n’importe quoi');
+  await page.click('#import-btn');
+  const refused = await page.textContent('#transfer-status');
+  const code = await page.evaluate(() => {
+    const st = JSON.parse(JSON.stringify(Vide.game.state));
+    st.light = 12345;
+    return Vide.Save.exportCode(st, Date.now());
+  });
+  await page.fill('#transfer-code', code);
+  page.once('dialog', (d) => d.accept());
+  await Promise.all([page.waitForNavigation(), page.click('#import-btn')]);
+  await wake();
+  await page.waitForTimeout(200);
+  const importedLight = await page.evaluate(() => Vide.game.state.light);
+  check(exported.startsWith('vide:') && refused.includes('illisible') && importedLight >= 12345 && importedLight < 13000,
+    `exporter puis importer un code de sauvegarde (${Math.round(importedLight)} ✦)`);
+  if (shotDir) {
+    await page.keyboard.press('Escape');
+    await page.click('.transfer summary');
+    await page.click('#export-btn');
+    await page.screenshot({ path: path.join(shotDir, 'menu-options.png') });
+    await page.keyboard.press('Escape');
+  }
+  await page.keyboard.press('Escape');
+
   // Recommencer : confirmation, puis partie neuve, sans que la sauvegarde de sortie ne la réécrive.
   page.once('dialog', (d) => d.accept());
   await Promise.all([page.waitForNavigation(), page.click('#menu-reset')]);

@@ -115,4 +115,40 @@
   test('un état vide donne une partie neuve', () => {
     assert.deepEqual(Save.sanitize({ seed: 5 }), State.create(5));
   });
+
+  test('un code de sauvegarde exporté se réimporte à l’identique', () => {
+    const state = sampleState();
+    state.lore = [Vide.LORE[0].id];
+    const code = Save.exportCode(state, 777);
+    assert.ok(code.startsWith('vide:'));
+    assert.ok(/^vide:[A-Za-z0-9+/=]+$/.test(code), 'une seule ligne, sans caractère gênant');
+    const result = Save.importCode(code);
+    assert.ok(result.ok);
+    assert.deepEqual(result.state, state);
+    assert.equal(result.savedAt, 777);
+  });
+
+  test('le code tolère espaces et retours à la ligne, et le JSON brut est accepté', () => {
+    const state = sampleState();
+    const code = Save.exportCode(state, 1);
+    const wrapped = '  ' + code.slice(0, 40) + '\n' + code.slice(40, 90) + ' \n ' + code.slice(90) + '\n';
+    assert.ok(Save.importCode(wrapped).ok);
+    assert.ok(Save.importCode(Save.serialize(state, 1)).ok);
+  });
+
+  test('l’encodage des codes respecte les caractères accentués et toutes les longueurs', () => {
+    for (const text of ['', 'a', 'ab', 'abc', 'éclat ancien ✦ ◆ ✧', '{"x":"Léviathan"}']) {
+      assert.equal(Save.decode64(Save.encode64(text)), text);
+    }
+    assert.equal(Save.encode64('abc'), 'YWJj'); // base64 standard
+    assert.equal(Save.encode64('é'), 'w6k=');
+  });
+
+  test('un code abîmé ou étranger est refusé sans planter', () => {
+    const code = Save.exportCode(sampleState(), 1);
+    for (const bad of ['', 'bonjour', 'vide:', 'vide:%%%%', code.slice(0, code.length / 2), 'vide:' + 'A'.repeat(7), null, 42, {}]) {
+      const result = Save.importCode(bad);
+      assert.equal(result.ok, false, String(bad).slice(0, 20));
+    }
+  });
 })();
