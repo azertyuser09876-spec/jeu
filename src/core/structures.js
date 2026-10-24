@@ -1,8 +1,8 @@
-// Bâtiments du territoire : planification, emplacement, construction, effets.
-// État persistant : state.buildings = [{ type, x, y, work }] ; un bâtiment est achevé quand work ≥ def.work.
+// Bâtiments des villages : planification, emplacement, construction, effets.
+// État persistant : village.buildings = [{ type, x, y, work }] ; un bâtiment est achevé quand work ≥ def.work.
 (function (Vide) {
   'use strict';
-  const { util, Catalog, Territory } = Vide;
+  const { util, Catalog, Territory, Villages } = Vide;
 
   const MIN_TERRITORY = 80; // rayon minimal pour bâtir
 
@@ -16,22 +16,36 @@
     return building.work >= def(building.type).work;
   }
 
-  // Nombre de bâtiments d'un type (achevés seulement, ou tous en comptant les chantiers).
+  // Nombre de bâtiments d'un type dans un village (achevés seulement, ou tous en comptant les chantiers).
+  function countIn(village, type, includeSites) {
+    let n = 0;
+    for (const b of village.buildings) if (b.type === type && (includeSites || isDone(b))) n++;
+    return n;
+  }
+
+  // … et dans tous les villages (le prix d'un plan en dépend).
   function count(state, type, includeSites) {
     let n = 0;
-    for (const b of state.buildings) if (b.type === type && (includeSites || isDone(b))) n++;
+    for (const v of state.villages) n += countIn(v, type, includeSites);
     return n;
   }
 
-  // Bâtiments d'un type qui fonctionnent (achevés et non éteints).
-  function working(state, type) {
+  // Tous les bâtiments, tous villages confondus.
+  function all(state) {
+    const list = [];
+    for (const v of state.villages) list.push(...v.buildings);
+    return list;
+  }
+
+  // Bâtiments d'un type qui fonctionnent dans un village (achevés et non éteints).
+  function working(village, type) {
     let n = 0;
-    for (const b of state.buildings) if (b.type === type && isWorking(b)) n++;
+    for (const b of village.buildings) if (b.type === type && isWorking(b)) n++;
     return n;
   }
 
-  function sites(state) {
-    return state.buildings.filter((b) => !isDone(b));
+  function sites(village) {
+    return village.buildings.filter((b) => !isDone(b));
   }
 
   function cost(state, d) {
@@ -78,11 +92,11 @@
     return true;
   }
 
-  // Bâtiment achevé le plus abîmé à réparer (les éteints d'abord, puis le plus proche), ou null.
-  function mostDamaged(game, x, y) {
+  // Bâtiment achevé le plus abîmé d'un village (les éteints d'abord, puis le plus proche), ou null.
+  function mostDamaged(game, village, x, y) {
     let best = null;
     let bestScore = Infinity;
-    for (const b of game.state.buildings) {
+    for (const b of village.buildings) {
       if (!isDone(b) || hp(game, b) >= def(b.type).hp) continue;
       const score = (b.broken ? 0 : 1e9) + Math.hypot(b.x - x, b.y - y);
       if (score < bestScore) {
@@ -93,20 +107,20 @@
     return best;
   }
 
-  // Choisit un emplacement : à la distance voulue du foyer, le plus loin possible des autres bâtiments.
+  // Choisit un emplacement : à la distance voulue du cœur du village, le plus loin possible des autres bâtiments.
   // Déterministe : un même état donne toujours le même emplacement.
-  function site(state, d) {
-    const radius = Territory.radius(state);
+  function site(state, village, d) {
+    const radius = Territory.radius(village);
     const dist = util.clamp(d.ring * radius, 50, radius * 0.9);
-    const rng = util.rng(state.seed ^ Math.imul(state.buildings.length + 1, 0x9e3779b1));
+    const rng = util.rng(state.seed ^ Math.imul(village.buildings.length + 1, 0x9e3779b1) ^ Math.imul(village.id, 0x85ebca6b));
     const start = rng() * Math.PI * 2;
     let best = null;
     let bestScore = -1;
     for (let i = 0; i < 24; i++) {
       const a = start + (i / 24) * Math.PI * 2;
-      const x = Math.cos(a) * dist, y = Math.sin(a) * dist;
+      const x = village.x + Math.cos(a) * dist, y = village.y + Math.sin(a) * dist;
       let score = Infinity;
-      for (const b of state.buildings) score = Math.min(score, Math.hypot(b.x - x, b.y - y));
+      for (const b of village.buildings) score = Math.min(score, Math.hypot(b.x - x, b.y - y));
       if (score > bestScore) {
         bestScore = score;
         best = { x, y };
@@ -115,11 +129,11 @@
     return best;
   }
 
-  function plan(state, type) {
+  function plan(state, village, type) {
     const d = def(type);
-    const at = site(state, d);
+    const at = site(state, village, d);
     const building = { type, x: at.x, y: at.y, work: 0 };
-    state.buildings.push(building);
+    village.buildings.push(building);
     return building;
   }
 
@@ -130,10 +144,10 @@
     return isDone(building);
   }
 
-  function nearestSite(state, x, y) {
+  function nearestSite(village, x, y) {
     let best = null;
     let bestD2 = Infinity;
-    for (const b of state.buildings) {
+    for (const b of village.buildings) {
       if (isDone(b)) continue;
       const d2 = (b.x - x) ** 2 + (b.y - y) ** 2;
       if (d2 < bestD2) {
@@ -144,11 +158,11 @@
     return best;
   }
 
-  // Point de dépôt le plus proche pour une lueur : le foyer, ou un relais (prisme) achevé.
-  function nearestDeposit(state, x, y) {
-    let best = { x: 0, y: 0, mult: 1, building: null };
-    let bestD2 = x * x + y * y;
-    for (const b of state.buildings) {
+  // Point de dépôt le plus proche pour une lueur : le cœur de son village, ou un relais (prisme) achevé.
+  function nearestDeposit(village, x, y) {
+    let best = { x: village.x, y: village.y, mult: 1, building: null };
+    let bestD2 = (village.x - x) ** 2 + (village.y - y) ** 2;
+    for (const b of village.buildings) {
       const d = def(b.type);
       if (!d.deposit || !isWorking(b)) continue;
       const d2 = (b.x - x) ** 2 + (b.y - y) ** 2;
@@ -160,21 +174,22 @@
     return best;
   }
 
-  // Effets des bâtiments achevés sur les caractéristiques (appelé par Stats.compute).
-  function modify(state, stats) {
+  // Effets des bâtiments achevés d'un village sur ses caractéristiques (appelé par Villages.local).
+  function modify(village, stats) {
     for (const d of Vide.BUILDINGS) {
       if (!d.modify) continue;
-      const n = working(state, d.id);
+      const n = working(village, d.id);
       if (n > 0) d.modify(stats, n);
     }
   }
 
-  // Pendant l'absence, les bâtisseurs continuent les chantiers dans l'ordre. Renvoie les bâtiments achevés.
-  function advanceOffline(state, stats, seconds) {
-    const builders = state.beings.batisseur || 0;
+  // Pendant l'absence, les bâtisseurs d'un village continuent ses chantiers dans l'ordre.
+  // Renvoie les bâtiments achevés. `stats` : caractéristiques du village.
+  function advanceOffline(village, stats, seconds) {
+    const builders = village.beings.batisseur || 0;
     let budget = builders * stats.buildRate * seconds;
     const done = [];
-    for (const b of state.buildings) {
+    for (const b of village.buildings) {
       if (budget <= 0) break;
       if (isDone(b)) continue;
       const need = def(b.type).work - b.work;
@@ -192,17 +207,21 @@
       name: d.name,
       desc: d.desc,
       revealed: (state) => count(state, d.id, true) > 0 ||
-        ((state.beings.lueur || 0) > 0 && (!d.requires || d.requires(state)) && state.totalLight >= d.baseCost * 0.4),
+        (Villages.count(state, 'lueur') > 0 && (!d.requires || d.requires(state)) && state.totalLight >= d.baseCost * 0.4),
       cost: (state) => cost(state, d),
+      // Un plan se pose dans le village où l'on se trouve.
       blocked: (state) => {
-        if (!(state.beings.batisseur > 0)) return 'il faut un bâtisseur';
-        if (Territory.radius(state) < MIN_TERRITORY) return 'territoire trop petit';
+        const village = Villages.current(state);
+        if (!village) return 'rejoins un village';
+        if (!(village.beings.batisseur > 0)) return 'il faut un bâtisseur';
+        if (Territory.radius(village) < MIN_TERRITORY) return 'territoire trop petit';
         return null;
       },
-      apply: (state) => { plan(state, d.id); },
+      apply: (state) => { plan(state, Villages.current(state), d.id); },
       label: (state) => {
-        const built = count(state, d.id, false);
-        const pending = count(state, d.id, true) - built;
+        const village = Villages.current(state);
+        const built = village ? countIn(village, d.id, false) : count(state, d.id, false);
+        const pending = (village ? countIn(village, d.id, true) : count(state, d.id, true)) - built;
         return pending ? `×${built} · ${pending} en chantier` : `×${built}`;
       },
       effect: () => d.effectText,
@@ -210,7 +229,7 @@
   }
 
   Vide.Structures = {
-    def, isDone, isWorking, count, working, sites, cost, site, plan, addWork, nearestSite, nearestDeposit,
+    def, isDone, isWorking, count, countIn, all, working, sites, cost, site, plan, addWork, nearestSite, nearestDeposit,
     modify, advanceOffline, hp, damage, repair, mostDamaged,
   };
 })(globalThis.Vide);

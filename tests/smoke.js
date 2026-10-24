@@ -86,20 +86,21 @@ const { chromium } = require('playwright');
     'la partie est retrouvée après rechargement'
   );
 
-  // Foyer : à l'origine, l'onglet territoire permet de l'allumer.
+  // Village : où que l'on soit, l'onglet territoire propose d'en fonder un, du type choisi.
   await page.evaluate(() => {
     const s = Vide.game.state;
-    s.player.x = 20; s.player.y = 0;
+    s.player.x = 400; s.player.y = -150;
     s.light += 500; s.totalLight += 500;
   });
   await page.waitForTimeout(100);
   await page.click('.tab:has-text("territoire")');
-  await page.click('#shop-list li:not([hidden]) .item:has-text("Allumer le foyer")');
+  await page.click('#shop-list li:not([hidden]) .item:has-text("Bastion")');
   await page.waitForTimeout(400);
-  const lit = await page.evaluate(() => Vide.game.state.territory.lit);
-  const announced = await page.evaluate(() => Vide.Away.history.some((t) => t.includes('Le foyer s’allume')));
-  check(lit && announced, 'le foyer s’allume depuis l’origine, avec un message');
-  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'foyer.png') });
+  const founded = await page.evaluate(() => Vide.game.state.villages.map((v) => ({ type: v.type, x: Math.round(v.x) })));
+  const announced = await page.evaluate(() => Vide.Away.history.some((t) => t.includes('premier village')));
+  check(founded.length === 1 && founded[0].type === 'bastion' && Math.abs(founded[0].x - 400) < 30 && announced,
+    'un village (bastion) se fonde là où l’on est, avec un message');
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'village.png') });
 
   // Lueurs : l'onglet êtres permet d'en éveiller une, qui apparaît dans le monde.
   await page.evaluate(() => { const s = Vide.game.state; s.light += 1000; s.totalLight += 1000; });
@@ -114,15 +115,15 @@ const { chromium } = require('playwright');
   await page.evaluate(() => {
     const s = Vide.game.state;
     s.light += 1e5; s.totalLight += 1e5;
-    s.territory.area = Math.PI * 200 * 200;
-    s.beings.batisseur = 1;
+    s.villages[0].area = Math.PI * 200 * 200;
+    s.villages[0].beings.batisseur = 1;
   });
   await page.waitForTimeout(200);
   await page.click('.tab:has-text("bâtiments")');
   await page.click('#shop-list li:not([hidden]) .item:has-text("Nid")');
   // Le bâtisseur doit d'abord rejoindre le chantier.
   await page.waitForTimeout(3000);
-  const site = await page.evaluate(() => Vide.game.state.buildings[0]);
+  const site = await page.evaluate(() => Vide.game.state.villages[0].buildings[0]);
   check(site && site.type === 'nid' && site.work > 0, 'un nid planifié est mis en chantier par le bâtisseur');
 
   // Ombres : la pulsation en blesse une, qui se dissipe et laisse un écho ; l'armée reçoit un ordre.
@@ -137,7 +138,7 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(600);
   const echoes = await page.evaluate(() => Vide.game.state.echoes);
   check(echoes > 0 && (await page.isVisible('#echoes')), 'la pulsation dissipe une ombre, qui laisse un écho ◆');
-  await page.evaluate(() => { Vide.game.state.beings.gardien = 1; });
+  await page.evaluate(() => { Vide.game.state.villages[0].beings.gardien = 1; });
   await page.waitForTimeout(300);
   await page.click('#orders button[data-posture="escorte"]');
   const posture = await page.evaluate(() => Vide.game.state.army.posture);
@@ -190,7 +191,7 @@ const { chromium } = require('playwright');
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
-  const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
+  const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state.villages[0]));
   await page.evaluate(() => {
     Vide.Storage.save(Vide.game.state);
     const save = JSON.parse(localStorage.getItem('le-vide/save'));
@@ -203,7 +204,7 @@ const { chromium } = require('playwright');
   await wake();
   await page.waitForTimeout(300);
   const awayShown = await page.isVisible('#away');
-  const radiusAfter = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
+  const radiusAfter = await page.evaluate(() => Vide.Territory.radius(Vide.game.state.villages[0]));
   check(awayShown && radiusAfter > radiusBefore + 20,
     `l’absence fait grandir le territoire (${Math.round(radiusBefore)} → ${Math.round(radiusAfter)}) et l’écran d’absence s’affiche`);
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'absence.png') });

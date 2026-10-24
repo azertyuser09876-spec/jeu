@@ -1,11 +1,11 @@
-// Les ombres : attirées par la lumière, elles viennent par marées vers le territoire,
+// Les ombres : attirées par la lumière, elles viennent par marées vers les villages,
 // et errent dans le vide lointain. Rien de tout cela n'est sauvegardé (sauf le nombre de marées passées).
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Territory, Structures, Colony } = Vide;
+  const { CONFIG, util, Territory, Structures, Colony, Villages } = Vide;
 
   // Catalogue des ombres.
-  //   prefers   cible préférée : 'any' (la plus proche), 'beings' (les êtres), 'structures' (bâtiments, foyer)
+  //   prefers   cible préférée : 'any' (la plus proche), 'beings' (les êtres), 'structures' (bâtiments, cœurs)
   //   cost      poids dans le « budget » d'une marée ; fromTide : première marée où elle apparaît
   Vide.SHADOW_KINDS = [
     { id: 'errante', name: 'Errante', hp: 20, speed: 45, damage: 8, cooldown: 1, radius: 12,
@@ -48,6 +48,7 @@
       target: null,
       retarget: 0,
       origin,             // 'tide' (marée) ou 'roam' (errance)
+      home: null,         // marée : le village visé (elle y marche tant qu'elle n'a pas de proie)
       phase: game.shadows.rng() * Math.PI * 2,
       hitFlash: 0,
       lastWave: -1,       // identifiant de la dernière onde de pulsation qui l'a touchée
@@ -69,47 +70,60 @@
     return entries[entries.length - 1][0];
   }
 
-  // Taille d'une marée : grandit avec le nombre de marées passées et la taille du territoire.
-  function tideBudget(state) {
+  // Taille d'une marée : grandit avec le nombre de marées passées et la taille du territoire visé.
+  function tideBudget(state, village) {
     const c = CONFIG.shadows;
-    return c.tideBase + c.tidePerWave * state.tides + Territory.radius(state) * c.tidePerRadius;
+    return c.tideBase + c.tidePerWave * state.tides + Territory.radius(village) * c.tidePerRadius;
   }
 
-  // Lance une marée depuis une direction au hasard, au-delà du bord du territoire.
-  function startTide(game) {
+  // Villages assez grands pour attirer les marées.
+  function tideTargets(state) {
+    return state.villages.filter((v) => Territory.radius(v) >= CONFIG.shadows.firstTideRadius);
+  }
+
+  // Lance une marée vers un village (tiré au sort, d'autant plus souvent qu'il est vaste),
+  // depuis une direction au hasard, au-delà du bord de son territoire.
+  function startTide(game, village) {
     const { state } = game;
     const c = CONFIG.shadows;
     const r = game.shadows.rng;
+    if (!village) {
+      const targets = tideTargets(state);
+      if (!targets.length) return 0;
+      let roll = r() * targets.reduce((sum, v) => sum + v.area, 0);
+      village = targets.find((v) => (roll -= v.area) < 0) || targets[targets.length - 1];
+    }
     const angle = r() * Math.PI * 2;
-    const dist = Territory.radius(state) + c.tideDistance;
-    const cx = Math.cos(angle) * dist, cy = Math.sin(angle) * dist;
+    const dist = Territory.radius(village) + c.tideDistance;
+    const cx = village.x + Math.cos(angle) * dist, cy = village.y + Math.sin(angle) * dist;
     const kinds = Vide.SHADOW_KINDS.filter((k) => state.tides >= k.fromTide);
-    let budget = tideBudget(state);
+    let budget = tideBudget(state, village);
     let count = 0;
     while (budget >= 1 && game.shadows.list.length < c.max) {
       const affordable = kinds.filter((k) => k.cost <= budget);
       const k = affordable[Math.floor(r() * affordable.length)];
       budget -= k.cost;
-      spawn(game, k.id, cx + (r() - 0.5) * 2 * c.tideSpread, cy + (r() - 0.5) * 2 * c.tideSpread, 'tide');
+      const s = spawn(game, k.id, cx + (r() - 0.5) * 2 * c.tideSpread, cy + (r() - 0.5) * 2 * c.tideSpread, 'tide');
+      s.home = village;
       count++;
     }
     state.tides++;
-    Vide.Sim.emit(game, 'tide', { angle, count, first: state.tides === 1 });
+    Vide.Sim.emit(game, 'tide', { angle, x: cx, y: cy, village: village.type, count, first: state.tides === 1 });
     return count;
   }
 
   // --- Cibles ---
 
   function targetPos(t) {
-    return t.ref ? t.ref : { x: 0, y: 0 };
+    return t.ref;
   }
 
   function targetValid(game, t) {
     if (!t) return false;
     if (t.type === 'player') return !game.vitality.invulnerable;
     if (t.type === 'being') return Colony.isActive(t.ref) && game.colony.beings.includes(t.ref);
-    if (t.type === 'building') return Structures.isWorking(t.ref);
-    if (t.type === 'foyer') return game.state.territory.lit;
+    if (t.type === 'building') return Structures.isWorking(t.ref) && game.state.villages.includes(t.village);
+    if (t.type === 'heart') return game.state.villages.includes(t.ref);
     return false;
   }
 
@@ -118,17 +132,19 @@
     const k = kind(s.kind);
     const sense2 = CONFIG.shadows.sense ** 2;
     const candidates = [];
-    const consider = (type, ref, x, y, weight) => {
+    const consider = (type, ref, x, y, weight, village) => {
       const d2 = (x - s.x) ** 2 + (y - s.y) ** 2;
-      if (d2 <= sense2) candidates.push({ type, ref, score: d2 * weight });
+      if (d2 <= sense2) candidates.push({ type, ref, village, score: d2 * weight });
     };
     const pref = (group) => (k.prefers === 'any' || k.prefers === group ? 1 : 6);
 
     const { player } = game.state;
     if (!game.vitality.invulnerable) consider('player', player, player.x, player.y, pref('player'));
     for (const b of game.colony.beings) if (Colony.isActive(b)) consider('being', b, b.x, b.y, pref('beings'));
-    for (const b of game.state.buildings) if (Structures.isWorking(b)) consider('building', b, b.x, b.y, pref('structures'));
-    if (game.state.territory.lit) consider('foyer', null, 0, 0, pref('structures'));
+    for (const v of game.state.villages) {
+      for (const b of v.buildings) if (Structures.isWorking(b)) consider('building', b, b.x, b.y, pref('structures'), v);
+      consider('heart', v, v.x, v.y, pref('structures'));
+    }
 
     candidates.sort((a, b) => a.score - b.score);
     return candidates[0] || null;
@@ -136,7 +152,7 @@
 
   function reachOf(t) {
     if (t.type === 'building') return Structures.def(t.ref.type).size;
-    if (t.type === 'foyer') return 24;
+    if (t.type === 'heart') return 24;
     return 8;
   }
 
@@ -147,8 +163,8 @@
     const { state } = game;
     const c = CONFIG.shadows;
 
-    // Marées : seulement une fois le territoire assez grand pour attirer les ombres.
-    if (state.territory.lit && Territory.radius(state) >= c.firstTideRadius) {
+    // Marées : seulement une fois un territoire assez grand pour attirer les ombres.
+    if (tideTargets(state).length) {
       sh.tideTimer -= dt;
       if (sh.tideTimer <= 0) {
         startTide(game);
@@ -156,9 +172,12 @@
       }
     }
 
-    // Errance : hors du territoire, la zone traversée fait surgir ses ombres près du joueur.
+    // Errance : loin des villages (ou de l'origine, tant qu'il n'y en a aucun), la zone traversée fait surgir
+    // ses ombres près du joueur.
     const zone = game.region ? game.region.zone : null;
-    const far = Math.hypot(state.player.x, state.player.y) - Territory.radius(state);
+    const far = state.villages.length
+      ? Territory.distanceToEdge(state, state.player.x, state.player.y)
+      : Math.hypot(state.player.x, state.player.y);
     if (zone && zone.shadows > 0 && far > c.roamBeyond) {
       sh.roamTimer -= dt * zone.shadows;
       const roaming = sh.list.filter((s) => s.origin === 'roam').length;
@@ -175,9 +194,10 @@
     for (const s of sh.list) {
       const k = kind(s.kind);
       s.age += dt;
-      // Dans le territoire, la lumière ronge lentement les ombres : une marée finit toujours par s'éteindre.
-      s.burning = Territory.isInside(state, s.x, s.y);
-      if (s.burning) s.hp -= c.territoryBurn * dt;
+      // Dans un territoire, la lumière ronge lentement les ombres : une marée finit toujours par s'éteindre.
+      const over = Villages.at(state, s.x, s.y);
+      s.burning = Boolean(over);
+      if (over) s.hp -= c.territoryBurn * Villages.statsOf(game, over).burn * dt;
       s.cd = Math.max(0, s.cd - dt);
       s.hitFlash = Math.max(0, s.hitFlash - dt * 4);
       s.retarget -= dt;
@@ -190,8 +210,8 @@
       if (s.target) {
         const p = targetPos(s.target);
         tx = p.x; ty = p.y;
-      } else if (s.origin === 'tide' && state.territory.lit) {
-        tx = 0; ty = 0; // une marée sans proie en vue avance vers le foyer
+      } else if (s.home && state.villages.includes(s.home)) {
+        tx = s.home.x; ty = s.home.y; // une marée sans proie en vue avance vers le cœur du village visé
       } else {
         tx = state.player.x; ty = state.player.y;
       }
@@ -227,8 +247,7 @@
         continue;
       }
       const fromPlayer = Math.hypot(s.x - state.player.x, s.y - state.player.y);
-      const fromFoyer = Math.hypot(s.x, s.y);
-      if (fromPlayer > c.despawn && (s.origin === 'roam' || fromFoyer > Territory.radius(state) + c.despawn)) {
+      if (fromPlayer > c.despawn && (s.origin === 'roam' || !(Territory.distanceToEdge(state, s.x, s.y) <= c.despawn))) {
         sh.list.splice(i, 1);
       }
     }
@@ -257,5 +276,5 @@
     return best;
   }
 
-  Vide.Shadows = { kind, create, spawn, pickKind, tideBudget, startTide, update, damage, nearest };
+  Vide.Shadows = { kind, create, spawn, pickKind, tideBudget, tideTargets, startTide, update, damage, nearest };
 })(globalThis.Vide);

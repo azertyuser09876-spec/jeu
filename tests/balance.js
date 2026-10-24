@@ -1,7 +1,8 @@
 // Robot d'équilibrage : `node tests/balance.js [minutes] [--renaissance]`.
 // Avec --renaissance, il renaît dès que possible et compare le rythme de chaque vie.
 // Joue une partie simulée (marche aléatoire douce, pulsation dès qu'elle est prête, achète toujours
-// l'article le moins cher du catalogue, revient à l'origine quand un achat l'exige) et affiche la progression.
+// l'article le moins cher du catalogue ; rejoint un village quand un achat l'exige, s'en éloigne pour en
+// fonder un autre) et affiche la progression.
 // Sert à vérifier le rythme après un réglage.
 'use strict';
 const fs = require('fs');
@@ -17,7 +18,7 @@ for (const m of html.matchAll(/<script src="(\.\.\/src\/core\/[^"]+)"><\/script>
   vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
 }
 const { Vide } = context;
-const { CONFIG, Catalog, Sim, State, Territory, Wallet, util } = Vide;
+const { CONFIG, Catalog, Sim, State, Territory, Villages, Wallet, util } = Vide;
 
 const random = util.rng(7);
 const state = State.create(7);
@@ -32,19 +33,44 @@ const lives = [];
 let lifeStart = 0;
 let lifeMillion = null;
 // Événements de combat comptés pendant la partie.
-const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, foyerAttacked: 0 };
+const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, heartAttacked: 0 };
 
 // Coût total d'un article, toutes ressources confondues (approximation suffisante pour choisir).
 const price = (item) => Object.values(item.cost(state)).reduce((a, b) => a + b, 0);
 
+// Achats qui attendent que le joueur se déplace : rejoindre un village, ou s'en éloigner pour en fonder un.
+const JOIN = ['rejoins un village'];
+const LEAVE = ['hors des villages', 'trop près d’un village'];
+let waitCheck = 0;
+let goal = null; // 'join' | 'leave' | null
+
+function steerTo(x, y, sign) {
+  const dx = x - state.player.x, dy = y - state.player.y;
+  const d = Math.hypot(dx, dy) || 1;
+  input.move.x = (sign * dx) / d;
+  input.move.y = (sign * dy) / d;
+}
+
 for (let s = 1; s <= minutes * stepsPerMinute; s++) {
-  // Un achat qui attend le joueur à l'origine : on y retourne.
-  const waiting = Catalog.all().find((i) => i.revealed(state) && !i.maxed(state) &&
-    i.blocked(state) === 'rejoins l’origine' && Wallet.has(state, i.cost(state)));
-  if (waiting) {
-    const d = Math.hypot(state.player.x, state.player.y) || 1;
-    input.move.x = -state.player.x / d;
-    input.move.y = -state.player.y / d;
+  if (--waitCheck <= 0) {
+    waitCheck = 30;
+    goal = null;
+    // Les fondations ne se montrent que hors des villages : le robot les considère toujours.
+    for (const i of Catalog.all()) {
+      if (i.maxed(state) || !Wallet.has(state, i.cost(state))) continue;
+      const founding = i.id.startsWith('village-');
+      if (!founding && !i.revealed(state)) continue;
+      const why = i.blocked(state);
+      if (JOIN.includes(why) && !goal) goal = 'join';
+      // Fonder (le premier village, ou le suivant quand on peut se l'offrir) passe avant tout.
+      if (founding && (LEAVE.includes(why) || (Villages.current(state) && !why))) goal = 'leave';
+    }
+  }
+  const home = Villages.nearest(state, state.player.x, state.player.y);
+  if (goal === 'join' && home) {
+    steerTo(home.x, home.y, 1);
+  } else if (goal === 'leave' && home) {
+    steerTo(home.x, home.y, -1);
   } else {
     if (s % 180 === 0) angle += (random() - 0.5) * 2.2;
     input.move.x = Math.cos(angle);
@@ -65,6 +91,10 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     const buyable = Catalog.all()
       .filter((i) => (reborn || i.id !== 'renaissance') && i.revealed(state) && Catalog.canBuy(state, i.id))
       .sort((a, b) => price(a) - price(b));
+    // Le type de village change à chaque fondation, pour les essayer tous.
+    const founding = buyable.filter((i) => i.id.startsWith('village-'));
+    const offset = Number(process.env.VILLAGE_OFFSET) || 0;
+    if (founding.length) buyable.unshift(founding[(state.villages.length + offset) % founding.length]);
     if (buyable.length) {
       const item = buyable[0];
       Catalog.buy(state, item.id);
@@ -74,9 +104,12 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
 
   if (s % (2 * stepsPerMinute) === 0) {
     const levels = Object.entries(state.upgrades).map(([k, v]) => `${k} ${v}`).join(', ');
-    const territory = state.territory.lit ? `  territoire r=${Math.round(Territory.radius(state))}` : '';
-    const beings = Object.entries(state.beings).map(([k, v]) => `${k} ${v}`).join(' ');
-    const built = state.buildings.filter((x) => Vide.Structures.isDone(x)).map((x) => x.type[0]).join('');
+    const territory = state.villages.length
+      ? `  villages ${state.villages.map((v) => `${v.type[0]}${Math.round(Territory.radius(v))}`).join(' ')}` : '';
+    const counts = {};
+    for (const v of state.villages) for (const [k, n] of Object.entries(v.beings)) counts[k] = (counts[k] || 0) + n;
+    const beings = Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(' ');
+    const built = Vide.Structures.all(state).filter((x) => Vide.Structures.isDone(x)).map((x) => x.type[0]).join('');
     const colony = beings ? `  êtres [${beings}] bâtiments [${built}]` : '';
     const fights = state.tides ? `  marées ${state.tides} ombres ${state.stats.shadows} ◆${Math.round(state.echoes)} dispersé ${events.dispersed} éteints ${events.beingDown} cassés ${events.broken}` : '';
     console.log(

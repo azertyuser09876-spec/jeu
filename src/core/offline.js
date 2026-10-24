@@ -2,13 +2,15 @@
 // La durée prise en compte est plafonnée par la caractéristique offlineCap (amélioration Mémoire).
 (function (Vide) {
   'use strict';
-  const { Territory } = Vide;
+  const { Territory, Villages } = Vide;
 
   // Applique `seconds` d'absence à l'état. Renvoie un rapport pour l'écran « pendant ton absence ».
   function apply(state, seconds) {
     const stats = Vide.Stats.compute(state);
     const away = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
     const applied = Math.min(away, stats.offlineCap);
+    // Le plus grand village sert de repère (« ton territoire s'est étendu »).
+    const largest = Villages.main(state);
     const report = {
       seconds: away,
       applied,
@@ -17,22 +19,24 @@
       radiated: 0,
       brought: 0,
       built: [],
-      radiusBefore: Territory.radius(state),
-      radiusAfter: Territory.radius(state),
+      villages: state.villages.length,
+      radiusBefore: Territory.radius(largest),
+      radiusAfter: Territory.radius(largest),
     };
     if (applied <= 0) return report;
 
-    const radiated = Territory.advance(state, stats, applied) * stats.lightMult;
-    report.built = Vide.Structures.advanceOffline(state, stats, applied);
-    // Les êtres continuent leur travail au rythme mesuré avant le départ.
-    const brought = Vide.Colony.total(state) > 0 ? state.colonyRate * applied * stats.lightMult : 0;
-    const light = radiated + brought;
+    for (const v of state.villages) {
+      const local = Villages.local(state, v, stats);
+      report.radiated += Territory.advance(v, local, applied) * stats.lightMult;
+      report.built.push(...Vide.Structures.advanceOffline(v, local, applied));
+      // Les êtres continuent leur travail au rythme mesuré avant le départ.
+      if (Object.keys(v.beings).length) report.brought += v.rate * applied * stats.lightMult;
+    }
+    const light = report.radiated + report.brought;
     state.light += light;
     state.totalLight += light;
     report.light = light;
-    report.radiated = radiated;
-    report.brought = brought;
-    report.radiusAfter = Territory.radius(state);
+    report.radiusAfter = Territory.radius(largest);
     return report;
   }
 

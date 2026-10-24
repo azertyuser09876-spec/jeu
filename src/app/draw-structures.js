@@ -110,7 +110,7 @@
     }
     const view = Render.viewBounds(r, 300);
     const t = r.time;
-    for (const b of game.state.buildings) {
+    for (const b of Structures.all(game.state)) {
       if (b.x < view.left || b.x > view.right || b.y < view.top || b.y > view.bottom) continue;
       const d = Structures.def(b.type);
       if (b.broken) {

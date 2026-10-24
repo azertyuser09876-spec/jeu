@@ -45,16 +45,24 @@
       waveSpeed: 700,    // vitesse d'expansion de l'onde
     },
 
-    // Territoire de lumière autour du foyer (l'origine). Sa surface croît linéairement dans le temps :
+    // Territoire de lumière autour du cœur de chaque village. Sa surface croît linéairement dans le temps :
     // le rayon grandit donc de plus en plus lentement, sans jamais s'arrêter.
     territory: {
-      foyerCost: 150,
-      foyerReach: 140,       // distance à l'origine pour pouvoir allumer le foyer
       startRadius: 60,
       growth: 70,            // unités² gagnées par seconde (avant améliorations)
       yield: 4e-5,           // lumière par seconde et par unité² de territoire
       insidePulseBoost: 2,   // la pulsation se recharge plus vite dans le territoire
       offlineCap: 4 * 3600,  // durée d'absence prise en compte (avant améliorations)
+    },
+
+    // Villages : le joueur les fonde où il veut. Le premier est bon marché, les suivants de plus en plus chers.
+    villages: {
+      firstCost: 150,
+      cost: 50000,       // deuxième village…
+      growth: 20,        // …puis ×20 à chaque nouveau village
+      gap: 450,          // distance minimale entre le cœur d'un nouveau village et le bord d'un autre
+      reach: 40,         // marge autour du territoire où l'on est encore « dans » le village (boutique)
+      max: 40,
     },
 
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
@@ -69,14 +77,14 @@
       max: 300,
       refillTime: 8,
       margin: 0.92,      // fraction du rayon où elles peuvent naître
-      foyerGap: 45,      // pas de particule collée au foyer
+      foyerGap: 45,      // pas de particule collée au cœur du village
       rareChance: 0.03,
     },
 
     // Êtres de lumière.
     colony: {
       cap: 6,            // population maximale de départ
-      depositRadius: 16, // distance au foyer pour déposer une charge
+      depositRadius: 16, // distance au cœur (ou au relais) pour déposer une charge
       pickRadius: 7,     // distance pour ramasser une particule
       separation: 14,    // les êtres s'écartent un peu les uns des autres
       rateMemory: 30,    // secondes de lissage du rendement mesuré (sert pendant l'absence)
@@ -86,7 +94,7 @@
       repairRate: 6,     // points de structure réparés par seconde de bâtisseur
       regenDelay: 5,     // secondes sans blessure avant de se régénérer
       regen: 2,          // points de vie régénérés par seconde
-      downTime: 20,      // secondes avant qu'un être vaincu se rallume au foyer
+      downTime: 20,      // secondes avant qu'un être vaincu se rallume au cœur de son village
     },
 
     // Combat : vitalité de la lumière, pulsation offensive, projectiles.
@@ -102,7 +110,7 @@
       projectileSpeed: 380,
       projectileLife: 1.2,
       projectileHit: 12,     // distance de touche d'un projectile
-      foyerDrain: 1,         // lumière dévorée par point de dégât infligé au foyer
+      foyerDrain: 1,         // lumière dévorée par point de dégât infligé au cœur d'un village
     },
 
     // Ombres : marées qui visent le territoire, rôdeuses du vide lointain.
@@ -118,7 +126,7 @@
       territoryBurn: 2,      // la lumière du territoire ronge les ombres qui y entrent (pv par seconde)
       sense: 380,            // distance à laquelle une ombre repère une proie
       max: 90,
-      despawn: 2600,         // une ombre trop loin du joueur et du foyer se dissipe
+      despawn: 2600,         // une ombre trop loin du joueur et des villages se dissipe
       roamBeyond: 300,       // au-delà du bord du territoire + cette distance, la zone fait errer ses ombres
       roamRate: 1 / 18,      // apparitions par seconde (multipliées par la dangerosité de la zone)
       roamMax: 5,

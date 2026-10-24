@@ -1,14 +1,12 @@
 (function () {
   'use strict';
-  const { test, assert } = VideTest;
-  const { CONFIG, State, Stats, Territory, Structures, Catalog, Sim, Shadows, Combat, Colony, Save, Offline } = Vide;
+  const { test, assert, village } = VideTest;
+  const { CONFIG, State, Stats, Territory, Villages, Structures, Catalog, Sim, Shadows, Combat, Colony, Save, Offline } = Vide;
   const dt = CONFIG.step;
 
   function world(radius, beings) {
     const state = State.create(11);
-    Territory.light(state);
-    state.territory.area = Math.PI * radius * radius;
-    Object.assign(state.beings, beings || {});
+    village(state, { radius, beings });
     state.light = state.totalLight = 1e6;
     return state;
   }
@@ -44,21 +42,22 @@
 
   test('les marées grossissent avec le temps et le territoire', () => {
     const state = world(200);
-    const small = Shadows.tideBudget(state);
+    const v = state.villages[0];
+    const small = Shadows.tideBudget(state, v);
     state.tides = 6;
-    state.territory.area *= 4;
-    assert.ok(Shadows.tideBudget(state) > small + 4);
+    v.area *= 4;
+    assert.ok(Shadows.tideBudget(state, v) > small + 4);
   });
 
-  test("une marée sans proie avance vers le foyer et le ronge", () => {
+  test("une marée sans proie avance vers le cœur du village et le ronge", () => {
     const state = world(160);
     state.player.x = 50000;
     const game = newGame(state);
-    Shadows.spawn(game, 'errante', 300, 0, 'tide');
+    Shadows.spawn(game, 'errante', 300, 0, 'tide').home = state.villages[0];
     const light = state.light;
     run(game, 15);
-    assert.ok(state.light < light, 'le foyer doit perdre de la lumière');
-    assert.ok(game.events.some((e) => e.type === 'foyerAttacked'));
+    assert.ok(state.light < light, 'le cœur doit perdre de la lumière');
+    assert.ok(game.events.some((e) => e.type === 'heartAttacked' && e.village === 'jardins'));
   });
 
   // --- La lumière du joueur ---
@@ -77,7 +76,7 @@
     assert.ok(game.vitality.hp > hurt);
   });
 
-  test('à zéro vitalité, la lumière se disperse et renaît au foyer', () => {
+  test('à zéro vitalité, la lumière se disperse et renaît au cœur du village', () => {
     const state = world(160);
     state.player.x = 900;
     state.light = 1000;
@@ -119,7 +118,7 @@
 
   // --- Êtres et bâtiments attaqués ---
 
-  test('une rôdeuse traque les êtres ; un être vaincu se rallume au foyer plus tard', () => {
+  test('une rôdeuse traque les êtres ; un être vaincu se rallume plus tard', () => {
     const state = world(300, { lueur: 1 });
     state.player.x = 50000;
     const game = newGame(state);
@@ -135,16 +134,17 @@
   test('une massive éteint un bâtiment ; un bâtisseur le répare et il refonctionne', () => {
     const state = world(300, { batisseur: 1 });
     state.player.x = 50000;
-    const nid = Structures.plan(state, 'nid');
+    const v = state.villages[0];
+    const nid = Structures.plan(state, v, 'nid');
     nid.work = Structures.def('nid').work;
     const game = newGame(state);
-    const cap = game.stats.beingCap;
+    const cap = Villages.local(state, v).beingCap;
     assert.ok(Structures.damage(game, nid, 10000));
     assert.ok(nid.broken);
-    assert.equal(Stats.compute(state).beingCap, cap - 4, 'un nid éteint ne donne plus de place');
+    assert.equal(Villages.local(state, v).beingCap, cap - 4, 'un nid éteint ne donne plus de place');
     run(game, 60);
     assert.equal(nid.broken, false);
-    assert.equal(Stats.compute(state).beingCap, cap);
+    assert.equal(Villages.local(state, v).beingCap, cap);
     assert.ok(game.events.some((e) => e.type === 'repaired'));
   });
 
@@ -237,7 +237,7 @@
   test('une tour de lumière tire sur les ombres à portée', () => {
     const state = world(300);
     state.player.x = 50000;
-    const tour = Structures.plan(state, 'tour');
+    const tour = Structures.plan(state, state.villages[0], 'tour');
     tour.work = Structures.def('tour').work;
     const game = newGame(state);
     const s = Shadows.spawn(game, 'massive', tour.x + 100, tour.y, 'tide');
@@ -262,7 +262,7 @@
 
   test("pendant l'absence, aucune ombre ne vient", () => {
     const state = world(400, { lueur: 2 });
-    state.colonyRate = 1;
+    state.villages[0].rate = 1;
     Offline.apply(state, 3600);
     assert.equal(state.tides, 0);
   });
@@ -270,26 +270,28 @@
   // --- Sauvegarde ---
 
   test('une sauvegarde de la 0.4 (format 4) se charge, sans échos ni marée', () => {
-    const text = JSON.stringify({ format: 4, state: { light: 3, buildings: [{ type: 'nid', x: 1, y: 2, work: 40 }] } });
+    const text = JSON.stringify({ format: 4, state: {
+      light: 3, territory: { lit: true, area: 9e4 }, buildings: [{ type: 'nid', x: 1, y: 2, work: 40 }] } });
     const result = Save.deserialize(text);
     assert.ok(result.ok);
     assert.equal(result.state.echoes, 0);
     assert.equal(result.state.tides, 0);
     assert.equal(result.state.army.posture, 'garde');
-    assert.equal(result.state.buildings.length, 1);
+    assert.equal(result.state.villages[0].buildings.length, 1);
   });
 
   test('échos, ordre, marées et bâtiments éteints sont relus et nettoyés', () => {
     const state = Save.sanitize({
       echoes: 12.5, tides: 3, army: { posture: 'chasse' }, stats: { shadows: 40 },
-      buildings: [{ type: 'nid', x: 1, y: 1, work: 40, broken: true }, { type: 'nid', x: 9, y: 9, work: 3, broken: true }],
+      villages: [{ id: 1, x: 0, y: 0, buildings: [
+        { type: 'nid', x: 1, y: 1, work: 40, broken: true }, { type: 'nid', x: 9, y: 9, work: 3, broken: true }] }],
     });
     assert.equal(state.echoes, 12.5);
     assert.equal(state.tides, 3);
     assert.equal(state.army.posture, 'chasse');
     assert.equal(state.stats.shadows, 40);
-    assert.equal(state.buildings[0].broken, true);
-    assert.equal(state.buildings[1].broken, undefined, 'un chantier ne peut pas être éteint');
+    assert.equal(state.villages[0].buildings[0].broken, true);
+    assert.equal(state.villages[0].buildings[1].broken, undefined, 'un chantier ne peut pas être éteint');
     const bad = Save.sanitize({ echoes: -1, tides: 2.5, army: { posture: 'fuite' } });
     assert.equal(bad.echoes, 0);
     assert.equal(bad.tides, 0);

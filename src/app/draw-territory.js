@@ -1,7 +1,7 @@
-// Dessin du foyer et du territoire de lumière.
+// Dessin des villages (territoire de lumière, cœur) et de l'origine, où naît la lumière.
 (function (Vide) {
   'use strict';
-  const { Render, Territory, util } = Vide;
+  const { Render, Territory, Villages, util } = Vide;
 
   const EDGE_POINTS = 140;
   const MOTE_CELL = 80;
@@ -11,22 +11,30 @@
     return radius * (1 + 0.016 * Math.sin(5 * a + t * 0.15) + 0.007 * Math.sin(11 * a - t * 0.1));
   }
 
-  function drawArea(r, radius) {
+  // Teinte du territoire : le bleu pâle de la lumière, nuancé par le type du village.
+  function mix(tint, k) {
+    const base = [150, 190, 255];
+    return base.map((c, i) => Math.round(c + (tint[i] - c) * k)).join(',');
+  }
+
+  function drawArea(r, v) {
     const { ctx } = r;
     const t = r.time;
+    const radius = Territory.radius(v);
+    const tint = Villages.type(v.type).tint;
     ctx.beginPath();
     for (let i = 0; i <= EDGE_POINTS; i++) {
       const a = (i / EDGE_POINTS) * Math.PI * 2;
-      const d = edge(radius, a, t);
-      if (i === 0) ctx.moveTo(Math.cos(a) * d, Math.sin(a) * d);
-      else ctx.lineTo(Math.cos(a) * d, Math.sin(a) * d);
+      const d = edge(radius, a, t + v.id * 10);
+      if (i === 0) ctx.moveTo(v.x + Math.cos(a) * d, v.y + Math.sin(a) * d);
+      else ctx.lineTo(v.x + Math.cos(a) * d, v.y + Math.sin(a) * d);
     }
     ctx.closePath();
 
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 1.04);
-    grad.addColorStop(0, 'rgba(150, 190, 255, 0.11)');
-    grad.addColorStop(0.6, 'rgba(110, 150, 220, 0.05)');
-    grad.addColorStop(1, 'rgba(160, 200, 255, 0.10)');
+    const grad = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, radius * 1.04);
+    grad.addColorStop(0, `rgba(${mix(tint, 0.4)}, 0.11)`);
+    grad.addColorStop(0.6, `rgba(${mix(tint, 0.3)}, 0.05)`);
+    grad.addColorStop(1, `rgba(${mix(tint, 0.4)}, 0.10)`);
     ctx.globalAlpha = 1;
     ctx.fillStyle = grad;
     ctx.fill();
@@ -40,14 +48,15 @@
   }
 
   // Petites lueurs qui dérivent dans le territoire, générées par cellules (stables, sans état).
-  function drawMotes(r, radius, seed) {
+  function drawMotes(r, v, seed) {
     const { ctx } = r;
     const b = Render.viewBounds(r, 20);
+    const radius = Territory.radius(v);
     const r2 = radius * radius;
-    const x0 = Math.floor(Math.max(b.left, -radius) / MOTE_CELL);
-    const x1 = Math.floor(Math.min(b.right, radius) / MOTE_CELL);
-    const y0 = Math.floor(Math.max(b.top, -radius) / MOTE_CELL);
-    const y1 = Math.floor(Math.min(b.bottom, radius) / MOTE_CELL);
+    const x0 = Math.floor(Math.max(b.left, v.x - radius) / MOTE_CELL);
+    const x1 = Math.floor(Math.min(b.right, v.x + radius) / MOTE_CELL);
+    const y0 = Math.floor(Math.max(b.top, v.y - radius) / MOTE_CELL);
+    const y1 = Math.floor(Math.min(b.bottom, v.y + radius) / MOTE_CELL);
     const t = r.time;
     for (let cx = x0; cx <= x1; cx++) {
       for (let cy = y0; cy <= y1; cy++) {
@@ -58,26 +67,35 @@
         const by = (cy + util.hash2(cx, cy, seed + 103)) * MOTE_CELL;
         const x = bx + Math.cos(t * 0.3 + phase) * 12;
         const y = by + Math.sin(t * 0.23 + phase) * 12;
-        if (x * x + y * y > r2) continue;
+        if ((x - v.x) ** 2 + (y - v.y) ** 2 > r2) continue;
         const twinkle = 0.5 + 0.5 * Math.sin(t * 1.3 + phase);
         Render.drawGlow(ctx, r.glows.light, x, y, 7, 0.12 + twinkle * 0.18);
       }
     }
   }
 
-  // Le foyer : faible et vacillant tant qu'il n'est pas allumé, rayonnant ensuite.
-  function drawFoyer(r, lit, pulse) {
+  // Le cœur d'un village : rayonnant ; chaque dépôt des êtres le fait briller un instant.
+  // Rongé par les ombres, il vacille.
+  function drawHeart(r, v, pulse, hurt) {
+    const { ctx } = r;
+    const breath = 0.5 + Math.sin(r.time * 0.7 + v.id) * 0.5;
+    const flicker = hurt > 0 ? 0.6 + 0.4 * Math.abs(Math.sin(r.time * 25)) : 1;
+    Render.drawGlow(ctx, r.glows.white, v.x, v.y, 150 + pulse * 40, (0.22 + breath * 0.06 + pulse * 0.2) * flicker);
+    Render.drawGlow(ctx, r.glows.light, v.x, v.y, 40 + pulse * 10, 0.75 * flicker);
+    ctx.globalAlpha = 0.25 + breath * 0.1;
+    ctx.strokeStyle = `rgb(${mix(Villages.type(v.type).tint, 0.5)})`;
+    ctx.lineWidth = 1 / r.camera.scale;
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, 26 + breath * 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // L'origine, où naît la lumière : un simple anneau qui respire faiblement.
+  function drawOrigin(r) {
     const { ctx } = r;
     const breath = 0.5 + Math.sin(r.time * 0.7) * 0.5;
-    if (lit) {
-      // Chaque dépôt des êtres fait briller le foyer un instant.
-      Render.drawGlow(ctx, r.glows.white, 0, 0, 150 + pulse * 40, 0.22 + breath * 0.06 + pulse * 0.2);
-      Render.drawGlow(ctx, r.glows.light, 0, 0, 40 + pulse * 10, 0.75);
-      ctx.globalAlpha = 0.25 + breath * 0.1;
-    } else {
-      Render.drawGlow(ctx, r.glows.white, 0, 0, 90, 0.07 + breath * 0.03);
-      ctx.globalAlpha = 0.1 + breath * 0.05;
-    }
+    Render.drawGlow(ctx, r.glows.white, 0, 0, 90, 0.07 + breath * 0.03);
+    ctx.globalAlpha = 0.1 + breath * 0.05;
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1 / r.camera.scale;
     ctx.beginPath();
@@ -87,11 +105,14 @@
 
   Vide.Draw.territory = function (r, game) {
     const { state } = game;
-    if (state.territory.lit) {
-      const radius = Territory.radius(state);
-      drawArea(r, radius);
-      drawMotes(r, radius, state.seed);
+    const view = Render.viewBounds(r, 200);
+    drawOrigin(r);
+    for (const v of state.villages) {
+      const radius = Territory.radius(v);
+      if (v.x + radius < view.left || v.x - radius > view.right || v.y + radius < view.top || v.y - radius > view.bottom) continue;
+      drawArea(r, v);
+      drawMotes(r, v, state.seed + v.id * 31);
+      drawHeart(r, v, game.colony.glows.get(v) || 0, game.heartHurt.get(v) || 0);
     }
-    drawFoyer(r, state.territory.lit, game.colony.foyerGlow);
   };
 })(globalThis.Vide);

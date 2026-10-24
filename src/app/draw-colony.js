@@ -83,7 +83,7 @@
     const t = r.time;
     for (const being of game.colony.beings) {
       if (being.x < b.left || being.x > b.right || being.y < b.top || being.y > b.bottom) continue;
-      if (being.down > 0) continue; // éteint : il se rallumera au foyer
+      if (being.down > 0) continue; // éteint : il se rallumera au cœur de son village
       drawBeing(r, being, Vide.Colony.species(being.species), t);
     }
   };

@@ -1,5 +1,5 @@
 // Les zones : le vide infini se découpe en régions (cellules de Voronoï irrégulières, stables pour une graine).
-// Le type d'une région dépend surtout de sa distance au foyer : plus on s'éloigne, plus c'est riche et dangereux.
+// Le type d'une région dépend surtout de sa distance à l'origine : plus on s'éloigne, plus c'est riche et dangereux.
 (function (Vide) {
   'use strict';
   const { util } = Vide;
@@ -10,7 +10,7 @@
   //   current   force du courant qui entraîne la lumière       fog      brouillard (0 à 1) qui réduit la vue
   //   kinds     poids des ombres errantes de la zone          tint     teinte de la lumière et de la poussière
   Vide.ZONES = [
-    { id: 'calme', name: 'Le Calme', desc: 'Le vide paisible autour du foyer.',
+    { id: 'calme', name: 'Le Calme', desc: 'Le vide paisible autour de l’origine.',
       density: 1, rare: 1, shadows: 0, echoes: 1, current: 0, fog: 0,
       kinds: { errante: 1 }, tint: [214, 234, 255] },
     { id: 'brume', name: 'La Brume', desc: 'Une lumière abondante, noyée dans un brouillard épais.',
@@ -32,7 +32,7 @@
 
   const CELL = 2400; // taille moyenne d'une région
 
-  // Types possibles selon la distance du centre de la région au foyer.
+  // Types possibles selon la distance du centre de la région à l'origine.
   const BANDS = [
     { until: 3200, ids: ['calme'] },
     { until: 7000, ids: ['brume', 'courants', 'murmure', 'calme'] },

@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 9;
+  const FORMAT = 10;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -25,6 +25,19 @@
     7: (data) => ({ ...data, lore: [] }),
     // 1.0 : la renaissance.
     8: (data) => ({ ...data, memories: 0, legacy: {}, renaissances: 0, runStart: 0 }),
+    // 1.2 : plus de foyer central. L'ancien territoire devient le premier village (des jardins, à l'origine),
+    // avec ses êtres, ses bâtiments et son rendement.
+    9: (data) => {
+      const { territory, beings, buildings, colonyRate, ...rest } = data;
+      const villages = [];
+      if (territory && territory.lit === true) {
+        villages.push({
+          id: 1, type: 'jardins', x: 0, y: 0, area: territory.area,
+          beings: beings || {}, buildings: buildings || [], rate: colonyRate || 0,
+        });
+      }
+      return { ...rest, villages };
+    },
   };
 
   function serialize(state, now) {
@@ -103,28 +116,12 @@
     state.player.x = finite(player.x, 0);
     state.player.y = finite(player.y, 0);
 
-    const territory = isObject(raw.territory) ? raw.territory : {};
-    state.territory.lit = territory.lit === true;
-    if (state.territory.lit) {
-      const start = Math.PI * Vide.CONFIG.territory.startRadius ** 2;
-      state.territory.area = Math.max(positive(territory.area, start), start);
-    }
-
-    const beings = isObject(raw.beings) ? raw.beings : {};
-    for (const sp of Vide.SPECIES) {
-      const n = beings[sp.id];
-      if (Number.isInteger(n) && n > 0) state.beings[sp.id] = n;
-    }
-    state.colonyRate = positive(raw.colonyRate, 0);
-
-    const buildings = Array.isArray(raw.buildings) ? raw.buildings : [];
-    for (const b of buildings) {
-      if (!isObject(b)) continue;
-      const def = Vide.BUILDINGS.find((d) => d.id === b.type);
-      if (!def || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
-      const building = { type: b.type, x: b.x, y: b.y, work: Math.min(positive(b.work, 0), def.work) };
-      if (b.broken === true && building.work >= def.work) building.broken = true;
-      state.buildings.push(building);
+    const villages = Array.isArray(raw.villages) ? raw.villages : [];
+    for (const v of villages) {
+      const village = sanitizeVillage(v);
+      if (!village || state.villages.some((o) => o.id === village.id)) continue;
+      state.villages.push(village);
+      if (state.villages.length >= Vide.CONFIG.villages.max) break;
     }
 
     state.echoes = positive(raw.echoes, 0);
@@ -161,6 +158,33 @@
     state.stats.shadows = Math.floor(positive(stats.shadows, 0));
 
     return state;
+  }
+
+  function sanitizeVillage(raw) {
+    if (!isObject(raw) || !Number.isInteger(raw.id) || raw.id <= 0) return null;
+    if (!Number.isFinite(raw.x) || !Number.isFinite(raw.y)) return null;
+    const type = Vide.VILLAGE_TYPES.some((t) => t.id === raw.type) ? raw.type : Vide.VILLAGE_TYPES[0].id;
+    const start = Math.PI * Vide.CONFIG.territory.startRadius ** 2;
+    const village = {
+      id: raw.id, type, x: raw.x, y: raw.y,
+      area: Math.max(positive(raw.area, start), start),
+      beings: {}, buildings: [], rate: positive(raw.rate, 0),
+    };
+    const beings = isObject(raw.beings) ? raw.beings : {};
+    for (const sp of Vide.SPECIES) {
+      const n = beings[sp.id];
+      if (Number.isInteger(n) && n > 0) village.beings[sp.id] = n;
+    }
+    const buildings = Array.isArray(raw.buildings) ? raw.buildings : [];
+    for (const b of buildings) {
+      if (!isObject(b)) continue;
+      const def = Vide.BUILDINGS.find((d) => d.id === b.type);
+      if (!def || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
+      const building = { type: b.type, x: b.x, y: b.y, work: Math.min(positive(b.work, 0), def.work) };
+      if (b.broken === true && building.work >= def.work) building.broken = true;
+      village.buildings.push(building);
+    }
+    return village;
   }
 
   // --- Codes de sauvegarde (exporter / importer) ---

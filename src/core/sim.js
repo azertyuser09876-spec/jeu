@@ -27,16 +27,18 @@
       },
       // Événements de ce qui vient de se passer ({ type, … }), lus puis vidés par l'interface.
       events: [],
-      lit: state.territory.lit, // pour détecter l'allumage du foyer
+      villageCount: state.villages.length, // pour détecter la fondation d'un village
+      villageStats: new Map(),             // caractéristiques de chaque village (recalculées à chaque pas)
       region: null,             // région du vide où se trouve la lumière (voir zones.js)
       zoneShown: null,          // dernière zone annoncée à l'écran
       loreCheck: 0,             // délai avant de vérifier les fragments du récit
       renaissances: state.renaissances, // pour détecter une renaissance (achetée dans la boutique)
     };
     updateRegion(game, true);
+    Vide.Villages.refresh(game);
     Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
     game.garden = Vide.Garden.create(state.seed);
-    Vide.Garden.fill(game.garden, state, game.stats);
+    Vide.Garden.fill(game);
     Vide.Colony.create(game);
     game.structureHp = new Map(); // solidité des bâtiments abîmés (voir structures.js)
     Vide.Shadows.create(game);
@@ -120,7 +122,8 @@
   function updatePulse(game, dt) {
     const p = game.pulse;
     const { player } = game.state;
-    const boost = Vide.Territory.isInside(game.state, player.x, player.y) ? CONFIG.territory.insidePulseBoost : 1;
+    const home = Vide.Villages.at(game.state, player.x, player.y);
+    const boost = home ? CONFIG.territory.insidePulseBoost * Vide.Villages.statsOf(game, home).pulseBoost : 1;
     if (p.cooldown > 0) p.cooldown = Math.max(0, p.cooldown - dt * boost);
     if (p.wave < 0) return;
     // L'onde suit la lumière et attrape tout ce qu'elle a déjà traversé.
@@ -139,6 +142,7 @@
       emit(game, 'renaissance', { count: state.renaissances, memories: state.memories });
     }
     game.stats = Vide.Stats.compute(state);
+    Vide.Villages.refresh(game);
     game.time += dt;
     state.stats.playTime += dt;
 
@@ -153,7 +157,7 @@
     updatePulse(game, dt);
 
     const harvest = Vide.Field.update(game.field, state.player, game.stats, dt, zoneMods(game));
-    const picked = Vide.Garden.update(game.garden, state, game.stats, dt);
+    const picked = Vide.Garden.update(game, dt);
     harvest.value += picked.value;
     harvest.count += picked.count;
     // Toute la lumière gagnée est multipliée par l'Éclat ancien (souvenirs).
@@ -165,11 +169,13 @@
       game.glow = Math.min(1, game.glow + 0.25 * harvest.count);
     }
 
-    if (state.territory.lit && !game.lit) {
-      game.lit = true;
-      emit(game, 'foyer');
+    if (state.villages.length > game.villageCount) {
+      const v = state.villages[state.villages.length - 1];
+      emit(game, 'village', { village: v.type, x: v.x, y: v.y, first: game.villageCount === 0 });
     }
-    const radiated = Vide.Territory.advance(state, game.stats, dt) * mult;
+    game.villageCount = state.villages.length;
+    let radiated = 0;
+    for (const v of state.villages) radiated += Vide.Territory.advance(v, Vide.Villages.statsOf(game, v), dt) * mult;
     if (radiated > 0) {
       gainLight(game, radiated);
       gained += radiated;

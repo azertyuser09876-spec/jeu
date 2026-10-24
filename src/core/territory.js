@@ -1,59 +1,44 @@
-// Le territoire : un disque de lumière autour du foyer (l'origine), qui grandit lentement et rayonne.
+// Le territoire de chaque village : une étendue de lumière autour de son cœur, qui grandit lentement et rayonne.
 (function (Vide) {
   'use strict';
-  const { CONFIG } = Vide;
 
-  function radius(state) {
-    return Math.sqrt(state.territory.area / Math.PI);
+  function radius(village) {
+    return village ? Math.sqrt(village.area / Math.PI) : 0;
   }
 
+  function contains(village, x, y, margin) {
+    const r = radius(village) + (margin || 0);
+    return (x - village.x) ** 2 + (y - village.y) ** 2 <= r * r;
+  }
+
+  // Le point (x, y) est-il dans le territoire d'un village ?
   function isInside(state, x, y) {
-    if (!state.territory.lit) return false;
-    return x * x + y * y <= state.territory.area / Math.PI;
+    return state.villages.some((v) => contains(v, x, y));
   }
 
-  function distanceToFoyer(state) {
-    return Math.hypot(state.player.x, state.player.y);
+  // Distance de (x, y) au bord du territoire le plus proche (négative à l'intérieur), Infinity sans village.
+  function distanceToEdge(state, x, y) {
+    let best = Infinity;
+    for (const v of state.villages) best = Math.min(best, Math.hypot(v.x - x, v.y - y) - radius(v));
+    return best;
   }
 
-  function light(state) {
-    const t = state.territory;
-    if (t.lit) return false;
-    t.lit = true;
-    const r = Vide.Stats.compute(state).startRadius; // les souvenirs (Racines) l'agrandissent
-    t.area = Math.PI * r * r;
-    return true;
-  }
-
-  // Fait avancer le territoire de `seconds` secondes. Formule exacte (surface linéaire dans le temps),
+  // Fait avancer le territoire d'un village de `seconds` secondes. Formule exacte (surface linéaire dans le temps),
   // donc identique qu'on l'appelle une fois pour 3 heures ou 648 000 fois pour 1/60 s.
   // Met à jour la surface et renvoie la lumière produite (à créditer par l'appelant).
-  function advance(state, stats, seconds) {
-    const t = state.territory;
-    if (!t.lit || seconds <= 0) return 0;
-    const a0 = t.area;
+  // `stats` : caractéristiques du village (voir Villages.local).
+  function advance(village, stats, seconds) {
+    if (seconds <= 0) return 0;
+    const a0 = village.area;
     const g = stats.territoryGrowth;
-    t.area = a0 + g * seconds;
+    village.area = a0 + g * seconds;
     return stats.territoryYield * (a0 * seconds + (g * seconds * seconds) / 2);
   }
 
-  // Lumière par seconde produite actuellement.
-  function production(state, stats) {
-    return state.territory.lit ? state.territory.area * stats.territoryYield : 0;
+  // Lumière par seconde produite actuellement par un village.
+  function production(village, stats) {
+    return village.area * stats.territoryYield;
   }
 
-  Vide.Catalog.register({
-    id: 'foyer',
-    tab: 'territoire',
-    name: 'Allumer le foyer',
-    desc: 'Retourne à l’origine et allume le foyer : ton territoire naîtra et grandira, même sans toi.',
-    revealed: (state) => !state.territory.lit && state.totalLight >= CONFIG.territory.foyerCost * 0.4,
-    maxed: (state) => state.territory.lit,
-    cost: () => ({ light: CONFIG.territory.foyerCost }),
-    blocked: (state) => (distanceToFoyer(state) > CONFIG.territory.foyerReach ? 'rejoins l’origine' : null),
-    apply: (state) => { light(state); },
-    effect: () => 'fait naître le territoire',
-  });
-
-  Vide.Territory = { radius, isInside, distanceToFoyer, light, advance, production };
+  Vide.Territory = { radius, contains, isInside, distanceToEdge, advance, production };
 })(globalThis.Vide);

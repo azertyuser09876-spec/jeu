@@ -1,5 +1,5 @@
 // Catalogue de tout ce qui s'achète, rangé par onglets. L'interface l'affiche sans rien savoir
-// de ce que chaque achat fait : améliorations, foyer, êtres, bâtiments… s'y enregistrent tous.
+// de ce que chaque achat fait : améliorations, villages, êtres, bâtiments… s'y enregistrent tous.
 //
 // Un article :
 //   id, tab, name, desc

@@ -1,8 +1,9 @@
-// La colonie : les êtres de lumière vivants. L'état persistant ne garde que leur nombre par espèce
-// (state.beings) ; les êtres eux-mêmes (position, tâche…) sont recréés au chargement autour du foyer.
+// La colonie : les êtres de lumière vivants. L'état persistant ne garde que leur nombre par espèce dans
+// chaque village (village.beings) ; les êtres eux-mêmes (position, tâche…) sont recréés au chargement
+// autour du cœur de leur village. Chaque être vit, travaille et se rallume dans son village.
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Garden, Catalog, Structures } = Vide;
+  const { CONFIG, util, Garden, Catalog, Structures, Villages, Territory } = Vide;
 
   function species(id) {
     const sp = Vide.SPECIES.find((s) => s.id === id);
@@ -10,14 +11,22 @@
     return sp;
   }
 
+  // Nombre d'êtres d'une espèce, tous villages confondus (le prix du suivant en dépend).
   function count(state, id) {
-    return state.beings[id] || 0;
+    return Villages.count(state, id);
   }
 
-  // Population soumise au plafond beingCap (les espèces à plafond propre n'y comptent pas).
+  // Population d'un village soumise au plafond beingCap (les espèces à plafond propre n'y comptent pas).
+  function populationIn(village) {
+    let n = 0;
+    for (const sp of Vide.SPECIES) if (!sp.cap) n += village.beings[sp.id] || 0;
+    return n;
+  }
+
+  // … et de tous les villages.
   function population(state) {
     let n = 0;
-    for (const sp of Vide.SPECIES) if (!sp.cap) n += count(state, sp.id);
+    for (const v of state.villages) n += populationIn(v);
     return n;
   }
 
@@ -28,12 +37,12 @@
     return n;
   }
 
-  // Occupation et plafond qui s'appliquent à une espèce.
-  function room(state, sp) {
-    const stats = Vide.Stats.compute(state);
+  // Occupation et plafond qui s'appliquent à une espèce dans un village.
+  function room(state, village, sp) {
+    const stats = Villages.local(state, village);
     return sp.cap
-      ? { used: count(state, sp.id), max: stats[sp.cap], label: sp.name.toLowerCase() + 's' }
-      : { used: population(state), max: stats.beingCap, label: 'population' };
+      ? { used: village.beings[sp.id] || 0, max: stats[sp.cap], label: sp.name.toLowerCase() + 's' }
+      : { used: populationIn(village), max: stats.beingCap, label: 'population' };
   }
 
   // Coût du prochain être d'une espèce : lumière, et échos pour l'armée.
@@ -44,26 +53,32 @@
     return price;
   }
 
-  function maxHp(game, b) {
-    return species(b.species).hp * game.stats.beingHp;
+  // Caractéristiques du village d'un être.
+  function statsOf(game, b) {
+    return Villages.statsOf(game, b.village);
   }
 
-  // Un être éteint (vaincu par une ombre) ne fait rien jusqu'à son retour au foyer.
+  function maxHp(game, b) {
+    return species(b.species).hp * statsOf(game, b).beingHp;
+  }
+
+  // Un être éteint (vaincu par une ombre) ne fait rien jusqu'à son retour au cœur de son village.
   function isActive(b) {
     return !(b.down > 0);
   }
 
   // --- Êtres vivants ---
 
-  function addBeing(colony, sp) {
+  function addBeing(colony, sp, village) {
     const r = colony.rng;
     const angle = r() * Math.PI * 2;
     const being = {
       id: colony.nextId++,
       species: sp.id,
       role: sp.role,
-      x: Math.cos(angle) * 20,
-      y: Math.sin(angle) * 20,
+      village,            // son village (objet de state.villages)
+      x: village.x + Math.cos(angle) * 20,
+      y: village.y + Math.sin(angle) * 20,
       vx: Math.cos(angle) * 30,
       vy: Math.sin(angle) * 30,
       task: 'idle',
@@ -80,7 +95,7 @@
       phase: r() * Math.PI * 2,
       flash: 0,           // éclat bref après un dépôt (affichage)
       hp: null,           // points de vie (initialisés au premier pas, selon les améliorations)
-      down: 0,            // secondes avant de se rallumer au foyer après avoir été vaincu
+      down: 0,            // secondes avant de se rallumer au cœur après avoir été vaincu
       lastHurt: -99,      // instant de la dernière blessure
       cd: 0,              // recharge d'attaque (armée)
     };
@@ -94,22 +109,35 @@
     being.target = null;
   }
 
-  // Aligne les êtres vivants sur les effectifs de l'état (après un achat, un chargement…).
+  function remove(colony, i) {
+    releaseTarget(colony.beings[i]);
+    colony.beings.splice(i, 1);
+  }
+
+  // Aligne les êtres vivants sur les effectifs de chaque village (après un achat, un chargement…).
   function sync(game, silent) {
     const colony = game.colony;
-    for (const sp of Vide.SPECIES) {
-      const wanted = count(game.state, sp.id);
-      let alive = colony.beings.filter((b) => b.species === sp.id).length;
-      while (alive < wanted) {
-        addBeing(colony, sp);
-        alive++;
-        if (!silent) Vide.Sim.emit(game, 'birth', { species: sp.id, first: alive === 1 });
-      }
-      while (alive > wanted) {
-        const i = colony.beings.map((b) => b.species).lastIndexOf(sp.id);
-        releaseTarget(colony.beings[i]);
-        colony.beings.splice(i, 1);
-        alive--;
+    const { villages } = game.state;
+    // Les êtres d'un village disparu (renaissance) s'en vont avec lui.
+    for (let i = colony.beings.length - 1; i >= 0; i--) {
+      if (!villages.includes(colony.beings[i].village)) remove(colony, i);
+    }
+    for (const v of villages) {
+      for (const sp of Vide.SPECIES) {
+        const wanted = v.beings[sp.id] || 0;
+        let alive = 0;
+        for (const b of colony.beings) if (b.village === v && b.species === sp.id) alive++;
+        while (alive < wanted) {
+          addBeing(colony, sp, v);
+          alive++;
+          if (!silent) Vide.Sim.emit(game, 'birth', { species: sp.id, first: count(game.state, sp.id) === 1 && alive === 1 });
+        }
+        while (alive > wanted) {
+          let i = colony.beings.length - 1;
+          while (!(colony.beings[i].village === v && colony.beings[i].species === sp.id)) i--;
+          remove(colony, i);
+          alive--;
+        }
       }
     }
   }
@@ -119,12 +147,11 @@
       beings: [],
       nextId: 1,
       rng: util.rng(game.state.seed ^ 0x2545f491),
-      rate: game.state.colonyRate || 0, // lumière par seconde rapportée par la colonie (lissée)
-      foyerGlow: 0,                     // éclat du foyer après des dépôts (affichage)
+      glows: new Map(),                 // éclat du cœur de chaque village après des dépôts (affichage)
       flashes: new Map(),               // éclat des bâtiments après un dépôt ou une fin de chantier
       active: new Set(),                // chantiers où un bâtisseur travaille (pas précédent)
       activeNow: new Set(),             // … et pendant ce pas
-      deposited: 0,
+      deposited: new Map(),             // lumière déposée dans chaque village pendant ce pas
     };
     sync(game, true);
     return game.colony;
@@ -144,13 +171,14 @@
   }
 
   function wander(game, b, speed, dt) {
-    const radius = Vide.Territory.radius(game.state) * 0.7;
+    const v = b.village;
+    const radius = Territory.radius(v) * 0.7;
     b.wanderTime -= dt;
     if (!b.wander || b.wanderTime <= 0 || Math.hypot(b.wander.x - b.x, b.wander.y - b.y) < 10) {
       const r = game.colony.rng;
       const angle = r() * Math.PI * 2;
       const dist = Math.max(30, radius) * Math.sqrt(r());
-      b.wander = { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist };
+      b.wander = { x: v.x + Math.cos(angle) * dist, y: v.y + Math.sin(angle) * dist };
       b.wanderTime = 3 + r() * 4;
     }
     steer(b, b.wander.x, b.wander.y, speed * 0.4, dt);
@@ -172,7 +200,7 @@
     if (b.danceCooldown > 0 || b.danceCheck > 0) return false;
     b.danceCheck = 0.5;
     for (const o of game.colony.beings) {
-      if (o === b || o.task !== 'idle' || o.dance || o.danceCooldown > 0) continue;
+      if (o === b || o.task !== 'idle' || o.dance || o.danceCooldown > 0 || !isActive(o)) continue;
       if (Math.hypot(o.x - b.x, o.y - b.y) > CONFIG.colony.danceRange) continue;
       const cx = (b.x + o.x) / 2, cy = (b.y + o.y) / 2;
       const a = Math.atan2(b.y - cy, b.x - cx);
@@ -202,7 +230,7 @@
   // Où une lueur chargée doit aller : au point de dépôt le plus proche, ou ravitailler un chantier
   // actif (où un bâtisseur travaille) s'il n'est pas plus loin.
   function destination(game, b) {
-    const deposit = Structures.nearestDeposit(game.state, b.x, b.y);
+    const deposit = Structures.nearestDeposit(b.village, b.x, b.y);
     const dDeposit = Math.hypot(deposit.x - b.x, deposit.y - b.y);
     let best = null;
     for (const site of game.colony.active) {
@@ -215,7 +243,7 @@
   const ROLES = {
     // Récolte : chercher une particule libre du jardin, la ramasser, rapporter quand plein.
     gatherer(game, b, dt, speed) {
-      const { stats } = game;
+      const stats = statsOf(game, b);
       const c = CONFIG.colony;
 
       if (b.task === 'return') {
@@ -225,9 +253,10 @@
             if (Structures.addWork(dest.site, b.carryValue * c.feedWork)) built(game, dest.site);
             else flash(game, dest.site);
           } else {
-            game.colony.deposited += b.carryValue * dest.mult;
+            const { deposited, glows } = game.colony;
+            deposited.set(b.village, (deposited.get(b.village) || 0) + b.carryValue * dest.mult);
             if (dest.building) flash(game, dest.building);
-            else game.colony.foyerGlow = Math.min(1, game.colony.foyerGlow + 0.3);
+            else glows.set(b.village, Math.min(1, (glows.get(b.village) || 0) + 0.3));
           }
           b.carry = 0;
           b.carryValue = 0;
@@ -244,7 +273,7 @@
       if (!b.target) {
         b.search -= dt;
         if (b.search <= 0) {
-          const p = Garden.nearestFree(game.garden, b.x, b.y, stats.beingSense);
+          const p = Garden.nearestFree(game.garden, b.x, b.y, stats.beingSense, b.village.id);
           if (p) {
             p.claimedBy = b.id;
             b.target = p;
@@ -278,7 +307,8 @@
     // Construction : réparer d'abord les bâtiments abîmés, puis rejoindre le chantier le plus proche
     // et y travailler en tournant autour.
     builder(game, b, dt, speed) {
-      const damaged = Structures.mostDamaged(game, b.x, b.y);
+      const stats = statsOf(game, b);
+      const damaged = Structures.mostDamaged(game, b.village, b.x, b.y);
       if (damaged) {
         const a = b.phase + game.time * 0.5;
         const radius = Structures.def(damaged.type).size + 10;
@@ -286,12 +316,12 @@
         b.working = Math.hypot(damaged.x - b.x, damaged.y - b.y) < radius + 14;
         b.task = b.working ? 'repair' : 'travel';
         b.site = damaged;
-        if (b.working && Structures.repair(game, damaged, game.stats.buildRate * CONFIG.colony.repairRate * dt)) {
+        if (b.working && Structures.repair(game, damaged, stats.buildRate * CONFIG.colony.repairRate * dt)) {
           Vide.Sim.emit(game, 'repaired', { building: damaged.type });
         }
         return;
       }
-      const site = Structures.nearestSite(game.state, b.x, b.y);
+      const site = Structures.nearestSite(b.village, b.x, b.y);
       if (site) {
         const a = b.phase + game.time * 0.5;
         const radius = Structures.def(site.type).size + 10;
@@ -301,7 +331,7 @@
         b.site = site;
         if (b.working) {
           game.colony.activeNow.add(site);
-          if (Structures.addWork(site, game.stats.buildRate * dt)) built(game, site);
+          if (Structures.addWork(site, stats.buildRate * dt)) built(game, site);
         }
         return;
       }
@@ -336,11 +366,11 @@
   // Avance la colonie d'un pas. Renvoie la lumière rapportée (multiplicateurs appliqués).
   function update(game, dt) {
     const colony = game.colony;
-    const { stats } = game;
-    colony.deposited = 0;
+    colony.deposited.clear();
     colony.activeNow.clear();
     for (const b of colony.beings) {
       const sp = species(b.species);
+      const stats = statsOf(game, b);
       const slow = game.webs ? Vide.Colossus.slowAt(game, b.x, b.y) : 1;
       const speed = sp.speed * stats.beingSpeed * slow;
       const max = maxHp(game, b);
@@ -348,18 +378,18 @@
       if (b.down > 0) {
         b.down -= dt;
         if (b.down <= 0) {
-          // Se rallume au foyer, intact.
+          // Se rallume au cœur de son village, intact.
           b.down = 0;
           b.hp = max;
-          b.x = (colony.rng() - 0.5) * 30;
-          b.y = (colony.rng() - 0.5) * 30;
+          b.x = b.village.x + (colony.rng() - 0.5) * 30;
+          b.y = b.village.y + (colony.rng() - 0.5) * 30;
           b.vx = b.vy = 0;
           b.age = 0;
         }
         continue;
       }
-      // Régénération lente loin des combats.
-      if (game.time - b.lastHurt > CONFIG.colony.regenDelay) b.hp = Math.min(max, b.hp + CONFIG.colony.regen * dt);
+      // Régénération lente loin des combats (plus rapide dans un sanctuaire).
+      if (game.time - b.lastHurt > CONFIG.colony.regenDelay) b.hp = Math.min(max, b.hp + CONFIG.colony.regen * stats.regen * dt);
       b.hp = Math.min(b.hp, max);
       b.cd = Math.max(0, b.cd - dt);
       b.age += dt;
@@ -379,7 +409,7 @@
     // Les chantiers actifs de ce pas servent aux lueurs au pas suivant.
     [colony.active, colony.activeNow] = [colony.activeNow, colony.active];
 
-    colony.foyerGlow *= 1 - util.damp(2, dt);
+    for (const [v, g] of colony.glows) colony.glows.set(v, g * (1 - util.damp(2, dt)));
     // Éclats des bâtiments : positifs (dépôt, fin de chantier) ou négatifs (coup d'une ombre), qui s'estompent.
     for (const [building, v] of colony.flashes) {
       const next = v > 0 ? v - dt * 1.5 : v + dt * 1.5;
@@ -387,10 +417,16 @@
       else colony.flashes.set(building, next);
     }
 
-    const gained = colony.deposited * stats.value * stats.beingValue;
-    colony.rate += (gained / dt - colony.rate) * util.damp(1 / CONFIG.colony.rateMemory, dt);
-    game.state.colonyRate = colony.rate;
-    return gained;
+    // Rendement de chaque village, mesuré et lissé : il sert pendant l'absence.
+    let total = 0;
+    const k = util.damp(1 / CONFIG.colony.rateMemory, dt);
+    for (const v of game.state.villages) {
+      const s = Villages.statsOf(game, v);
+      const gained = (colony.deposited.get(v) || 0) * s.value * s.beingValue;
+      v.rate += (gained / dt - v.rate) * k;
+      total += gained;
+    }
+    return total;
   }
 
   // --- Boutique ---
@@ -405,21 +441,32 @@
       revealed: (state) => count(state, sp.id) > 0 ||
         ((!sp.requires || sp.requires(state)) && state.totalLight >= sp.baseCost * 0.5),
       cost: (state) => cost(state, sp),
+      // Un être s'éveille dans le village où l'on se trouve.
       blocked: (state) => {
-        const r = room(state, sp);
+        const village = Villages.current(state);
+        if (!village) return 'rejoins un village';
+        const r = room(state, village, sp);
         return r.used >= r.max ? (sp.cap ? 'complet' : 'population pleine') : null;
       },
-      apply: (state) => { state.beings[sp.id] = count(state, sp.id) + 1; },
-      label: (state) => `×${count(state, sp.id)}`,
+      apply: (state) => {
+        const village = Villages.current(state);
+        village.beings[sp.id] = (village.beings[sp.id] || 0) + 1;
+      },
+      label: (state) => {
+        const village = Villages.current(state);
+        return `×${village ? village.beings[sp.id] || 0 : count(state, sp.id)}`;
+      },
       effect: (state) => {
-        const r = room(state, sp);
+        const village = Villages.current(state);
+        if (!village) return `dans tes villages : ${count(state, sp.id)}`;
+        const r = room(state, village, sp);
         return `${r.label} ${r.used}/${r.max}`;
       },
     });
   }
 
   Vide.Colony = {
-    species, count, population, total, room, cost, maxHp, isActive, create, sync, update,
+    species, count, population, populationIn, total, room, cost, statsOf, maxHp, isActive, create, sync, update,
     // Pour les comportements définis ailleurs (armée, voir combat.js).
     ROLES, steer, wander, tryDance,
   };

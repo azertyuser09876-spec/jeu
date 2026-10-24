@@ -95,10 +95,12 @@
     return { x: Math.cos(angle) * d.lair.distance, y: Math.sin(angle) * d.lair.distance };
   }
 
-  // Point de ronde d'un colosse apaisé : juste au-delà du bord du territoire.
+  // Point de ronde d'un colosse apaisé : juste au-delà du bord du plus grand village (ou autour de l'origine).
   function residentSpot(state, angle) {
-    const r = Territory.radius(state) + 90;
-    return { x: Math.cos(angle) * r, y: Math.sin(angle) * r };
+    const home = Vide.Villages.main(state);
+    const r = Territory.radius(home) + 90;
+    const cx = home ? home.x : 0, cy = home ? home.y : 0;
+    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
   }
 
   // --- Géométrie ---
@@ -618,7 +620,7 @@
       }
       case 'resident': {
         // Ronde lente autour du territoire.
-        const r = Territory.radius(state) + 90;
+        const r = Territory.radius(Vide.Villages.main(state)) + 90;
         c.orbit += (16 / r) * dt;
         const spot = residentSpot(state, c.orbit);
         walkTo(c, spot.x, spot.y, 22, dt);

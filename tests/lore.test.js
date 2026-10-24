@@ -21,7 +21,7 @@
     state.totalLight = 300;
     assert.deepEqual(Lore.check(state), ['eveil', 'souvenirs']);
     assert.deepEqual(Lore.check(state), []);
-    Territory.light(state);
+    VideTest.village(state);
     assert.deepEqual(Lore.check(state), ['foyer']);
     assert.deepEqual(state.lore, ['eveil', 'souvenirs', 'foyer']);
   });
@@ -35,10 +35,8 @@
   test('tout révéler est possible (aucune condition impossible)', () => {
     const state = State.create(1);
     state.totalLight = 1e9;
-    Territory.light(state);
-    state.territory.area = Math.PI * 700 * 700;
-    state.beings = { lueur: 6, gardien: 6, batisseur: 1 };
-    state.buildings.push({ type: 'nid', x: 0, y: 100, work: 999 });
+    const v = VideTest.village(state, { radius: 700, beings: { lueur: 6, gardien: 6, batisseur: 1 } });
+    v.buildings.push({ type: 'nid', x: 0, y: 100, work: 999 });
     state.stats.shadows = 20;
     state.zones.discovered = Vide.ZONES.map((z) => z.id);
     for (const d of Vide.COLOSSI) state.colossi[d.id] = 'tamed';
@@ -57,7 +55,7 @@
   test('une partie déjà avancée remplit son journal d’un coup, avec un seul message', () => {
     const state = State.create(1);
     state.totalLight = 1e6;
-    Territory.light(state);
+    VideTest.village(state);
     state.stats.shadows = 12;
     const game = Sim.create(state);
     assert.ok(state.lore.length > 2);

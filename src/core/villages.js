@@ -1,0 +1,209 @@
+// Les villages. Il n'y a plus de foyer central : le joueur fonde ses villages là où il se trouve, d'un type
+// qu'il choisit ; chacun a son cœur, son territoire, ses êtres, ses bâtiments et son jardin.
+// L'origine (0, 0) n'est plus que le lieu où naît la lumière.
+//
+// Un village (état persistant, dans state.villages) :
+//   id         numéro stable dans la partie
+//   type       identifiant de VILLAGE_TYPES (stocké dans les sauvegardes : ne jamais le renommer)
+//   x, y       position du cœur
+//   area       surface du territoire (unités²)
+//   beings     nombre d'êtres par espèce
+//   buildings  bâtiments : { type, x, y, work, broken? }
+//   rate       lumière/s rapportée par ses êtres (mesurée, sert pendant l'absence)
+(function (Vide) {
+  'use strict';
+  const { CONFIG, Catalog, Territory } = Vide;
+
+  // Types de villages, au choix du joueur. Ajouter un type = ajouter une entrée.
+  //   modify(local)  effet sur les caractéristiques du village (voir local())
+  //   tint           teinte du territoire et du cœur
+  Vide.VILLAGE_TYPES = [
+    {
+      id: 'jardins',
+      name: 'Jardins',
+      desc: 'Fonder ici des jardins : la lumière y naît plus dense, et les lueurs portent davantage.',
+      effectText: 'jardin ×1,4 · lueurs +1',
+      tint: [150, 255, 205],
+      modify: (l) => { l.gardenDensity *= 1.4; l.beingCapacity += 1; },
+    },
+    {
+      id: 'bastion',
+      name: 'Bastion',
+      desc: 'Fonder ici un bastion : remparts solides, territoire qui brûle les ombres deux fois plus, armée plus forte.',
+      effectText: 'remparts · armée ×1,25',
+      tint: [255, 222, 150],
+      modify: (l) => { l.structureArmor *= 1.6; l.burn *= 2; l.armyDamage *= 1.25; },
+    },
+    {
+      id: 'atelier',
+      name: 'Atelier',
+      desc: 'Fonder ici un atelier : on y bâtit bien plus vite, et un bâtisseur de plus peut y vivre.',
+      effectText: 'chantiers ×1,6 · +1 bâtisseur',
+      tint: [255, 186, 130],
+      modify: (l) => { l.buildRate *= 1.6; l.builderCap += 1; },
+    },
+    {
+      id: 'observatoire',
+      name: 'Observatoire',
+      desc: 'Fonder ici un observatoire, tourné vers le loin : son territoire grandit plus vite, '
+        + 'et ta pulsation s’y recharge encore plus vite.',
+      effectText: 'croissance ×1,35',
+      tint: [165, 195, 255],
+      modify: (l) => { l.territoryGrowth *= 1.35; l.pulseBoost *= 1.5; },
+    },
+    {
+      id: 'sanctuaire',
+      name: 'Sanctuaire',
+      desc: 'Fonder ici un sanctuaire : ta lumière et les êtres s’y soignent deux fois plus vite, '
+        + 'et ses êtres sont plus résistants.',
+      effectText: 'soins ×2 · êtres ×1,3',
+      tint: [255, 205, 238],
+      modify: (l) => { l.regen *= 2; l.beingHp *= 1.3; },
+    },
+  ];
+
+  function type(id) {
+    const t = Vide.VILLAGE_TYPES.find((v) => v.id === id);
+    if (!t) throw new Error(`Type de village inconnu : ${id}`);
+    return t;
+  }
+
+  function byId(state, id) {
+    return state.villages.find((v) => v.id === id) || null;
+  }
+
+  // Village dont le territoire contient (x, y), à `margin` près ; le cœur le plus proche s'il y en a plusieurs.
+  function at(state, x, y, margin) {
+    let best = null;
+    let bestD = Infinity;
+    for (const v of state.villages) {
+      if (!Territory.contains(v, x, y, margin)) continue;
+      const d = Math.hypot(v.x - x, v.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    return best;
+  }
+
+  // Village où se trouve le joueur (la boutique des êtres et des bâtiments s'y applique), ou null.
+  function current(state) {
+    return at(state, state.player.x, state.player.y, CONFIG.villages.reach);
+  }
+
+  // Village dont le cœur est le plus proche de (x, y), ou null s'il n'y en a aucun.
+  function nearest(state, x, y) {
+    let best = null;
+    let bestD = Infinity;
+    for (const v of state.villages) {
+      const d = Math.hypot(v.x - x, v.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    return best;
+  }
+
+  // Le plus grand village (les colosses apaisés y font leur ronde), ou null.
+  function main(state) {
+    let best = null;
+    for (const v of state.villages) if (!best || v.area > best.area) best = v;
+    return best;
+  }
+
+  // Nombre d'êtres d'une espèce, tous villages confondus.
+  function count(state, speciesId) {
+    let n = 0;
+    for (const v of state.villages) n += v.beings[speciesId] || 0;
+    return n;
+  }
+
+  // --- Caractéristiques locales ---
+
+  // Celles du joueur (améliorations, souvenirs, colosses), puis les bâtiments du village, puis son type.
+  // Clés propres aux villages : structureArmor (les coups sur ses bâtiments sont divisés d'autant),
+  // burn (brûlure des ombres dans son territoire), pulseBoost (recharge de la pulsation), regen (soins).
+  function local(state, village, stats) {
+    const l = { ...(stats || Vide.Stats.compute(state)), structureArmor: 1, burn: 1, pulseBoost: 1, regen: 1 };
+    Vide.Structures.modify(village, l);
+    type(village.type).modify(l);
+    return l;
+  }
+
+  // Recalcule les caractéristiques de chaque village (à chaque pas de simulation).
+  function refresh(game) {
+    const map = game.villageStats;
+    map.clear();
+    for (const v of game.state.villages) map.set(v, local(game.state, v, game.stats));
+  }
+
+  function statsOf(game, village) {
+    return game.villageStats.get(village) || local(game.state, village, game.stats);
+  }
+
+  // --- Fondation ---
+
+  function foundCost(state) {
+    const c = CONFIG.villages;
+    const n = state.villages.length;
+    return n === 0 ? c.firstCost : Math.ceil(c.cost * Math.pow(c.growth, n - 1));
+  }
+
+  // Raison qui empêche de fonder un village là où se trouve le joueur, ou null.
+  function foundBlocked(state) {
+    const { x, y } = state.player;
+    if (state.villages.length >= CONFIG.villages.max) return 'assez de villages';
+    for (const v of state.villages) {
+      const d = Math.hypot(v.x - x, v.y - y) - Territory.radius(v);
+      if (d < 0) return 'hors des villages';
+      if (d < CONFIG.villages.gap) return 'trop près d’un village';
+    }
+    return null;
+  }
+
+  // Fonde un village du type donné à l'emplacement du joueur. Le premier d'une vie reçoit les lueurs
+  // offertes par les souvenirs (Éveil précoce).
+  function found(state, typeId) {
+    const stats = Vide.Stats.compute(state);
+    const village = {
+      id: state.villages.reduce((m, v) => Math.max(m, v.id), 0) + 1,
+      type: type(typeId).id,
+      x: state.player.x,
+      y: state.player.y,
+      area: Math.PI * stats.startRadius ** 2,
+      beings: {},
+      buildings: [],
+      rate: 0,
+    };
+    if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;
+    state.villages.push(village);
+    return village;
+  }
+
+  for (const t of Vide.VILLAGE_TYPES) {
+    Catalog.register({
+      id: 'village-' + t.id,
+      tab: 'territoire',
+      order: -10,
+      name: t.name,
+      desc: t.desc,
+      // Les fondations ne se montrent que hors des villages : dans un village, la boutique est la sienne.
+      revealed: (state) => !current(state) &&
+        state.totalLight >= (state.villages.length ? foundCost(state) * 0.25 : CONFIG.villages.firstCost * 0.4),
+      cost: (state) => ({ light: foundCost(state) }),
+      blocked: foundBlocked,
+      apply: (state) => { found(state, t.id); },
+      label: (state) => {
+        const n = state.villages.filter((v) => v.type === t.id).length;
+        return n ? `×${n}` : '';
+      },
+      effect: () => t.effectText,
+    });
+  }
+
+  Vide.Villages = {
+    type, byId, at, current, nearest, main, count, local, refresh, statsOf, foundCost, foundBlocked, found,
+  };
+})(globalThis.Vide);

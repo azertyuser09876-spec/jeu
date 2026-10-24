@@ -301,7 +301,8 @@
     s.collected = collected;
     if (s.pulse >= 0 && game.pulse.id !== s.pulse) play('pulse');
     s.pulse = game.pulse.id;
-    const glow = game.colony.foyerGlow;
+    let glow = 0;
+    for (const g of game.colony.glows.values()) glow = Math.max(glow, g);
     if (glow > s.glow + 0.2) play('deposit');
     s.glow = glow;
     if (game.vitality.hurt > 0.95) play('hurt');

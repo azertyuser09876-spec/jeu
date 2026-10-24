@@ -4,7 +4,7 @@
 //   id, name, epithet   identité (id stocké dans les sauvegardes : ne jamais le renommer)
 //   body                forme du corps (voir BODIES dans colossus.js)
 //   size                échelle du corps
-//   lair                { distance, angleSeed } : repaire, à cette distance du foyer
+//   lair                { distance, angleSeed } : repaire, à cette distance de l'origine
 //   roam                rayon de flânerie autour du repaire
 //   speed               vitesse de marche
 //   awareness           distance à laquelle il remarque la lumière ; leash : au-delà, il renonce

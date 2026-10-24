@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const { test, assert } = VideTest;
+  const { test, assert, village } = VideTest;
   const { CONFIG, State, Stats, Territory, Structures, Catalog, Sim, Renaissance, Offline, Save, Shadows } = Vide;
   const dt = CONFIG.step;
 
@@ -10,10 +10,9 @@
     state.totalLight = 9e6;
     state.light = 2e6;
     state.upgrades = { reach: 10, value: 8, expansion: 5 };
-    Territory.light(state);
-    state.territory.area = Math.PI * 500 * 500;
-    state.beings = { lueur: 10, batisseur: 2, gardien: 3 };
-    Structures.plan(state, 'nid').work = 40;
+    const v = village(state, { radius: 500, beings: { lueur: 10, batisseur: 2, gardien: 3 } });
+    village(state, { x: 3000, beings: { lueur: 1 } });
+    Structures.plan(state, v, 'nid').work = 40;
     state.echoes = 50;
     state.tides = 9;
     state.player.x = 2000;
@@ -51,11 +50,9 @@
     assert.equal(state.renaissances, 1);
     assert.equal(state.light, 0);
     assert.deepEqual(state.upgrades, {});
-    assert.deepEqual(state.beings, {});
-    assert.deepEqual(state.buildings, []);
+    assert.deepEqual(state.villages, []);
     assert.equal(state.echoes, 0);
     assert.equal(state.tides, 0);
-    assert.equal(state.territory.lit, false);
     assert.deepEqual(state.player, { x: 0, y: 0 });
     assert.equal(state.totalLight, 9e6, 'la lumière de toute une vie reste comptée');
     assert.equal(state.colossi.veilleur, 'tamed');
@@ -81,9 +78,10 @@
     const state = advanced();
     state.legacy = { roots: 2, earlyWake: 3 };
     Renaissance.perform(state);
-    assert.ok(state.territory.lit);
-    assert.near(Territory.radius(state), CONFIG.territory.startRadius + 100, 1e-6);
-    assert.equal(state.beings.lueur, 3);
+    assert.deepEqual(state.villages, [], 'le premier village reste à fonder, où l’on veut');
+    const v = village(state, { x: 700 });
+    assert.near(Territory.radius(v), CONFIG.territory.startRadius + 100, 1e-6);
+    assert.equal(v.beings.lueur, 3);
   });
 
   test('Souffle ancien et Mémoire profonde se cumulent aux améliorations', () => {
@@ -99,7 +97,7 @@
 
   test("l'Éclat ancien multiplie toute la lumière, y compris pendant l'absence", () => {
     const a = State.create(1), b = State.create(1);
-    for (const s of [a, b]) Territory.light(s);
+    for (const s of [a, b]) village(s);
     b.legacy.ancientGlow = 4;
     const ra = Offline.apply(a, 3600), rb = Offline.apply(b, 3600);
     assert.near(rb.light, ra.light * 2, 1e-6);

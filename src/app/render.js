@@ -287,7 +287,7 @@
 
   function followCamera(r, game, dt) {
     const { player } = game.state;
-    // Un saut lointain (lumière dispersée, renvoyée au foyer) : la caméra suit d'un coup.
+    // Un saut lointain (lumière dispersée, renvoyée à un village) : la caméra suit d'un coup.
     if (Math.hypot(player.x - r.camera.x, player.y - r.camera.y) > 900) snapCamera(r, game);
     const k = Vide.util.damp(5, dt);
     r.camera.x += (game.state.player.x - r.camera.x) * k;
@@ -313,7 +313,9 @@
     ctx.fillRect(0, 0, r.width, r.height);
 
     drawDust(r, game.state.seed, game.region.zone.tint);
-    edgePointer(r, 0, 0, '#fff', 0.3);
+    // Une petite flèche indique le village le plus proche (ou l'origine, tant qu'il n'y en a aucun).
+    const home = Vide.Villages.nearest(game.state, game.state.player.x, game.state.player.y);
+    edgePointer(r, home ? home.x : 0, home ? home.y : 0, '#fff', 0.3);
 
     // Passage en coordonnées du monde, centrées sur la caméra (secouée par les pas des colosses).
     // Secousses réduites (réglage) : à peine un frisson.

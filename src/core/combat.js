@@ -1,7 +1,7 @@
 // Combat : vitalité de la lumière, coups des ombres, projectiles, tours, comportements de l'armée.
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Colony, Structures, Shadows, Territory } = Vide;
+  const { CONFIG, util, Colony, Structures, Shadows, Territory, Villages } = Vide;
 
   const POSTURES = ['garde', 'escorte', 'chasse'];
 
@@ -14,8 +14,8 @@
     };
     game.projectiles = [];
     game.towerCd = new Map();
-    game.foyerHurt = 0;
-    game.lastFoyerAlert = -99;
+    game.heartHurt = new Map(); // cœurs de village rongés par les ombres (affichage)
+    game.lastHeartAlert = -99;
   }
 
   // --- Coups des ombres ---
@@ -35,19 +35,22 @@
     if (v.hp <= 0) disperse(game);
   }
 
-  // Lumière vaincue : elle se disperse et renaît au foyer, en perdant une part de sa lumière.
+  // Lumière vaincue : elle se disperse et renaît au cœur du village le plus proche (à l'origine s'il n'y en a
+  // aucun), en perdant une part de sa lumière.
   function disperse(game) {
     const { state } = game;
     const lost = state.light * CONFIG.combat.dispersalLoss;
     state.light -= lost;
-    state.player.x = 0;
-    state.player.y = 0;
+    const from = { x: state.player.x, y: state.player.y };
+    const home = Villages.nearest(state, from.x, from.y);
+    state.player.x = home ? home.x : 0;
+    state.player.y = home ? home.y : 0;
     game.velocity.x = game.velocity.y = 0;
     game.vitality.hp = game.stats.vitality;
     game.vitality.invulnerable = CONFIG.combat.invulnerable;
     game.field.particles.length = 0;
-    Vide.Field.fill(game.field, 0, 0, game.stats);
-    Vide.Sim.emit(game, 'dispersed', { lost });
+    Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
+    Vide.Sim.emit(game, 'dispersed', { lost, from, to: { x: state.player.x, y: state.player.y }, village: home ? home.type : null });
   }
 
   function hurtBeing(game, b, amount) {
@@ -56,7 +59,7 @@
     b.lastHurt = game.time;
     b.hurt = 1;
     if (b.hp > 0) return;
-    // Vaincu : il s'éteint, lâche ce qu'il portait, et se rallumera au foyer plus tard.
+    // Vaincu : il s'éteint, lâche ce qu'il portait, et se rallumera au cœur de son village plus tard.
     b.hp = 0;
     b.down = CONFIG.colony.downTime;
     if (b.target && b.target.claimedBy === b.id) b.target.claimedBy = 0;
@@ -76,20 +79,23 @@
       case 'being':
         hurtBeing(game, target.ref, amount);
         break;
-      case 'building':
+      case 'building': {
         game.colony.flashes.set(target.ref, -1); // éclat négatif : le bâtiment vacille
-        if (Structures.damage(game, target.ref, amount)) {
+        // Les remparts d'un bastion amortissent les coups.
+        const armor = target.village ? Villages.statsOf(game, target.village).structureArmor : 1;
+        if (Structures.damage(game, target.ref, amount / armor)) {
           Vide.Sim.emit(game, 'broken', { building: target.ref.type });
         }
         break;
-      case 'foyer': {
-        // Les ombres au foyer dévorent la réserve de lumière.
+      }
+      case 'heart': {
+        // Les ombres au cœur d'un village dévorent la réserve de lumière.
         const { state } = game;
         state.light = Math.max(0, state.light - amount * CONFIG.combat.foyerDrain);
-        game.foyerHurt = 1;
-        if (game.time - game.lastFoyerAlert > 15) {
-          game.lastFoyerAlert = game.time;
-          Vide.Sim.emit(game, 'foyerAttacked');
+        game.heartHurt.set(target.ref, 1);
+        if (game.time - game.lastHeartAlert > 15) {
+          game.lastHeartAlert = game.time;
+          Vide.Sim.emit(game, 'heartAttacked', { village: target.ref.type });
         }
         break;
       }
@@ -105,8 +111,9 @@
     v.hurt = Math.max(0, v.hurt - dt * 2);
     if (game.time - v.lastHurt > CONFIG.combat.regenDelay) {
       const { player } = game.state;
-      const inside = Territory.isInside(game.state, player.x, player.y);
-      v.hp += CONFIG.combat.regen * (inside ? CONFIG.combat.insideRegen : 1) * dt;
+      const home = Villages.at(game.state, player.x, player.y);
+      const boost = home ? CONFIG.combat.insideRegen * Villages.statsOf(game, home).regen : 1;
+      v.hp += CONFIG.combat.regen * boost * dt;
     }
     v.hp = Math.min(v.hp, max);
   }
@@ -174,21 +181,26 @@
   // --- Tours de lumière ---
 
   function updateTowers(game, dt) {
-    for (const b of game.state.buildings) {
-      const d = Structures.def(b.type);
-      if (!d.tower || !Structures.isWorking(b)) continue;
-      const cd = (game.towerCd.get(b) || 0) - dt;
-      if (cd > 0) {
-        game.towerCd.set(b, cd);
-        continue;
-      }
-      const target = Shadows.nearest(game, b.x, b.y, d.tower.range);
-      if (target) {
-        fire(game, b.x, b.y, target, d.tower.damage * game.stats.armyDamage, 'tower');
-        game.towerCd.set(b, d.tower.cooldown);
-      } else {
-        game.towerCd.set(b, 0);
-      }
+    for (const v of game.state.villages) {
+      const stats = Villages.statsOf(game, v);
+      for (const b of v.buildings) updateTower(game, b, stats, dt);
+    }
+  }
+
+  function updateTower(game, b, stats, dt) {
+    const d = Structures.def(b.type);
+    if (!d.tower || !Structures.isWorking(b)) return;
+    const cd = (game.towerCd.get(b) || 0) - dt;
+    if (cd > 0) {
+      game.towerCd.set(b, cd);
+      return;
+    }
+    const target = Shadows.nearest(game, b.x, b.y, d.tower.range);
+    if (target) {
+      fire(game, b.x, b.y, target, d.tower.damage * stats.armyDamage, 'tower');
+      game.towerCd.set(b, d.tower.cooldown);
+    } else {
+      game.towerCd.set(b, 0);
     }
   }
 
@@ -200,14 +212,16 @@
     return true;
   }
 
-  // Zone que l'armée défend selon l'ordre donné : centre et rayon d'engagement.
-  function anchor(game) {
+  // Zone qu'un être de l'armée défend selon l'ordre donné : centre et rayon d'engagement.
+  // En garde ou en chasse, chacun défend son propre village.
+  function anchor(game, b) {
     const { state } = game;
-    const R = Territory.radius(state);
+    const v = b.village;
+    const R = Territory.radius(v);
     switch (state.army.posture) {
       case 'escorte': return { x: state.player.x, y: state.player.y, radius: 320 };
-      case 'chasse': return { x: 0, y: 0, radius: R + 1400 };
-      default: return { x: 0, y: 0, radius: R + 260 };
+      case 'chasse': return { x: v.x, y: v.y, radius: R + 1400 };
+      default: return { x: v.x, y: v.y, radius: R + 260 };
     }
   }
 
@@ -227,7 +241,7 @@
     else Shadows.damage(enemy, amount);
   }
 
-  // Sans ennemi : en garde, ronde autour du foyer ; en escorte, cortège autour de la lumière.
+  // Sans ennemi : en garde, ronde autour du cœur du village ; en escorte, cortège autour de la lumière.
   function formation(game, b, a, speed, dt) {
     b.task = 'idle';
     if (game.state.army.posture === 'escorte') {
@@ -236,16 +250,17 @@
       Colony.steer(b, a.x + Math.cos(angle) * r, a.y + Math.sin(angle) * r, speed * 1.3, dt);
       return;
     }
-    const R = Math.max(60, Territory.radius(game.state) * 0.55);
+    const v = b.village;
+    const R = Math.max(60, Territory.radius(v) * 0.55);
     const angle = b.phase + game.time * 0.04;
-    Colony.steer(b, Math.cos(angle) * R, Math.sin(angle) * R, speed * 0.5, dt);
+    Colony.steer(b, v.x + Math.cos(angle) * R, v.y + Math.sin(angle) * R, speed * 0.5, dt);
   }
 
   const ROLES = {
     // Mêlée : fondre sur l'ombre la plus proche dans la zone défendue.
     guard(game, b, dt, speed) {
       const sp = Colony.species(b.species);
-      const a = anchor(game);
+      const a = anchor(game, b);
       const enemy = enemyFor(game, b, a);
       if (!enemy) return formation(game, b, a, speed, dt);
       b.task = 'fight';
@@ -253,14 +268,14 @@
       if (d <= sp.range + enemyRadius(enemy) && b.cd <= 0) {
         b.cd = sp.cooldown;
         b.flash = 1;
-        damageEnemy(game, enemy, sp.damage * game.stats.armyDamage);
+        damageEnemy(game, enemy, sp.damage * Colony.statsOf(game, b).armyDamage);
       }
     },
 
     // Distance : garder l'ombre à bonne portée et tirer.
     ranged(game, b, dt, speed) {
       const sp = Colony.species(b.species);
-      const a = anchor(game);
+      const a = anchor(game, b);
       const enemy = enemyFor(game, b, a);
       if (!enemy) return formation(game, b, a, speed, dt);
       b.task = 'fight';
@@ -273,7 +288,7 @@
       if (d <= sp.range && b.cd <= 0) {
         b.cd = sp.cooldown;
         b.flash = 1;
-        fire(game, b.x, b.y, enemy, sp.damage * game.stats.armyDamage, 'ally');
+        fire(game, b.x, b.y, enemy, sp.damage * Colony.statsOf(game, b).armyDamage, 'ally');
       }
     },
 
@@ -298,14 +313,14 @@
         worst = playerRatio;
       }
       b.healing = null;
-      if (!best) return formation(game, b, anchor(game), speed, dt);
+      if (!best) return formation(game, b, anchor(game, b), speed, dt);
       b.task = 'heal';
       const d = Math.hypot(best.x - b.x, best.y - b.y);
       if (d > sp.range * 0.6) Colony.steer(b, best.x, best.y, speed, dt);
       else Colony.steer(b, b.x, b.y, speed, dt);
       if (d <= sp.range) {
         b.healing = best;
-        const amount = sp.heal * game.stats.armyDamage * dt;
+        const amount = sp.heal * Colony.statsOf(game, b).armyDamage * dt;
         if (best === player) v.hp = Math.min(game.stats.vitality, v.hp + amount);
         else best.hp = Math.min(Colony.maxHp(game, best), best.hp + amount);
       }
@@ -317,12 +332,15 @@
     updateVitality(game, dt);
     updateProjectiles(game, dt);
     updateTowers(game, dt);
-    game.foyerHurt = Math.max(0, game.foyerHurt - dt * 2);
+    for (const [v, h] of game.heartHurt) {
+      if (h <= dt * 2) game.heartHurt.delete(v);
+      else game.heartHurt.set(v, h - dt * 2);
+    }
   }
 
   function armySize(state) {
     let n = 0;
-    for (const sp of Vide.SPECIES) if (sp.army) n += state.beings[sp.id] || 0;
+    for (const sp of Vide.SPECIES) if (sp.army) n += Villages.count(state, sp.id);
     return n;
   }
 

@@ -129,7 +129,7 @@
       return { ...Zones.center(i, j, seed), zone: Zones.get(Zones.typeOf(i, j, seed)) };
     });
 
-    // Cadrage : toutes les régions visitées, le foyer et la lumière.
+    // Cadrage : toutes les régions visitées, l'origine, les villages et la lumière.
     const pad = Zones.CELL * 0.7;
     let minX = Math.min(0, state.player.x) - pad, maxX = Math.max(0, state.player.x) + pad;
     let minY = Math.min(0, state.player.y) - pad, maxY = Math.max(0, state.player.y) + pad;
@@ -145,21 +145,26 @@
 
     paintRegions(ctx, w, h, X, Y, scale, ox, oy, state);
 
-    // Territoire, bâtiments, foyer.
-    if (state.territory.lit) {
-      ctx.fillStyle = 'rgba(160, 200, 255, 0.18)';
-      ctx.strokeStyle = 'rgba(210, 230, 255, 0.5)';
+    // Villages (territoire teinté par leur type, bâtiments, cœur), puis l'origine.
+    for (const v of state.villages) {
+      const tint = Vide.Villages.type(v.type).tint;
+      ctx.fillStyle = rgba(tint, 0.16);
+      ctx.strokeStyle = rgba(tint, 0.5);
       ctx.beginPath();
-      ctx.arc(X(0), Y(0), Math.max(2, Territory.radius(state) * scale), 0, Math.PI * 2);
+      ctx.arc(X(v.x), Y(v.y), Math.max(3, Territory.radius(v) * scale), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 220, 170, 0.8)';
+      for (const b of v.buildings) ctx.fillRect(X(b.x) - 1, Y(b.y) - 1, 2, 2);
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(X(v.x), Y(v.y), 2.5, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.fillStyle = 'rgba(255, 220, 170, 0.8)';
-    for (const b of state.buildings) ctx.fillRect(X(b.x) - 1, Y(b.y) - 1, 2, 2);
-    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.beginPath();
     ctx.arc(X(0), Y(0), 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.stroke();
 
     // Repères supplémentaires (colosses…), fournis par d'autres modules.
     for (const mark of Vide.MapMarks || []) mark(ctx, X, Y, state);

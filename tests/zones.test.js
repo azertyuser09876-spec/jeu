@@ -145,9 +145,6 @@
   });
 
   test('le territoire reste calme : les zones ne touchent pas la colonie', () => {
-    const state = State.create(SEED);
-    Territory.light(state);
-    state.territory.area = Math.PI * 1500 * 1500;
     assert.equal(Zones.at(SEED, 0, 0).zone.id, 'calme');
   });
 })();

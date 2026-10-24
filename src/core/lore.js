@@ -4,16 +4,16 @@
   'use strict';
 
   const zone = (id) => (state) => state.zones.discovered.includes(id);
-  const builtAny = (state) => state.buildings.some((b) => Vide.Structures.isDone(b));
+  const builtAny = (state) => Vide.Structures.all(state).some((b) => Vide.Structures.isDone(b));
 
   Vide.LORE = [
     { id: 'eveil', when: (s) => s.totalLight >= 1,
       text: 'Au commencement, il n’y avait que le vide. Puis une lueur. Toi.' },
     { id: 'souvenirs', when: (s) => s.totalLight >= 200,
       text: 'Ces particules ne sont pas de la poussière. Ce sont des souvenirs de lumière, éparpillés.' },
-    { id: 'foyer', when: (s) => s.territory.lit,
-      text: 'Le foyer se souvient d’un temps où le vide était plein.' },
-    { id: 'lueur', when: (s) => (s.beings.lueur || 0) > 0,
+    { id: 'foyer', when: (s) => s.villages.length > 0,
+      text: 'Le cœur d’un village se souvient d’un temps où le vide était plein.' },
+    { id: 'lueur', when: (s) => Vide.Villages.count(s, 'lueur') > 0,
       text: 'Ce que tu éveilles n’est pas toi. Mais cela vient de toi.' },
     { id: 'danse', when: (s) => Vide.Colony.population(s) >= 8,
       text: 'Ils ne parlent pas. Ils dansent. C’est peut-être la même chose.' },
@@ -43,7 +43,7 @@
       text: 'Quelque chose nage sous le vide. Le vide a donc un dessous.' },
     { id: 'leviathan', when: (s) => s.colossi.leviathan === 'tamed',
       text: 'Le Léviathan portait le vide sur son dos. Il te le confie, maintenant.' },
-    { id: 'recul', when: (s) => Vide.Territory.radius(s) >= 600,
+    { id: 'recul', when: (s) => s.villages.some((v) => Vide.Territory.radius(v) >= 600),
       text: 'Le vide recule. Ou peut-être apprend-il à briller.' },
     { id: 'armee', when: (s) => Vide.Combat.armySize(s) >= 6,
       text: 'Tu n’as jamais voulu d’armée. Seulement que personne ne s’éteigne.' },

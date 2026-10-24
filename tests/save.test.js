@@ -102,14 +102,16 @@
     assert.ok(result.ok);
     assert.equal(result.state.light, 77);
     assert.deepEqual(result.state.upgrades, { reach: 4, pulse: 2 });
-    assert.deepEqual(result.state.territory, { lit: false, area: 0 });
+    assert.deepEqual(result.state.villages, []);
   });
 
-  test('le territoire est relu et nettoyé', () => {
+  test('l’ancien territoire est relu et nettoyé en devenant un village', () => {
     const start = Math.PI * Vide.CONFIG.territory.startRadius ** 2;
-    assert.deepEqual(Save.sanitize({ territory: { lit: true, area: 99999 } }).territory, { lit: true, area: 99999 });
-    assert.equal(Save.sanitize({ territory: { lit: true, area: -4 } }).territory.area, start);
-    assert.deepEqual(Save.sanitize({ territory: { lit: 'oui', area: 500 } }).territory, { lit: false, area: 0 });
+    const load = (territory) => Save.deserialize(JSON.stringify({ format: 9, state: { territory } })).state.villages;
+    assert.equal(load({ lit: true, area: 99999 })[0].area, 99999);
+    assert.equal(load({ lit: true, area: -4 })[0].area, start);
+    assert.deepEqual(load({ lit: 'oui', area: 500 }), []);
+    assert.deepEqual(load('n’importe quoi'), []);
   });
 
   test('un état vide donne une partie neuve', () => {

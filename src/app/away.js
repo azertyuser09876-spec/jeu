@@ -20,10 +20,13 @@
   function show(report) {
     const lines = [];
     if (report.radiusAfter > report.radiusBefore) {
-      lines.push(`Ton territoire s’est étendu : rayon ${Math.round(report.radiusBefore)} → ${Math.round(report.radiusAfter)}.`);
+      const growth = `rayon ${Math.round(report.radiusBefore)} → ${Math.round(report.radiusAfter)}`;
+      lines.push(report.villages > 1
+        ? `Tes ${report.villages} villages se sont étendus (le plus grand : ${growth}).`
+        : `Ton village s’est étendu : ${growth}.`);
     }
-    if (report.radiated > 0) lines.push(`Il a rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
-    if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au foyer.`);
+    if (report.radiated > 0) lines.push(`Les territoires ont rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
+    if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au cœur des villages.`);
     if (report.built.length) {
       const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
       lines.push(`Les bâtisseurs ont achevé : ${names.join(', ')}.`);
@@ -52,15 +55,18 @@
   // --- Messages ---
 
   const MESSAGES = {
-    foyer: 'Le foyer s’allume. Ton territoire grandira, même sans toi.',
+    village: (e) => (e.first
+      ? `${Vide.Villages.type(e.village).name} : ton premier village naît. Son territoire grandira, même sans toi.`
+      : `Un nouveau village naît : ${Vide.Villages.type(e.village).name}.`),
     birth: (e) => (e.first ? FIRST_BIRTH[e.species] : null),
     built: (e) => `${Vide.Structures.def(e.building).name} achevé.`,
     tide: (e) => (e.first
       ? 'Une marée d’ombres approche, attirée par ton territoire. Ta pulsation peut les blesser.'
       : `Une marée d’ombres approche (${e.count}).`),
     shadowDown: (e) => (e.first ? 'Une ombre se dissipe et laisse un écho ◆. Les échos éveillent une armée.' : null),
-    dispersed: (e) => `Ta lumière se disperse… et renaît au foyer. ✦ ${util.formatNumber(e.lost)} perdue.`,
-    foyerAttacked: 'Des ombres rongent le foyer !',
+    dispersed: (e) => `Ta lumière se disperse… et renaît ${e.village ? 'au village le plus proche' : 'à l’origine'}. `
+      + `✦ ${util.formatNumber(e.lost)} perdue.`,
+    heartAttacked: (e) => `Des ombres rongent le cœur d’un village (${Vide.Villages.type(e.village).name}) !`,
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
     heartbeat: (e) => Vide.Colossus.def(e.id).heartbeat,
@@ -73,12 +79,12 @@
     web: () => (seen.web ? null : (seen.web = true, 'Une toile ! Elle ralentit tout ce qui s’y prend. Sors-en vite.')),
     colossusTamed: (e) => {
       const d = Vide.Colossus.def(e.id);
-      return `${d.name} s’apaise. Il rejoint ton territoire. ${d.reward.text}`;
+      return `${d.name} s’apaise. Il rejoint ton plus grand village. ${d.reward.text}`;
     },
     renaissance: 'Tu te dissous… et renais. Tes souvenirs t’attendent dans l’onglet souvenirs.',
     loreBatch: (e) => `Ton journal s’est rempli de ${e.count} fragments du récit (menu ≡).`,
     colossusLost: (e) => `${Vide.Colossus.def(e.id).name} se détourne et retourne à son repaire.`,
-    beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au foyer.')),
+    beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au cœur de son village.')),
     // Les danses sont fréquentes : on n'en parle qu'une fois par session.
     dance: () => (seen.dance ? null : (seen.dance = true, 'Deux êtres se croisent… et dansent un instant ensemble.')),
   };
@@ -87,7 +93,7 @@
 
   // Message à la naissance du premier être de chaque espèce.
   const FIRST_BIRTH = {
-    lueur: 'Une lueur s’éveille. Elle récoltera le jardin pour toi.',
+    lueur: 'Une lueur s’éveille. Elle récoltera le jardin de son village pour toi.',
     batisseur: 'Un bâtisseur s’éveille. Planifie un bâtiment : il choisira où le construire.',
     gardien: 'Un gardien s’éveille. Donne des ordres à l’armée : garder, escorter, chasser.',
     etincelle: 'Une étincelle s’éveille. Elle frappe les ombres de loin.',

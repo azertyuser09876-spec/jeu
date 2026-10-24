@@ -95,13 +95,15 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 5. Options : réduire les secousses, exporter / importer sa sauvegarde.
 
 ### [ ] 1.2 — Villages
-1. L'origine devient un simple lieu de naissance ; on fonde un village là où l'on se trouve, en choisissant
-   son type (Jardins, Bastion, Atelier, Observatoire, Sanctuaire), chacun avec son architecture et ses effets.
+1. Plus de foyer central : l'origine n'est qu'un lieu de naissance. On fonde un village là où l'on se trouve,
+   en choisissant son type (Jardins, Bastion, Atelier, Observatoire, Sanctuaire), chacun avec ses effets.
+   Êtres, bâtiments, jardin propres à chaque village ; boutique contextuelle (village où l'on se trouve).
+   Migration : l'ancien territoire devient le premier village. Sauvegarde format 10.
+   (Un seul point : le modèle de données change d'un bloc, avec sa migration.)
 2. Territoire de lumière vivant (grille) : il pousse là où vivent et travaillent les habitants, autour des
    bâtiments ; les zones pleines blanchissent, et ce blanc se répand plus lentement encore.
-3. Êtres, bâtiments, jardin propres à chaque village ; boutique contextuelle (village où l'on se trouve).
+3. Architecture propre à chaque type de village (cœur, bâtiments, teinte du territoire).
 4. Dispersion : animation, puis renaissance dans le village le plus proche (ou à l'origine).
-5. Migration : l'ancien territoire devient le premier village. Sauvegarde format 10.
 
 ### [ ] 1.3 — Autonomie et bâtiments
 1. Population sans plafond fixe (logements) ; intendant de village qui construit seul avec la part de

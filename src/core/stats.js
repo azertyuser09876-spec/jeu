@@ -45,9 +45,8 @@
       const level = (up.legacy ? state.legacy : state.upgrades)[up.id] || 0;
       if (level > 0) up.modify(stats, level);
     }
-    // Les bâtiments achevés modifient ensuite ces valeurs (+places, croissance…).
-    if (Vide.Structures) Vide.Structures.modify(state, stats);
-    // Puis les colosses apaisés.
+    // Puis les colosses apaisés. (Les bâtiments et le type de chaque village n'agissent que sur ce village :
+    // voir Villages.local.)
     if (Vide.Colossus) Vide.Colossus.modify(state, stats);
     return stats;
   }

@@ -17,14 +17,14 @@
     {
       id: 'lueur',
       name: 'Lueur',
-      desc: 'Cherche la lumière du jardin, la porte et la dépose au foyer.',
+      desc: 'Cherche la lumière du jardin de son village, la porte et la dépose en son cœur.',
       role: 'gatherer',
       baseCost: 250,
       growth: 1.32,
       speed: 70,
       hp: 20,
       color: [130, 255, 200],
-      requires: (state) => state.territory.lit,
+      requires: (state) => state.villages.length > 0,
     },
     {
       id: 'batisseur',
@@ -36,10 +36,10 @@
       speed: 60,
       hp: 30,
       color: [255, 196, 120],
-      // Les bâtisseurs vivent au foyer et ne prennent pas de place dans la population :
+      // Les bâtisseurs vivent au cœur du village et ne prennent pas de place dans la population :
       // on peut toujours en éveiller un pour bâtir des nids, même quand la population est pleine.
       cap: 'builderCap',
-      requires: (state) => (state.beings.lueur || 0) > 0,
+      requires: (state) => Vide.Villages.count(state, 'lueur') > 0,
     },
 
     // --- Armée (débloquée par les premiers échos) ---
@@ -77,7 +77,7 @@
       cooldown: 1,
       range: 170,
       color: [150, 200, 255],
-      requires: (state) => (state.beings.gardien || 0) > 0,
+      requires: (state) => Vide.Villages.count(state, 'gardien') > 0,
     },
     {
       id: 'veilleuse',
@@ -94,7 +94,7 @@
       heal: 7,
       range: 120,
       color: [255, 170, 220],
-      requires: (state) => (state.beings.gardien || 0) > 0,
+      requires: (state) => Vide.Villages.count(state, 'gardien') > 0,
     },
   ];
 })(globalThis.Vide);

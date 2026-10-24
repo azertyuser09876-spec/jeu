@@ -10,13 +10,7 @@
       totalLight: 0,     // lumière récoltée depuis le début
       upgrades: {},      // niveau de chaque amélioration, par identifiant
       player: { x: 0, y: 0 },
-      territory: {
-        lit: false,      // foyer allumé ?
-        area: 0,         // surface du territoire (unités²)
-      },
-      beings: {},        // nombre d'êtres par espèce
-      buildings: [],     // bâtiments : { type, x, y, work }
-      colonyRate: 0,     // lumière/s rapportée par la colonie (mesurée, sert pendant l'absence)
+      villages: [],      // villages fondés : territoire, êtres, bâtiments (voir villages.js)
       echoes: 0,         // échos laissés par les ombres vaincues
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
       army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse

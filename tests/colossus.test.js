@@ -1,13 +1,12 @@
 (function () {
   'use strict';
-  const { test, assert } = VideTest;
+  const { test, assert, village } = VideTest;
   const { CONFIG, State, Stats, Territory, Sim, Colossus, Shadows, Save } = Vide;
   const dt = CONFIG.step;
 
   function ready() {
     const state = State.create(31);
-    Territory.light(state);
-    state.territory.area = Math.PI * 300 * 300;
+    village(state, { radius: 300 });
     state.stats.shadows = 15;
     state.light = state.totalLight = 1e6;
     return state;
@@ -222,10 +221,10 @@
 
   test('un gardien en escorte frappe le colosse et remplit sa jauge', () => {
     const { state, game, c } = facing(420);
-    state.beings.gardien = 2;
+    state.villages[0].beings.gardien = 2;
     Vide.Combat.setPosture(state, 'escorte');
     run(game, dt);
-    // Les gardiens naissent au foyer : on les amène directement près du colosse.
+    // Les gardiens naissent au cœur du village : on les amène directement près du colosse.
     for (const g of game.colony.beings) {
       g.x = state.player.x;
       g.y = state.player.y;
@@ -263,8 +262,9 @@
     const game = newGame(state);
     const c = game.colossi[0];
     assert.equal(c.mode, 'resident');
-    assert.near(Math.hypot(c.x, c.y), Territory.radius(state) + 90, 1);
+    assert.near(Math.hypot(c.x, c.y), Territory.radius(state.villages[0]) + 90, 1);
     const s = Shadows.spawn(game, 'massive', c.legs[0].foot.x, c.legs[0].foot.y, 'tide');
+    s.home = state.villages[0]; // une marée marche vers le village : sous les pas du Veilleur
     s.cd = 99;
     let hurt = false;
     for (let i = 0; i < 60 * 15 && !hurt; i++) {
