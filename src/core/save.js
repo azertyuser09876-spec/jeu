@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 19;
+  const FORMAT = 20;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -80,6 +80,20 @@
       }
       if (data.renaissances > 0) seen.push('renaissance');
       return { ...data, cinematics: seen };
+    },
+    // 2.2 : le plan des villages. Les bâtiments d'un village (pas d'une cité) se rangent sur son plan ; un village
+    // abîmé est laissé tel quel (sanitize s'en charge).
+    19: (data) => {
+      for (const v of Array.isArray(data.villages) ? data.villages : []) {
+        try {
+          if (Array.isArray(v.cells) && Array.isArray(v.buildings) && Number.isFinite(v.x) && Number.isFinite(v.y)) {
+            Vide.Plan.settle(v);
+          }
+        } catch (e) {
+          // Rien : le village garde ses bâtiments où ils étaient.
+        }
+      }
+      return data;
     },
   };
 

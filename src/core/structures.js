@@ -119,9 +119,12 @@
     return best;
   }
 
-  // Choisit un emplacement : à la distance voulue du cœur du village, le plus loin possible des autres bâtiments.
+  // Choisit un emplacement : le meilleur emplacement libre du plan du village (voir plan.js) ; s'il n'y en a plus,
+  // à la distance voulue du cœur, le plus loin possible des autres bâtiments.
   // Déterministe : un même état donne toujours le même emplacement.
   function site(state, village, d) {
+    const slot = Vide.Plan.choose(village, d);
+    if (slot) return { x: slot.x, y: slot.y };
     const radius = Territory.radius(village);
     const dist = util.clamp(d.ring * radius, 50, radius * 0.9);
     const rng = util.rng(state.seed ^ Math.imul(village.buildings.length + 1, 0x9e3779b1) ^ Math.imul(village.id, 0x85ebca6b));

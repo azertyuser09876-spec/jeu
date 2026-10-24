@@ -33,7 +33,7 @@
     assert.equal(Catalog.get('nid').blocked(state), 'territoire trop petit');
   });
 
-  test('un plan est placé dans le territoire, à la distance voulue du cœur', () => {
+  test('un plan est placé sur le plan du village, à la distance voulue du cœur', () => {
     for (const d of Vide.BUILDINGS) {
       // Chaque bâtiment dans un village du type qu'il exige, le cas échéant.
       const state = State.create(5);
@@ -45,7 +45,9 @@
       assert.ok(Catalog.buy(state, d.id), d.id);
       const b = state.villages[0].buildings[0];
       const dist = Math.hypot(b.x, b.y);
-      assert.near(dist, Math.min(400 * 0.9, Math.max(50, d.ring * 400)), 1e-6, d.id);
+      // Sur un îlot (entre deux boulevards), le plus proche de sa place idéale.
+      assert.ok(Vide.Plan.slots(state.villages[0]).some((s) => Math.hypot(s.x - b.x, s.y - b.y) < 1e-6), d.id);
+      assert.ok(Math.abs(dist - d.ring * 400) <= Vide.Plan.STREET / 2 + 1e-6, `${d.id} : ${dist}`);
       assert.equal(b.work, 0);
     }
   });

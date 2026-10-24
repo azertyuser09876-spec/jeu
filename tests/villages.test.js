@@ -125,7 +125,7 @@
     assert.ok(Catalog.buy(state, 'nid'));
     assert.equal(b.buildings.length, 1);
     const n = b.buildings[0];
-    assert.near(Math.hypot(n.x - 4000, n.y - 1000), Structures.def('nid').ring * 400, 1e-6);
+    assert.ok(Math.abs(Math.hypot(n.x - 4000, n.y - 1000) - Structures.def('nid').ring * 400) <= Vide.Plan.STREET / 2);
     state.player.x = 2000;
     assert.equal(Catalog.get('nid').blocked(state), 'rejoins un village');
   });
