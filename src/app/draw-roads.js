@@ -52,8 +52,54 @@
       }
     }
     drawCaravans(r, game);
+    drawExpeditions(r, game);
     ctx.globalAlpha = 1;
   };
+
+  // Expéditions : un petit groupe de lumières qui marche vers son but ; l'escorte entoure le groupe d'anneaux.
+  // Arrêtée par un combat, elle vacille.
+  function drawExpeditions(r, game) {
+    const { ctx } = r;
+    for (const e of game.state.expeditions) {
+      const fighting = game.expeditionsFighting.has(e);
+      const glow = e.kind === 'colons' ? glowOfType(r, e.type) : r.glows.white;
+      const n = (e.members.lueur || 0) + (e.members.eclaireur || 0);
+      const flicker = fighting ? 0.6 + 0.4 * Math.abs(Math.sin(r.time * 20)) : 1;
+      for (let k = 0; k < n; k++) {
+        const a = r.time * 1.3 + (k / n) * Math.PI * 2;
+        Render.drawGlow(ctx, glow, e.x + Math.cos(a) * 9, e.y + Math.sin(a) * 9, 10, 0.8 * flicker);
+      }
+      for (let k = 0; k < (e.members.gardien || 0); k++) {
+        const a = -r.time * 0.9 + (k / e.members.gardien) * Math.PI * 2;
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = '#ffecaa';
+        ctx.lineWidth = 1.2 / r.camera.scale;
+        ctx.beginPath();
+        ctx.arc(e.x + Math.cos(a) * 22, e.y + Math.sin(a) * 22, 7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // Le but, discret, tant qu'on n'y est pas.
+      const g = Vide.Expeditions.goal(game.state, e);
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1 / r.camera.scale;
+      ctx.setLineDash([4 / r.camera.scale, 8 / r.camera.scale]);
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y);
+      ctx.lineTo(g.x, g.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  const typeGlows = {};
+  function glowOfType(r, type) {
+    if (!typeGlows[type]) {
+      const c = Vide.Villages.type(type).tint;
+      typeGlows[type] = r.makeGlow(c[0], c[1], c[2]);
+    }
+    return typeGlows[type];
+  }
 
   // Caravanes : un ballot de lumière qui glisse le long de la route, teinté par ce qu'il porte.
   const tints = {};

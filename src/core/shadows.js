@@ -124,6 +124,7 @@
     if (t.type === 'being') return Colony.isActive(t.ref) && game.colony.beings.includes(t.ref);
     if (t.type === 'building') return Structures.isWorking(t.ref) && game.state.villages.includes(t.village);
     if (t.type === 'heart') return game.state.villages.includes(t.ref);
+    if (t.type === 'expedition') return game.state.expeditions.includes(t.ref);
     return false;
   }
 
@@ -145,6 +146,7 @@
       for (const b of v.buildings) if (Structures.isWorking(b)) consider('building', b, b.x, b.y, pref('structures'), v);
       consider('heart', v, v.x, v.y, pref('structures'));
     }
+    for (const e of game.state.expeditions) consider('expedition', e, e.x, e.y, pref('beings'));
 
     candidates.sort((a, b) => a.score - b.score);
     return candidates[0] || null;
@@ -191,6 +193,17 @@
       }
     }
 
+    // Les expéditions loin de tout croisent aussi les ombres des zones qu'elles traversent.
+    for (const e of state.expeditions) {
+      const z = Vide.Zones.at(state.seed, e.x, e.y).zone;
+      if (!z.shadows || Territory.distanceToEdge(state, e.x, e.y) < c.roamBeyond) continue;
+      if (sh.rng() > c.roamRate * z.shadows * dt) continue;
+      const a = sh.rng() * Math.PI * 2;
+      const s = spawn(game, pickKind(z.kinds, sh.rng()), e.x + Math.cos(a) * 320, e.y + Math.sin(a) * 320, 'roam');
+      s.echoMult = z.echoes;
+      s.near = e; // elle rôde autour de l'expédition, pas du joueur
+    }
+
     for (const s of sh.list) {
       const k = kind(s.kind);
       s.age += dt;
@@ -215,6 +228,8 @@
       if (s.target) {
         const p = targetPos(s.target);
         tx = p.x; ty = p.y;
+      } else if (s.near && state.expeditions.includes(s.near)) {
+        tx = s.near.x; ty = s.near.y; // elle suit l'expédition qu'elle a repérée
       } else if (s.home && state.villages.includes(s.home)) {
         tx = s.home.x; ty = s.home.y; // une marée sans proie en vue avance vers le cœur du village visé
       } else {
@@ -252,7 +267,8 @@
         sh.list.splice(i, 1);
         continue;
       }
-      const fromPlayer = Math.hypot(s.x - state.player.x, s.y - state.player.y);
+      let fromPlayer = Math.hypot(s.x - state.player.x, s.y - state.player.y);
+      if (s.near && state.expeditions.includes(s.near)) fromPlayer = Math.min(fromPlayer, Math.hypot(s.x - s.near.x, s.y - s.near.y));
       if (fromPlayer > c.despawn && (s.origin === 'roam' || !(Territory.distanceToEdge(state, s.x, s.y) <= c.despawn))) {
         s.gone = true;
         sh.list.splice(i, 1);

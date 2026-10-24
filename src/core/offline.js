@@ -44,6 +44,7 @@
     }
     report.roads = Vide.Roads.advance(state, (v) => Villages.local(state, v, stats), applied).length;
     report.cities = Vide.Cities.fuse(state).length;
+    report.expeditions = Vide.Expeditions.offline(state, applied);
     const light = report.radiated + report.brought;
     state.light += light;
     state.totalLight += light;

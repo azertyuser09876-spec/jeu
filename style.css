@@ -559,7 +559,62 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
 #map-canvas {
   display: block;
   border-radius: 8px;
+  cursor: crosshair;
 }
+
+/* Expéditions : un petit panneau au bas de la carte, vers le point touché. */
+.map-view { position: relative; }
+
+.map-actions {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--faint);
+  border-radius: 10px;
+  background: rgba(5, 5, 6, 0.9);
+  font-size: 0.8rem;
+}
+
+.map-actions-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--dim);
+}
+
+.map-actions-head button {
+  border: none;
+  background: none;
+  color: var(--dim);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.map-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 8px;
+}
+
+.map-actions-row button {
+  padding: 4px 10px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.map-actions-row button:disabled { opacity: 0.35; cursor: default; }
+.map-actions-row .label { color: var(--dim); }
+.exp-escort { color: var(--dim); }
+.exp-escort input { accent-color: #d6eaff; vertical-align: -2px; }
+.exp-status { margin-top: 6px; min-height: 1em; color: var(--dim); font-size: 0.75rem; }
 
 .map-legend {
   display: flex;

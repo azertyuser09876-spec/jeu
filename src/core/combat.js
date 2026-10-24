@@ -88,6 +88,11 @@
         }
         break;
       }
+      case 'expedition':
+        if (Vide.Expeditions.hurt(game.state, target.ref, amount)) {
+          Vide.Sim.emit(game, 'expeditionLost', { kind: target.ref.kind });
+        }
+        break;
       case 'heart': {
         // Les ombres au cœur d'un village dévorent la réserve de lumière.
         const { state } = game;

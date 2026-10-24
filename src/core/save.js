@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 14;
+  const FORMAT = 15;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -55,6 +55,8 @@
       ...data,
       villages: (Array.isArray(data.villages) ? data.villages : []).map((v) => ({ ...v, extra: [], districts: [] })),
     }),
+    // 1.5 : les expéditions.
+    14: (data) => ({ ...data, expeditions: [] }),
   };
 
   function serialize(state, now) {
@@ -139,6 +141,22 @@
       if (!village || state.villages.some((o) => o.id === village.id)) continue;
       state.villages.push(village);
       if (state.villages.length >= Vide.CONFIG.villages.max) break;
+    }
+
+    // Expéditions : depuis un village existant (sinon elles rentrent au plus proche), membres connus.
+    const expeditions = Array.isArray(raw.expeditions) ? raw.expeditions : [];
+    for (const e of expeditions) {
+      if (!isObject(e) || !Vide.Expeditions.KINDS.includes(e.kind) || state.expeditions.length >= Vide.CONFIG.expeditions.max) continue;
+      if (![e.x, e.y, e.tx, e.ty].every(Number.isFinite) || !Number.isInteger(e.id)) continue;
+      const members = {};
+      const raw2 = isObject(e.members) ? e.members : {};
+      for (const id of ['lueur', 'eclaireur', 'gardien']) if (Number.isInteger(raw2[id]) && raw2[id] > 0) members[id] = raw2[id];
+      if (!Object.keys(members).length) continue;
+      state.expeditions.push({
+        id: e.id, kind: e.kind, from: Number.isInteger(e.from) ? e.from : 0, x: e.x, y: e.y, tx: e.tx, ty: e.ty,
+        type: e.kind === 'colons' ? (Vide.VILLAGE_TYPES.some((t) => t.id === e.type) ? e.type : 'jardins') : null,
+        members, hp: Math.min(positive(e.hp, 1), Vide.Expeditions.hpOf(members)) || 1, back: e.back === true,
+      });
     }
 
     // Routes : entre deux villages existants et distincts, une seule par paire, jamais plus longue que bâtie.

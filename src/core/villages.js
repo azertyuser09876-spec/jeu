@@ -180,6 +180,8 @@
     // fondation suivante moins chère.
     let n = 0;
     for (const v of state.villages) n += 1 + (v.districts ? v.districts.length : 0);
+    // Les colons en route comptent aussi : on ne lance pas dix fondations au même prix.
+    for (const e of state.expeditions || []) if (e.kind === 'colons') n++;
     return n === 0 ? c.firstCost : Math.ceil(c.cost * Math.pow(c.growth, n - 1));
   }
 
@@ -195,15 +197,16 @@
     return null;
   }
 
-  // Fonde un village du type donné à l'emplacement du joueur. Le premier d'une vie reçoit les lueurs
-  // offertes par les souvenirs (Éveil précoce).
-  function found(state, typeId) {
+  // Fonde un village du type donné à l'emplacement du joueur (ou en `at`, pour des colons). Le premier d'une vie
+  // reçoit les lueurs offertes par les souvenirs (Éveil précoce).
+  function found(state, typeId, at) {
     const stats = Vide.Stats.compute(state);
+    const where = at || state.player;
     const village = {
       id: state.villages.reduce((m, v) => Math.max(m, v.id), 0) + 1,
       type: type(typeId).id,
-      x: state.player.x,
-      y: state.player.y,
+      x: where.x,
+      y: where.y,
       area: Math.PI * stats.startRadius ** 2,
       cells: [],
       beings: {},

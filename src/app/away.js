@@ -28,6 +28,10 @@
     if (report.radiated > 0) lines.push(`Les territoires ont rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
     if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au cœur des villages.`);
     if (report.cities) lines.push(`Des villages se sont rejoints : ${report.cities > 1 ? report.cities + ' cités sont nées' : 'une cité est née'}.`);
+    for (const e of report.expeditions || []) {
+      if (e.type === 'settled') lines.push(`Des colons ont fondé ${to(e.village)}.`);
+      if (e.type === 'scouted') lines.push('Des éclaireurs ont exploré au loin.');
+    }
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
       const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
@@ -95,6 +99,16 @@
       'Le bastion forme un soldat avec la réserve de son intendant. En trop, ses soldats iront aux villages reliés.')),
     city: (e) => `Deux villages se rejoignent : une cité naît (${e.types.map((t) => Vide.Villages.type(t).name).join(' · ')}). `
       + 'Elle garde leurs spécialités.',
+    expedition: (e) => (e.kind === 'colons'
+      ? `Des colons partent fonder ${to(e.type)} au loin. Les ombres pourraient les attaquer en chemin.`
+      : 'Des éclaireurs partent explorer au loin.'),
+    scouted: (e) => (e.zones.length
+      ? `Les éclaireurs ont trouvé : ${e.zones.map((z) => Vide.Zones.get(z).name).join(', ')}. Ils rentrent.`
+      : 'Les éclaireurs ont exploré au loin (voir la carte). Ils rentrent.'),
+    returned: 'Les éclaireurs sont rentrés au village.',
+    settled: (e) => `Les colons arrivent et fondent ${to(e.village)}.`,
+    colonsJoined: (e) => `La place était prise : les colons rejoignent ${to(e.village)} le plus proche.`,
+    expeditionLost: (e) => `Les ombres ont dévoré une expédition (${e.kind === 'colons' ? 'colons' : 'éclaireurs'}).`,
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       return e.first

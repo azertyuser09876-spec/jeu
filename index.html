@@ -62,7 +62,18 @@
 
   <div id="map" class="overlay" hidden>
     <div class="map-card" role="dialog" aria-label="Carte">
-      <canvas id="map-canvas"></canvas>
+      <div class="map-view">
+        <canvas id="map-canvas"></canvas>
+        <div id="map-actions" class="map-actions" hidden>
+          <div class="map-actions-head"><span id="exp-target"></span><button id="exp-close" type="button" aria-label="Fermer">×</button></div>
+          <div class="map-actions-row">
+            <button id="exp-scouts" type="button">éclaireurs</button>
+            <label class="exp-escort"><input id="exp-escort" type="checkbox"> escorte</label>
+          </div>
+          <div class="map-actions-row" id="exp-colons"></div>
+          <div id="exp-status" class="exp-status"></div>
+        </div>
+      </div>
       <div id="map-legend" class="map-legend"></div>
       <div class="menu-actions">
         <span class="version">régions explorées · M pour fermer</span>
@@ -160,6 +171,7 @@
   <script src="src/core/roads.js"></script>
   <script src="src/core/trade.js"></script>
   <script src="src/core/cities.js"></script>
+  <script src="src/core/expeditions.js"></script>
   <script src="src/core/shadows.js"></script>
   <script src="src/core/combat.js"></script>
   <script src="src/core/colossi.js"></script>

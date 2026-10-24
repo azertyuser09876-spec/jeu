@@ -241,6 +241,20 @@ const { chromium } = require('playwright');
   check(await page.isVisible('#map'), 'la touche M ouvre la carte des régions explorées');
   await page.keyboard.press('Escape');
   check(!(await page.isVisible('#map')), 'Échap referme la carte');
+
+  // Expéditions : sur la carte, toucher un point, puis y envoyer des éclaireurs.
+  await page.evaluate(() => { Vide.game.state.light += 1e5; });
+  await page.keyboard.press('m');
+  await page.waitForTimeout(200);
+  const box = await page.locator('#map-canvas').boundingBox();
+  await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.45);
+  await page.waitForTimeout(100);
+  const panel = await page.isVisible('#map-actions');
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'expedition.png') });
+  await page.click('#exp-scouts');
+  const sent = await page.evaluate(() => Vide.game.state.expeditions.map((e) => e.kind));
+  check(panel && sent.length === 1 && sent[0] === 'scouts', 'sur la carte, un point touché permet d’envoyer des éclaireurs');
+  await page.keyboard.press('Escape');
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
   // Zoom : la molette éloigne la caméra, + la rapproche ; le choix survit au rechargement.

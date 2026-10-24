@@ -111,6 +111,19 @@
       growth: 8,         // …×8 pour chacune des suivantes
     },
 
+    // Expéditions lancées depuis la carte (voir expeditions.js).
+    expeditions: {
+      speed: 70,         // unités par seconde
+      range: 12000,      // portée depuis le village de départ
+      max: 4,            // expéditions en route en même temps
+      colonists: 3,      // lueurs qui partent fonder un village
+      scouts: 2,
+      escort: 2,         // gardiens qui les accompagnent (en option)
+      scoutCost: 1.5,    // lumière par unité de distance, pour des éclaireurs
+      reveal: 2600,      // rayon révélé par les éclaireurs
+      engage: 90,        // une ombre plus proche que ça arrête l'expédition, qui fait face
+    },
+
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
     renaissance: {
       threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître

@@ -15,6 +15,7 @@
     };
     map.button.addEventListener('click', () => toggle(map));
     $('map-close').addEventListener('click', () => toggle(map, false));
+    setupExpeditions(map);
     map.root.addEventListener('click', (e) => {
       if (e.target === map.root) toggle(map, false);
     });
@@ -24,7 +25,74 @@
   function toggle(map, open) {
     map.open = open === undefined ? !map.open : open;
     map.root.hidden = !map.open;
+    if (!map.open) map.target = null;
+    $('map-actions').hidden = !map.target;
     if (map.open) draw(map);
+  }
+
+  // --- Expéditions : toucher un point de la carte, puis choisir qui y envoyer ---
+
+  function setupExpeditions(map) {
+    const colons = $('exp-colons');
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = 'colons :';
+    colons.appendChild(label);
+    map.colonButtons = Vide.VILLAGE_TYPES.map((t) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = t.name.toLowerCase();
+      btn.addEventListener('click', () => launch(map, 'colons', t.id));
+      colons.appendChild(btn);
+      return btn;
+    });
+    $('exp-scouts').addEventListener('click', () => launch(map, 'scouts'));
+    $('exp-escort').addEventListener('change', () => refreshActions(map));
+    $('exp-close').addEventListener('click', () => {
+      map.target = null;
+      $('map-actions').hidden = true;
+      draw(map);
+    });
+    map.canvas.addEventListener('click', (e) => {
+      if (!map.view || !map.game.state.villages.length) return;
+      const rect = map.canvas.getBoundingClientRect();
+      const { ox, oy, scale } = map.view;
+      map.target = { x: (e.clientX - rect.left - ox) / scale, y: (e.clientY - rect.top - oy) / scale };
+      $('map-actions').hidden = false;
+      refreshActions(map);
+      draw(map);
+    });
+  }
+
+  function refreshActions(map) {
+    if (!map.target) return;
+    const { state } = map.game;
+    const E = Vide.Expeditions;
+    const { x, y } = map.target;
+    const escort = $('exp-escort').checked;
+    const from = Vide.Villages.nearest(state, x, y);
+    $('exp-target').textContent = `vers ce point · ${Math.round(Math.hypot(from.x - x, from.y - y))} du village le plus proche`;
+    const scoutWhy = E.blocked(state, 'scouts', x, y, escort);
+    const scoutFrom = E.origin(state, 'scouts', x, y, escort);
+    $('exp-scouts').textContent = `éclaireurs · ✦ ${Vide.util.formatNumber(E.cost(state, 'scouts', x, y, scoutFrom).light)}`;
+    $('exp-scouts').disabled = Boolean(scoutWhy);
+    const colonWhy = E.blocked(state, 'colons', x, y, escort);
+    for (const btn of map.colonButtons) btn.disabled = Boolean(colonWhy);
+    const colonCost = Vide.util.formatNumber(E.cost(state, 'colons', x, y).light);
+    $('exp-status').textContent = [
+      scoutWhy ? `éclaireurs : ${scoutWhy}` : '',
+      colonWhy ? `colons : ${colonWhy}` : `colons : ✦ ${colonCost}, trois lueurs du village`,
+    ].filter(Boolean).join(' · ');
+  }
+
+  function launch(map, kind, type) {
+    const { x, y } = map.target;
+    const exp = Vide.Expeditions.launch(map.game.state, kind, x, y, { type, escort: $('exp-escort').checked });
+    if (!exp) return refreshActions(map);
+    Vide.Sim.emit(map.game, 'expedition', { kind, type });
+    map.target = null;
+    $('map-actions').hidden = true;
+    draw(map);
   }
 
   function rgba(tint, a) {
@@ -142,6 +210,7 @@
     const oy = h / 2 - ((minY + maxY) / 2) * scale;
     const X = (x) => ox + x * scale;
     const Y = (y) => oy + y * scale;
+    map.view = { ox, oy, scale };
 
     paintRegions(ctx, w, h, X, Y, scale, ox, oy, state);
 
@@ -203,6 +272,35 @@
       ctx.setLineDash([]);
     }
 
+    // Expéditions en route : leur position, et un trait vers leur but (ou leur village, au retour).
+    for (const e of state.expeditions) {
+      const g = Vide.Expeditions.goal(state, e);
+      ctx.strokeStyle = 'rgba(255, 245, 225, 0.4)';
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.moveTo(X(e.x), Y(e.y));
+      ctx.lineTo(X(g.x), Y(g.y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = e.kind === 'colons' ? rgba(Vide.Villages.type(e.type).tint, 0.95) : '#fff';
+      ctx.beginPath();
+      ctx.arc(X(e.x), Y(e.y), 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Le point choisi pour une expédition.
+    if (map.target) {
+      const tx = X(map.target.x), ty = Y(map.target.y);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.moveTo(tx - 6, ty); ctx.lineTo(tx + 6, ty);
+      ctx.moveTo(tx, ty - 6); ctx.lineTo(tx, ty + 6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(tx, ty, Vide.CONFIG.expeditions.reveal * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.stroke();
+    }
+
     // Repères supplémentaires (colosses…), fournis par d'autres modules.
     for (const mark of Vide.MapMarks || []) mark(ctx, X, Y, state);
 
@@ -230,7 +328,7 @@
   }
 
   function update(map) {
-    const visible = map.game.state.zones.visited.length > 1;
+    const visible = map.game.state.zones.visited.length > 1 || map.game.state.villages.length > 0;
     if (map.button.classList.contains('hidden') === visible) map.button.classList.toggle('hidden', !visible);
   }
 
