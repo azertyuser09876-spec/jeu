@@ -202,20 +202,30 @@ s'ouvrent qu'aux ombres.
 3. Prendre une base : abattre son cœur rend son terrain au vide, ou à ton village s'il le touche.
 
 ### [ ] 2.4 — Le monde vit
-1. De nouvelles unités dans les deux camps. Lumière : le porte-bouclier (il attire les coups et en encaisse la
+Demandé en cours de route : les créatures intermédiaires sont tuables et convertibles par les deux camps, selon la
+sous-faction de qui les affronte ; les sous-factions sont choisies au début par le joueur, et un village fondé
+depuis un autre a de grandes chances d'être de la même.
+1. [x] De nouvelles unités dans les deux camps. Lumière : le porte-bouclier (il attire les coups et en encaisse la
    moitié), le lancier (longue allonge ; il brise ouvrages et remparts). Ombres : la fouisseuse (elle passe sous
    les murailles), la cracheuse (elle crache de loin), la bélière (elle enfonce les murailles).
-2. Des créatures intermédiaires, plus grandes et plus travaillées que les êtres, plus petites qu'un colosse, aux
-   corps articulés : côté ombres, des chimères (loups d'ombre en meute, scolopendre) qui naissent des bases mûres
-   et viennent avec la guerre ; côté lumière, le cerf de lumière, gardien d'un village. Des colosses plus grands
-   (×1,4) et bien plus solides (sceaux ×2), réglés avec le duelliste.
-3. La vie du monde : de vrais convois sur les routes (plusieurs chariots, attaquables, la charge perdue s'ils
-   tombent) ; une faune neutre dans le vide (bancs de lucioles qui fuient, raies de lumière qui planent, une
-   baleine du vide dans les régions lointaines), qui ne fait pas de mal.
+2. Les sous-factions : en plus de son type, chaque village a la sienne — les Éleveurs (ils apprivoisent créatures
+   et faune), les Illuminés (ils purifient les créatures d'ombre ; leur blanc avance plus vite), les Lames (elles
+   tuent : plus fortes contre les créatures, plus d'échos). Les bases aussi — les Dévoreurs (ils tuent et s'en
+   nourrissent), les Corrupteurs (ils retournent les créatures de lumière), les Meutes (plus de créatures ; elles
+   apprivoisent la faune). Le joueur choisit celle de son premier village ; un village fondé depuis un autre (un
+   avant-poste depuis sa base) en hérite le plus souvent.
+3. Les créatures intermédiaires, plus grandes et plus travaillées que les êtres, aux corps articulés : loups (en
+   meute), scolopendre, cerf (gardien d'un village, il s'achète). Tuables ou convertibles par les deux camps : à
+   bout de forces, une créature est apprivoisée, purifiée ou corrompue — selon la sous-faction de qui l'abat — au
+   lieu de mourir, et rejoint ce village ou cette base.
+4. Des colosses plus grands (×1,4) et bien plus solides (sceaux ×2), réglés avec le duelliste.
+5. La vie du monde : de vrais convois sur les routes (plusieurs chariots, attaquables, la charge perdue s'ils
+   tombent) ; une faune neutre dans le vide (lucioles qui fuient, raies de lumière qui planent, une baleine du vide
+   dans les régions lointaines), qui ne fait pas de mal — les Éleveurs et les Meutes l'apprivoisent.
 
 ### [ ] 2.5 — Les gouverneurs
 1. Chaque village (et chaque base d'ombre) a un gouverneur et un budget : il bâtit selon le plan, recrute, lance
-   des expéditions, fonde, relie, forme des cités, conquiert.
+   des expéditions, fonde (des villages de sa sous-faction, le plus souvent), relie, forme des cités, conquiert.
 2. Les deux camps ont le même cerveau ; leur ambition grandit avec le temps.
 
 ### [ ] 2.6 — La guerre
