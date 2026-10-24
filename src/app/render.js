@@ -95,6 +95,20 @@
     ctx.stroke();
   }
 
+  function drawPulse(r, game) {
+    const wave = game.pulse.wave;
+    if (wave < 0) return;
+    const { ctx } = r;
+    const { x, y } = game.state.player;
+    const progress = wave / game.stats.pulseRadius;
+    ctx.globalAlpha = 0.5 * (1 - progress);
+    ctx.strokeStyle = '#d6eaff';
+    ctx.lineWidth = (2 + 6 * (1 - progress)) / r.camera.scale;
+    ctx.beginPath();
+    ctx.arc(x, y, wave, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   function drawPlayer(r, game) {
     const { ctx } = r;
     const { x, y } = game.state.player;
@@ -139,6 +153,7 @@
     ctx.globalCompositeOperation = 'lighter';
 
     drawReach(r, game);
+    drawPulse(r, game);
     drawParticles(r, game);
     drawPlayer(r, game);
 

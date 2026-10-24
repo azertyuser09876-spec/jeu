@@ -19,6 +19,7 @@
   function create(canvas) {
     const input = {
       move: { x: 0, y: 0 },
+      pulse: false,
       pointer: { active: false, id: null, x: 0, y: 0 },
       keys: new Set(),
       onAction: null,   // rappel facultatif pour les touches d'action (pulsation, achats…)

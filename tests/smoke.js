@@ -53,7 +53,13 @@ const { chromium } = require('playwright');
   check(levels.reach === 1, 'la touche 1 achète la première amélioration');
   check(levels.speed === 1, 'un clic achète une amélioration');
   const visible = await page.$$eval('#upgrade-list li:not([hidden])', (els) => els.length);
-  check(visible === 4, `les améliorations se dévoilent (${visible} visibles)`);
+  check(visible === 5, `les améliorations se dévoilent (${visible} visibles)`);
+
+  // Pulsation : la touche Espace la déclenche.
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(100);
+  const pulse = await page.evaluate(() => ({ ...Vide.game.pulse }));
+  check(pulse.cooldown > 0, 'Espace déclenche la pulsation');
 
   // Capture facultative : `node tests/smoke.js capture.png`
   const shot = process.argv[2];

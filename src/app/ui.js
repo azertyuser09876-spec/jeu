@@ -52,9 +52,29 @@
       panel: $('upgrades'),
       list: $('upgrade-list'),
       rows: [],
+      pulseBtn: $('pulse-btn'),
+      pulseRing: $('pulse-ring'),
+      pulseShown: -1, // dernière progression affichée, pour éviter des écritures inutiles
     };
     for (const up of Vide.UPGRADES) ui.rows.push(createRow(ui, up));
+    ui.pulseBtn.addEventListener('click', () => {
+      if (ui.hooks.onPulse) ui.hooks.onPulse();
+    });
     return ui;
+  }
+
+  const RING = 2 * Math.PI * 29; // périmètre de l'anneau SVG du bouton de pulsation
+
+  function updatePulse(ui) {
+    const { game } = ui;
+    setClass(ui.pulseBtn, 'hidden', game.state.totalLight < 5);
+    const progress = 1 - game.pulse.cooldown / game.stats.pulseCooldown;
+    const shown = Math.round(progress * 200) / 200;
+    if (shown !== ui.pulseShown) {
+      ui.pulseShown = shown;
+      ui.pulseRing.style.strokeDashoffset = String(RING * (1 - shown));
+    }
+    setClass(ui.pulseBtn, 'ready', Vide.Sim.pulseReady(game));
   }
 
   function buy(ui, id) {
@@ -102,6 +122,7 @@
       setClass(row.btn, 'maxed', maxed);
     }
     setClass(ui.panel, 'hidden', visible === 0);
+    updatePulse(ui);
   }
 
   Vide.UI = { create, update, buy, buyByIndex };

@@ -52,5 +52,18 @@
       effects: { density: (l) => 1 + 0.25 * l },
       show: (s) => util.formatMultiplier(s.density),
     },
+    {
+      id: 'pulse',
+      name: 'Pulsation',
+      desc: 'Ton onde porte plus loin et revient plus vite.',
+      baseCost: 80,
+      growth: 1.75,
+      max: 20,
+      effects: {
+        pulseRadius: (l) => CONFIG.pulse.radius * (1 + 0.15 * l),
+        pulseCooldown: (l) => CONFIG.pulse.cooldown * Math.pow(0.93, l),
+      },
+      show: (s) => `${Math.round(s.pulseRadius)} · ${s.pulseCooldown.toFixed(1).replace('.', ',')} s`,
+    },
   ];
 })(globalThis.Vide);

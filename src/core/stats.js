@@ -9,6 +9,8 @@
       reach: CONFIG.attraction.radius,
       density: 1,   // multiplicateur de la densité du champ
       value: 1,     // multiplicateur de la lumière gagnée par particule
+      pulseRadius: CONFIG.pulse.radius,
+      pulseCooldown: CONFIG.pulse.cooldown,
     };
   }
 

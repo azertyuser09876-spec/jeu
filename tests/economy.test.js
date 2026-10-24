@@ -19,13 +19,18 @@
     assert.deepEqual(Stats.compute(State.create(1)), Stats.base());
   });
 
+  // Caractéristiques pour lesquelles « plus petit » est meilleur.
+  const LOWER_IS_BETTER = new Set(['pulseCooldown']);
+
   test("chaque niveau améliore la caractéristique visée", () => {
     for (const up of UPGRADES) {
-      const state = State.create(1);
       for (const key in up.effects) {
+        const state = State.create(1);
         const before = Stats.compute(state)[key];
         state.upgrades[up.id] = 3;
-        assert.ok(Stats.compute(state)[key] > before, `${up.id} → ${key}`);
+        const after = Stats.compute(state)[key];
+        const better = LOWER_IS_BETTER.has(key) ? after < before : after > before;
+        assert.ok(better, `${up.id} → ${key} : ${before} puis ${after}`);
       }
     }
   });

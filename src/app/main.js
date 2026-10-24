@@ -10,11 +10,17 @@
   const state = Vide.State.create((Math.random() * 2 ** 32) >>> 0);
   const game = Vide.Sim.create(state);
   const input = Vide.Input.create(canvas);
-  const ui = Vide.UI.create(game);
+  const ui = Vide.UI.create(game, {
+    onPulse: () => { input.pulse = true; },
+  });
   Vide.Render.snapCamera(renderer, game);
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
   input.onAction = (code) => {
+    if (code === 'Space') {
+      input.pulse = true;
+      return true;
+    }
     const digit = /^(?:Digit|Numpad)([1-9])$/.exec(code);
     if (digit) return Vide.UI.buyByIndex(ui, Number(digit[1]));
     return false;

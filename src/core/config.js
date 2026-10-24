@@ -36,5 +36,12 @@
       pullAccel: 900,    // …puis accélération tant qu'elle n'a pas rejoint la lumière
       collectRadius: 9,
     },
+
+    // Capacité active : une onde part de la lumière et attrape toutes les particules qu'elle traverse.
+    pulse: {
+      radius: 180,       // portée de base de l'onde
+      cooldown: 12,      // secondes avant de pouvoir recommencer
+      waveSpeed: 700,    // vitesse d'expansion de l'onde
+    },
   };
 })(globalThis.Vide);
