@@ -304,6 +304,7 @@
         case 'colossusAttack': play('colossusAttack'); break;
         case 'web': play('web'); break;
         case 'bolt': play('bolt'); break;
+        case 'shards': play('shadowDown'); break;
         case 'medusaPulse': {
           const d = Math.hypot(e.x - player.x, e.y - player.y);
           if (d < 2000) play('medusa', 1 - d / 2000);

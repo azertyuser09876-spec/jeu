@@ -232,4 +232,76 @@
     assert.ok(mended);
     assert.ok(Structures.hp(game, b) > hurt, 'réparé');
   });
+
+  // --- La Nuée ---
+
+  test('la Nuée se fait entendre une fois le Léviathan apaisé', () => {
+    const state = State.create(1);
+    assert.equal(Colossus.def('nuee').requires(state), false);
+    state.colossi.leviathan = 'tamed';
+    assert.ok(Colossus.def('nuee').requires(state));
+  });
+
+  test('ses éclats protègent son noyau ; l’onde de pulsation les détruit, et le noyau s’offre', () => {
+    const { game, c } = facing('nuee', 900);
+    c.attackCd = 1e9;
+    run(game, 1);
+    const S = Vide.Beasts.SWARM;
+    assert.ok(Vide.Beasts.swarm.cover(c) >= S.guard, 'à l’abri');
+    assert.equal(Colossus.sealHit(game, c, 50), false);
+    assert.ok(game.events.some((e) => e.type === 'shielded'));
+    const n = c.nuclei[c.active];
+    const before = c.shards.length;
+    game.pulse.id = (game.pulse.id || 0) + 1;
+    Colossus.pulseHit(game, n.x, n.y, 300);
+    assert.ok(c.shards.length < before, 'des éclats détruits');
+    assert.ok(c.seals[0].hp < c.seals[0].max, 'le noyau est touché dans la même onde');
+  });
+
+  test('l’armée dévore ses éclats ; ils renaissent des noyaux', () => {
+    const { game, c } = facing('nuee', 900);
+    c.attackCd = 1e9;
+    const before = c.shards.length;
+    Colossus.hit(game, c, Vide.Beasts.SWARM.eat * 40);
+    assert.equal(c.shards.length, before - 40);
+    run(game, 3);
+    assert.ok(c.shards.length > before - 40 + 15, 'ils renaissent');
+  });
+
+  test('au contact de ses éclats, la lumière brûle', () => {
+    const { state, game, c } = facing('nuee', 900);
+    c.attackCd = 1e9;
+    game.vitality.invulnerable = 0;
+    const hp = game.vitality.hp;
+    for (let i = 0; i < 60; i++) {
+      state.player.x = c.x + 100;
+      state.player.y = c.y;
+      Sim.step(game, dt, Sim.emptyInput());
+    }
+    assert.ok(game.vitality.hp < hp - 5);
+  });
+
+  test('le tourbillon referme un anneau d’éclats sur la lumière ; le noyau, lui, se découvre', () => {
+    const { state, game, c } = facing('nuee', 700);
+    c.attackCd = 1e9;
+    Colossus.startAttack(game, c, 'vortex');
+    const at = { x: state.player.x, y: state.player.y };
+    run(game, c.attack.telegraph + Colossus.ATTACKS.vortex.active * 0.9);
+    let near = 0;
+    for (const f of c.shards) if (Math.hypot(f.x - at.x, f.y - at.y) < 150) near++;
+    assert.ok(near > c.shards.length * 0.5, `${near} éclats autour`);
+    assert.equal(Vide.Beasts.swarm.guard(game, c), null, 'noyau découvert');
+  });
+
+  test('apaisée, sa nuée entoure la lumière sans la brûler', () => {
+    const { state, game, c } = facing('nuee', 900);
+    state.colossi.nuee = 'tamed';
+    c.mode = 'resident';
+    c.calm = 1;
+    game.vitality.invulnerable = 0;
+    const hp = game.vitality.hp;
+    run(game, 10);
+    assert.ok(Math.hypot(c.x - state.player.x, c.y - state.player.y) < 200);
+    assert.ok(game.vitality.hp >= hp - 1e-9);
+  });
 })();

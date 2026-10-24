@@ -157,6 +157,36 @@
     Render.drawGlow(ctx, glow, c.x, c.y, R * (open ? 0.9 : 0.5), open ? 0.85 : 0.45);
   }
 
+  // --- La Nuée ---
+
+  // Des centaines d'éclats, chacun un trait bref le long de sa course ; au cœur, quatre noyaux.
+  function drawSwarm(r, c) {
+    const { ctx } = r;
+    const s = c.def.size;
+    const px = 1 / r.camera.scale;
+    const tint = tintOf(c);
+    const glow = glowOf(r, tint);
+    Render.drawGlow(ctx, glow, c.x, c.y, c.body.cloud * s * 1.3, c.mode === 'kneel' ? 0.05 : 0.1);
+    ctx.globalAlpha = 0.75;
+    ctx.strokeStyle = rgb(tint, 1);
+    ctx.lineWidth = 1.8 * px;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const f of c.shards) {
+      const v = Math.hypot(f.vx, f.vy) || 1;
+      const len = Math.max(5, Math.min(26, v * 0.04));
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(f.x - (f.vx / v) * len, f.y - (f.vy / v) * len);
+    }
+    ctx.stroke();
+    for (let i = 0; i < c.shards.length; i += 5) Render.drawGlow(ctx, glow, c.shards[i].x, c.shards[i].y, 9 * s, 0.4);
+    c.nuclei.forEach((n, k) => {
+      const broken = c.seals[k] && c.seals[k].broken;
+      Render.drawGlow(ctx, glow, n.x, n.y, (broken ? 14 : 34) * s, broken ? 0.25 : 0.85);
+      Render.drawGlow(ctx, r.glows.white, n.x, n.y, (broken ? 4 : 9) * s, broken ? 0.3 : 0.9);
+    });
+  }
+
   // --- Attaques ---
 
   function band(ctx, from, dir, length, width, alpha, color) {
@@ -197,7 +227,7 @@
     }
   }
 
-  Vide.Draw.beasts = { bird: drawBird, medusa: drawMedusa };
+  Vide.Draw.beasts = { bird: drawBird, medusa: drawMedusa, swarm: drawSwarm };
 
   Vide.Draw.beastAttacks = {
     // Piqué : le couloir qu'il va raser.
@@ -226,6 +256,29 @@
       }
     },
     feathers: (r, c, atk, k) => circles(r, atk, k),
+    // Assaut : un cercle d'alerte autour de la lumière, le temps que la nuée se ramasse.
+    rush(r, c, atk, k) {
+      if (atk.phase !== 'telegraph') return;
+      const { ctx } = r;
+      ctx.globalAlpha = 0.15 + 0.4 * k;
+      ctx.strokeStyle = '#b89cff';
+      ctx.lineWidth = 2 / r.camera.scale;
+      ctx.beginPath();
+      ctx.arc(atk.at.x, atk.at.y, 140 * (1.6 - 0.6 * k), 0, Math.PI * 2);
+      ctx.stroke();
+    },
+    // Tourbillon : l'anneau qui va se resserrer.
+    vortex(r, c, atk, k) {
+      const { ctx } = r;
+      const V = Colossus.ATTACKS.vortex;
+      const ring = atk.phase === 'telegraph' ? V.from : V.from + (V.to - V.from) * Math.min(1, atk.t / V.active);
+      ctx.globalAlpha = atk.phase === 'telegraph' ? 0.1 + 0.3 * k : 0.25;
+      ctx.strokeStyle = '#6b3fd1';
+      ctx.lineWidth = 30;
+      ctx.beginPath();
+      ctx.arc(atk.at.x, atk.at.y, ring, 0, Math.PI * 2);
+      ctx.stroke();
+    },
     // Fouet : trois lignes qui s'épaississent, puis claquent.
     lash(r, c, atk, k) {
       const w = Colossus.ATTACKS.lash.width * 2;

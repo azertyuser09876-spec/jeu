@@ -165,7 +165,7 @@
     setClass(ui.pulseBtn, 'ready', Vide.Sim.pulseReady(game));
   }
 
-  const GUARDS = { aloft: 'en vol', closed: 'refermée', shielded: 'à l’abri de sa nuée' };
+  const GUARDS = { aloft: 'en vol', closed: 'refermée', shielded: 'protégée' };
 
   // Combat contre un colosse : son nom, ses sceaux (● actif, ○ à venir, · brisé, ◌ voilé), la jauge qui le fait plier.
   function updateBoss(ui) {

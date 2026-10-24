@@ -651,6 +651,7 @@
   function hit(game, c, amount, melee) {
     if (!hostile(c) || c.mode === 'sleep' || (melee && beast(c).aloft && beast(c).aloft(c))) return;
     provoke(game, c);
+    if (beast(c).struck) beast(c).struck(game, c, amount);
     c.hitFlash = Math.min(1, c.hitFlash + 0.3);
     if (c.mode === 'kneel') return;
     c.stagger += amount;
@@ -710,6 +711,8 @@
   // L'onde de pulsation touche le sceau actif s'il est dans son rayon (une fois par onde).
   function pulseHit(game, x, y, radius) {
     for (const c of game.colossi) {
+      // (L'onde agit sur le corps de certains colosses à chaque pas : elle disperse la Nuée.)
+      if (hostile(c) && beast(c).wave) beast(c).wave(game, c, x, y, radius);
       if (!hostile(c) || c.lastWave === game.pulse.id) continue;
       const p = sealPos(c);
       if (p && Math.hypot(p.x - x, p.y - y) <= radius) {

@@ -4,6 +4,9 @@
 //            rarement ; une chaîne le tire au sol, et sa jauge pleine (traits, harpons, balistes) l'y cloue.
 //   medusa   La Méduse : une cloche qui pulse. Elle avance par à-coups, à chaque contraction ; ses sceaux ne
 //            s'ouvrent qu'au sommet de chaque pulsation (et quand elle plie).
+//   swarm    La Nuée : des centaines de fragments autour de quatre noyaux (ses sceaux). Tant que les fragments
+//            entourent le noyau actif, il est à l'abri ; l'onde de pulsation les détruit, l'armée les dévore,
+//            et ils renaissent des noyaux. Les toucher brûle la lumière.
 (function (Vide) {
   'use strict';
   const { util, Colony } = Vide;
@@ -32,6 +35,17 @@
       tentacles: 7,     // nombre de tentacules…
       links: 10,        // …de maillons chacun…
       spacing: 26,      // …espacés de tant
+    },
+    swarm: {
+      kind: 'swarm',
+      turn: 1,
+      points: {},
+      eyes: [],
+      radius: 200,
+      extent: 300,
+      nuclei: 4,
+      orbit: 90,        // rayon où tournent les noyaux (taille de référence)
+      cloud: 260,       // rayon du nuage de fragments
     },
   });
 
@@ -201,6 +215,154 @@
     },
   };
 
+  // --- La Nuée ---
+
+  const SWARM = {
+    shards: 320,      // fragments au plus
+    regen: 10,        // fragments renaissant par seconde (plus à chaque phase)
+    shield: 120,      // un noyau est à l'abri s'il a autour de lui (dans ce rayon)…
+    guard: 18,        // …au moins tant de fragments
+    sting: 6,         // vitalité perdue par seconde et par fragment au contact de la lumière…
+    stingMax: 10,     // …comptés jusqu'à dix (sinon, un assaut serait fatal d'un coup)
+    contact: 40,
+    eat: 6,           // dégâts d'armée pour détruire un fragment
+  };
+
+  function shardAt(c, k) {
+    const s = c.def.size;
+    const a = c.rng() * Math.PI * 2;
+    const r = c.body.cloud * s * Math.sqrt(c.rng());
+    return {
+      x: c.x + Math.cos(a) * r, y: c.y + Math.sin(a) * r, vx: 0, vy: 0,
+      a, r, spin: (0.25 + 0.5 * c.rng()) * (k % 2 ? 1 : -1),
+    };
+  }
+
+  // Détruit les fragments pour lesquels `test` est vrai ; au plus `max`. Renvoie le nombre détruit.
+  function shatter(c, test, max) {
+    let n = 0;
+    for (let i = c.shards.length - 1; i >= 0 && n < (max === undefined ? Infinity : max); i--) {
+      if (!test(c.shards[i])) continue;
+      c.shards.splice(i, 1);
+      n++;
+    }
+    return n;
+  }
+
+  Object.assign(C.ATTACKS, {
+    // Assaut : tous ses fragments fondent sur l'endroit marqué (là où était la lumière), puis reviennent.
+    rush: {
+      name: 'Assaut', telegraph: 1.1, active: 2.4,
+      start: (game) => ({ kind: 'rush', t: 0, phase: 'telegraph', at: { x: game.state.player.x, y: game.state.player.y } }),
+    },
+    // Tourbillon : les fragments forment un anneau autour de la lumière, qui se resserre. Sors-en à temps.
+    vortex: {
+      name: 'Tourbillon', telegraph: 0.6, active: 2.4, from: 320, to: 40,
+      start: (game) => ({ kind: 'vortex', t: 0, phase: 'telegraph', at: { x: game.state.player.x, y: game.state.player.y } }),
+    },
+  });
+
+  const swarm = {
+    init(game, c) {
+      c.shards = [];
+      for (let k = 0; k < SWARM.shards; k++) c.shards.push(shardAt(c, k));
+      c.nuclei = [];
+      for (let k = 0; k < c.body.nuclei; k++) c.nuclei.push({ x: c.x, y: c.y });
+      c.regen = 0;
+    },
+
+    // Fragments autour du noyau actif.
+    cover(c) {
+      const n = c.nuclei[c.active];
+      if (!n) return 0;
+      const r2 = (SWARM.shield * c.def.size / 1.3) ** 2;
+      let count = 0;
+      for (const s of c.shards) if ((s.x - n.x) ** 2 + (s.y - n.y) ** 2 <= r2) count++;
+      return count;
+    },
+    guard: (game, c) => (c.mode !== 'kneel' && swarm.cover(c) >= SWARM.guard ? 'shielded' : null),
+
+    // L'onde de pulsation détruit les fragments qu'elle atteint.
+    wave(game, c, x, y, radius) {
+      const r2 = radius * radius;
+      const n = shatter(c, (s) => (s.x - x) ** 2 + (s.y - y) ** 2 <= r2);
+      if (n) Vide.Sim.emit(game, 'shards', { id: c.id, count: n });
+    },
+
+    // L'armée dévore les fragments (ceux du centre d'abord) en même temps qu'elle remplit sa jauge.
+    struck(game, c, amount) {
+      c.eaten = (c.eaten || 0) + amount / SWARM.eat;
+      const n = Math.floor(c.eaten);
+      if (n < 1) return;
+      c.eaten -= n;
+      const r = (c.body.cloud * c.def.size) * 0.5;
+      shatter(c, (s) => Math.hypot(s.x - c.x, s.y - c.y) <= r, n) || shatter(c, () => true, n);
+    },
+
+    update(game, c, dt) {
+      const s = c.def.size;
+      const B = c.body;
+      // Les noyaux tournent lentement autour du centre.
+      c.nuclei.forEach((n, k) => {
+        const a = c.time * 0.35 + (k / B.nuclei) * Math.PI * 2;
+        const r = B.orbit * s * (k === 0 ? 0.4 : 1);
+        n.x = c.x + Math.cos(a) * r;
+        n.y = c.y + Math.sin(a) * r;
+      });
+      // Les fragments renaissent des noyaux.
+      if (c.mode !== 'calm') {
+        c.regen += SWARM.regen * (1 + 0.3 * C.phase(c)) * dt;
+        while (c.regen >= 1 && c.shards.length < SWARM.shards) {
+          c.regen -= 1;
+          const shard = shardAt(c, c.shards.length);
+          const n = c.nuclei[Math.floor(c.rng() * c.nuclei.length)];
+          shard.x = n.x;
+          shard.y = n.y;
+          c.shards.push(shard);
+        }
+        if (c.shards.length >= SWARM.shards) c.regen = 0;
+      }
+      // Chaque fragment vise sa place dans le nuage — ou la lumière, pendant un assaut ou un tourbillon. À genou,
+      // la nuée se disperse au loin.
+      const { player } = game.state;
+      const atk = c.attack && c.attack.phase === 'active' ? c.attack : null;
+      const scatter = c.mode === 'kneel' ? 2.2 : 1;
+      const k = util.damp(c.mode === 'kneel' ? 1 : 3, dt);
+      for (const f of c.shards) {
+        f.a += f.spin * dt;
+        let tx, ty;
+        if (atk && atk.kind === 'rush') {
+          tx = atk.at.x + Math.cos(f.a) * f.r * 0.3;
+          ty = atk.at.y + Math.sin(f.a) * f.r * 0.3;
+        } else if (atk && atk.kind === 'vortex') {
+          const V = C.ATTACKS.vortex;
+          const ring = V.from + (V.to - V.from) * Math.min(1, atk.t / V.active);
+          tx = atk.at.x + Math.cos(f.a * 3) * ring;
+          ty = atk.at.y + Math.sin(f.a * 3) * ring;
+        } else {
+          tx = c.x + Math.cos(f.a) * f.r * scatter;
+          ty = c.y + Math.sin(f.a) * f.r * scatter;
+        }
+        f.vx += ((tx - f.x) * 3 - f.vx) * k;
+        f.vy += ((ty - f.y) * 3 - f.vy) * k;
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+      }
+      // Leur contact brûle la lumière (sauf apaisée).
+      if (c.mode === 'calm' || c.mode === 'home' || c.mode === 'resident') return;
+      const r2 = SWARM.contact * SWARM.contact;
+      let touching = 0;
+      for (const f of c.shards) if ((f.x - player.x) ** 2 + (f.y - player.y) ** 2 <= r2) touching++;
+      const v = game.vitality;
+      if (touching && v.invulnerable <= 0) {
+        v.hp -= Math.min(touching, SWARM.stingMax) * SWARM.sting * dt;
+        v.lastHurt = game.time;
+        v.hurt = Math.max(v.hurt || 0, 0.4);
+        if (v.hp <= 0) Vide.Combat.disperse(game);
+      }
+    },
+  };
+
   // --- La Méduse ---
 
   const MEDUSA = {
@@ -275,5 +437,5 @@
     },
   };
 
-  Vide.Beasts = Object.assign(Vide.Beasts || {}, { bird, medusa });
+  Vide.Beasts = Object.assign(Vide.Beasts || {}, { bird, medusa, swarm, SWARM });
 })(globalThis.Vide);

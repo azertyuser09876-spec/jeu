@@ -5,6 +5,7 @@
 //   Léviathan  porte : il rejoint une expédition en route et l'emporte, trois fois plus vite, hors d'atteinte des
 //              ombres.
 //   Oiseau     accompagne : il tourne au-dessus de ta lumière et révèle les régions autour de lui.
+//   Nuée       rabat : son nuage entoure ta lumière, ses éclats rabattent la lumière vers toi.
 //   Méduse     soigne : elle flotte jusqu'au village le plus abîmé ; chaque pulsation y répare les bâtiments et
 //              soigne les êtres alentour.
 // Rien n'est sauvegardé : le rôle se recalcule à chaque pas (les recherches, deux fois par seconde).
@@ -228,7 +229,15 @@
     return { x: v.x, y: v.y, speed: 120 };
   }
 
-  const ROLES = { veilleur: guard, tisseuse: weave, leviathan: carry, oiseau: escort, meduse: mend };
+  // --- Nuée ---
+
+  function gather(game, c) {
+    const { player } = game.state;
+    const far = Math.hypot(player.x - c.x, player.y - c.y) > 2000;
+    return { x: player.x, y: player.y, speed: far ? 1400 : 400 };
+  }
+
+  const ROLES = { veilleur: guard, tisseuse: weave, leviathan: carry, oiseau: escort, meduse: mend, nuee: gather };
 
   // Où va un colosse apaisé, et à quelle vitesse : { x, y, speed }, ou null (il fait sa ronde).
   function spot(game, c, dt) {

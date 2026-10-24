@@ -175,6 +175,8 @@
     aloft: (e) => (seen.aloft ? null : (seen.aloft = true,
       'Il vole trop haut : ta pulsation ne l’atteint pas. Cloue-le au sol (chaînes, balistes, harpons, étincelles), '
       + 'ou guette ses posés.')),
+    shielded: () => (seen.shielded ? null : (seen.shielded = true,
+      'Ses éclats protègent son noyau : disperse-les d’une onde, ou laisse ton armée les dévorer, puis frappe.')),
     closed: (e) => (seen.closed ? null : (seen.closed = true,
       'Sa cloche est refermée : ses sceaux ne s’ouvrent qu’au sommet de chaque pulsation. Frappe au bon moment.')),
     landed: () => 'L’Oiseau d’aube se pose… vite, ses sceaux sont à portée !',
