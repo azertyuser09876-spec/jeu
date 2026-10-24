@@ -112,7 +112,8 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(200);
   await page.click('.tab:has-text("bâtiments")');
   await page.click('#shop-list li:not([hidden]) .item:has-text("Nid")');
-  await page.waitForTimeout(1500);
+  // Le bâtisseur doit d'abord rejoindre le chantier.
+  await page.waitForTimeout(3000);
   const site = await page.evaluate(() => Vide.game.state.buildings[0]);
   check(site && site.type === 'nid' && site.work > 0, 'un nid planifié est mis en chantier par le bâtisseur');
 
