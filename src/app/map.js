@@ -285,15 +285,18 @@
       }
       ctx.fill('evenodd');
       ctx.stroke();
-      // Le blanc du cœur.
-      ctx.fillStyle = 'rgba(240, 245, 255, 0.35)';
-      ctx.beginPath();
-      for (const loop of Territory.outline(v, 60)) {
-        ctx.moveTo(X(loop[0][0]), Y(loop[0][1]));
-        for (const [x, y] of loop) ctx.lineTo(X(x), Y(y));
-        ctx.closePath();
-      }
-      ctx.fill('evenodd');
+      // Le blanc, nuance après nuance (elles s'empilent jusqu'au blanc pur).
+      Territory.NUANCES.forEach((wv, n) => {
+        if (n === 0) return;
+        ctx.fillStyle = `rgba(240, 245, 255, ${n === 4 ? 0.4 : 0.1})`;
+        ctx.beginPath();
+        for (const loop of Territory.outline(v, wv)) {
+          ctx.moveTo(X(loop[0][0]), Y(loop[0][1]));
+          for (const [x, y] of loop) ctx.lineTo(X(x), Y(y));
+          ctx.closePath();
+        }
+        ctx.fill('evenodd');
+      });
       ctx.fillStyle = 'rgba(255, 220, 170, 0.8)';
       for (const b of v.buildings) ctx.fillRect(X(b.x) - 1, Y(b.y) - 1, 2, 2);
       ctx.fillStyle = '#fff';

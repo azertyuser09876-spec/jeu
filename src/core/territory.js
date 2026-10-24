@@ -4,7 +4,8 @@
 // Sa forme est une grille de cellules (village.cells = [i, j, blanc, i, j, blanc, …], blanc de 0 à 100) :
 // à mesure que la surface grandit, une cellule s'ajoute au bord, là où le village attire sa lumière
 // (près du cœur, vers ses bâtiments, avec un peu d'irrégularité). Les cellules pleines blanchissent
-// lentement depuis le cœur.
+// lentement depuis le cœur, en cinq nuances (voir NUANCES) jusqu'au blanc pur ; chaque nuance est plus lente à
+// gagner que la précédente, et une cellule plus blanche tient mieux (voir HOLD : elle est plus dure à perdre).
 (function (Vide) {
   'use strict';
   const { CONFIG, util } = Vide;
@@ -35,7 +36,10 @@
     if (!idx || idx.cells !== v.cells || idx.length !== v.cells.length) {
       const map = new Map();
       for (let k = 0; k < v.cells.length; k += 3) map.set(key(v.cells[k], v.cells[k + 1]), k);
-      idx = { map, cells: v.cells, length: v.cells.length, frontier: null, buildings: -1, clock: idx ? idx.clock : 0 };
+      idx = {
+        map, cells: v.cells, length: v.cells.length, frontier: null, buildings: -1,
+        clock: idx ? idx.clock : 0, carry: idx ? idx.carry : null,
+      };
       indexes.set(v, idx);
     }
     return idx;
@@ -185,32 +189,74 @@
 
   // --- Blanc ---
 
+  // Les cinq nuances du blanc : seuil (en %) de chacune ; la cinquième est le blanc pur.
+  const NUANCES = [1, 25, 50, 75, 100];
+  // Lenteur de chaque nuance : une cellule de la nuance n avance SLOW[n] fois moins vite.
+  const SLOW = [1, 1, 2, 5, 12];
+  // Tenue d'une cellule selon sa nuance (0 : pas encore blanche) : l'effort qu'il faut pour la prendre.
+  const HOLD = [1, 1.5, 2.5, 4, 7, 12];
+  // Une cellule commence à blanchir quand une voisine a atteint ce blanc (%).
+  const SPREAD = 25;
+  // Le blanc le plus avancé qu'une cellule peut atteindre selon sa distance au cœur (en part de la portée du
+  // blanc) : le blanc pur au centre, puis des anneaux de moins en moins blancs jusqu'au bord.
+  const RINGS = [[0.35, 100], [0.55, 99], [0.75, 74], [0.9, 49], [Infinity, 24]];
+
+  function ceilingAt(f) {
+    for (const [limit, w] of RINGS) if (f < limit) return w;
+    return 24;
+  }
+
+  // Nuance d'un blanc (0 à 100) : 0 (pas blanche) à 5 (blanc pur).
+  function nuance(w) {
+    let n = 0;
+    while (n < NUANCES.length && w >= NUANCES[n]) n++;
+    return n;
+  }
+
+  // Tenue de la cellule (i, j) d'un village (1 hors du blanc, jusqu'à HOLD[5] dans le blanc pur).
+  function hold(v, i, j) {
+    const w = whiteOf(v, i, j);
+    return w < 0 ? 0 : HOLD[nuance(Math.round(w * 100))];
+  }
+
   function interior(v, i, j) {
     for (const [di, dj] of NEIGHBORS) if (!has(v, i + di, j + dj)) return false;
     return true;
   }
 
   function touchesWhite(v, i, j) {
-    for (const [di, dj] of NEIGHBORS) if (whiteOf(v, i + di, j + dj) >= 1) return true;
+    for (const [di, dj] of NEIGHBORS) if (whiteOf(v, i + di, j + dj) >= SPREAD / 100) return true;
     return false;
   }
 
-  // Un pas de blanchiment de `step` % : les cellules qui blanchissent déjà continuent ; une cellule intérieure,
-  // assez proche du cœur et voisine d'une cellule toute blanche (ou le cœur lui-même), commence.
-  function whitenStep(v, step) {
+  // Un pas de blanchiment de `step` % : les cellules qui blanchissent déjà continuent (chacune au rythme de sa
+  // nuance) ; une cellule intérieure, assez proche du cœur et voisine d'une cellule déjà blanche (ou le cœur
+  // lui-même), commence.
+  function whitenStep(v, step, idx) {
     const reach = radius(v) * CONFIG.territory.whiteReach;
     const hi = cellOf(v.x), hj = cellOf(v.y);
     const cells = v.cells;
+    // Ce que gagne, à ce pas, une cellule de chaque nuance (le reste fractionnaire est reporté).
+    const carry = idx.carry || (idx.carry = [0, 0, 0, 0, 0]);
+    const gain = carry.map((c, n) => {
+      const total = c + step / SLOW[n];
+      const whole = Math.floor(total);
+      carry[n] = total - whole;
+      return whole;
+    });
     const growing = [];
+    const ceilings = [];
     for (let k = 0; k < cells.length; k += 3) {
       const w = cells[k + 2];
-      if (w >= 100) continue;
+      if (w >= 100 || !gain[nuance(w)]) continue;
+      const i = cells[k], j = cells[k + 1];
+      const heart = i === hi && j === hj;
+      const d = heart ? 0 : Math.hypot(center(i) - v.x, center(j) - v.y);
+      const ceiling = heart ? 100 : ceilingAt(d / Math.max(reach, CELL));
+      if (w >= ceiling) continue;
       if (w === 0) {
-        const i = cells[k], j = cells[k + 1];
-        const heart = i === hi && j === hj;
         if (!heart) {
           // Tests du moins coûteux au plus coûteux : distance, voisines, puis la limite du blanc, qui ondule.
-          const d = Math.hypot(center(i) - v.x, center(j) - v.y);
           if (d > reach * 1.2 || !touchesWhite(v, i, j) || !interior(v, i, j)) continue;
           if (d > reach * (0.8 + 0.4 * smoothNoise(i, j, seedOf(v, 2)))) continue;
         } else if (!interior(v, i, j)) {
@@ -218,8 +264,11 @@
         }
       }
       growing.push(k);
+      ceilings.push(ceiling);
     }
-    for (const k of growing) cells[k + 2] = Math.min(100, cells[k + 2] + step);
+    growing.forEach((k, n) => {
+      cells[k + 2] = Math.min(ceilings[n], cells[k + 2] + gain[nuance(cells[k + 2])]);
+    });
   }
 
   // Fait avancer le blanc d'un village de `seconds` secondes (par pas de 1 %, ou de 10 % pour une longue absence).
@@ -229,7 +278,7 @@
     while (idx.clock >= 1) {
       const step = Math.min(10, Math.floor(idx.clock));
       idx.clock -= step;
-      whitenStep(v, step);
+      whitenStep(v, step, idx);
     }
   }
 
@@ -319,7 +368,7 @@
   }
 
   Vide.Territory = {
-    CELL, cellOf, radius, targetCells, has, whiteOf, contains, isInside, whiteAt, distanceToEdge,
-    grow, whiten, whiteness, randomPoint, outline, advance, production,
+    CELL, NUANCES, HOLD, cellOf, radius, targetCells, has, whiteOf, contains, isInside, whiteAt, distanceToEdge,
+    nuance, hold, grow, whiten, whiteness, randomPoint, outline, advance, production,
   };
 })(globalThis.Vide);

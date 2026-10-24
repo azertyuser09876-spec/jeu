@@ -60,8 +60,9 @@
       pullRange: 160,
       // Blanc : les cellules pleines blanchissent lentement depuis le cœur, et le blanc se répand plus lentement
       // encore, sans dépasser une part du rayon.
-      whiteTime: 300,        // secondes pour qu'une cellule blanchisse entièrement
-      whiteReach: 0.6,       // le blanc reste dans cette fraction du rayon
+      whiteTime: 600,        // secondes pour 100 pas de blanc (les nuances les plus blanches sont plus lentes :
+                             // le cœur atteint le blanc pur en un peu moins d'une heure)
+      whiteReach: 0.75,      // le blanc reste dans cette fraction du rayon
       whiteBurn: 3,          // dans le blanc, les ombres brûlent d'autant plus
       whiteRare: 2,          // … et la lumière dorée naît d'autant plus souvent
     },

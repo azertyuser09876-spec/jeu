@@ -199,16 +199,25 @@
     assert.ok(Territory.contains(v, 430, 0), 'le phare finit dans le territoire');
   });
 
-  test('le cœur blanchit d’abord, puis le blanc se répand lentement, sans jamais toucher le bord', () => {
+  test('le cœur blanchit d’abord, nuance après nuance, chacune plus lente ; puis le blanc se répand', () => {
     const state = State.create(1);
     const v = village(state, { radius: 500 });
     const stats = Villages.local(state, v);
     const white = (x, y) => Territory.whiteOf(v, Territory.cellOf(x), Territory.cellOf(y));
-    Territory.whiten(v, stats, CONFIG.territory.whiteTime / 2);
-    assert.near(white(0, 0), 0.5, 0.011);
-    assert.equal(white(40, 0), 0, 'les voisines attendent que le cœur soit tout blanc');
-    Territory.whiten(v, stats, CONFIG.territory.whiteTime / 2);
+    Territory.whiten(v, stats, CONFIG.territory.whiteTime / 4);
+    assert.near(white(0, 0), 0.25, 0.011);
+    assert.equal(white(40, 0), 0, 'les voisines attendent que le cœur ait pris une nuance');
+    // La deuxième nuance (25 → 50 %) prend deux fois plus de temps que la première.
+    Territory.whiten(v, stats, CONFIG.territory.whiteTime / 4);
+    assert.near(white(0, 0), 0.375, 0.011);
+    assert.ok(white(40, 0) > 0, 'le blanc s’est mis à gagner les voisines');
+    // Le blanc pur au cœur : un peu moins d'une heure.
+    Territory.whiten(v, stats, CONFIG.territory.whiteTime * 4.6);
     assert.equal(white(0, 0), 1);
+    assert.equal(Territory.nuance(100), 5);
+    // Plus on s'éloigne du cœur, moins c'est blanc.
+    const ring = (d) => white(d, 0) + white(-d, 0) + white(0, d) + white(0, -d);
+    assert.ok(ring(40) > ring(160) && ring(160) > ring(320), `${ring(40)} > ${ring(160)} > ${ring(320)}`);
     Territory.whiten(v, stats, CONFIG.territory.whiteTime * 30);
     const R = Territory.radius(v);
     for (const c of cellsOf(v)) {
@@ -216,6 +225,16 @@
       if (c.w > 0) assert.ok(d <= R * CONFIG.territory.whiteReach * 1.2 + 1, `blanc trop loin : ${d}`);
     }
     assert.ok(Territory.whiteness(v) > 0.15 && Territory.whiteness(v) < CONFIG.territory.whiteReach ** 2 + 0.05);
+  });
+
+  test('cinq nuances de blanc ; plus une cellule est blanche, plus elle tient', () => {
+    assert.deepEqual([0, 1, 24, 25, 50, 74, 75, 99, 100].map(Territory.nuance), [0, 1, 1, 2, 3, 3, 4, 4, 5]);
+    const v = { id: 1, x: 0, y: 0, area: 0, cells: [0, 0, 100, 1, 0, 30, 2, 0, 0], buildings: [] };
+    assert.equal(Territory.hold(v, 0, 0), Territory.HOLD[5]);
+    assert.equal(Territory.hold(v, 1, 0), Territory.HOLD[2]);
+    assert.equal(Territory.hold(v, 2, 0), 1);
+    assert.equal(Territory.hold(v, 9, 9), 0, 'hors du territoire');
+    for (let n = 1; n < Territory.HOLD.length; n++) assert.ok(Territory.HOLD[n] > Territory.HOLD[n - 1]);
   });
 
   test('pendant l’absence, le blanc avance comme en jeu', () => {
@@ -242,7 +261,7 @@
       Vide.Shadows.update(game, 0.1);
       return hp - s.hp;
     };
-    assert.near(burn(CONFIG.territory.whiteTime * 2), CONFIG.territory.whiteBurn * burn(0), 1e-9);
+    assert.near(burn(CONFIG.territory.whiteTime * 6), CONFIG.territory.whiteBurn * burn(0), 1e-9);
   });
 
   test('le contour des cellules forme des boucles fermées', () => {

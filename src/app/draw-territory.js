@@ -37,6 +37,9 @@
     return path;
   }
 
+  // Éclat de chaque nuance du blanc (elles s'additionnent : le blanc pur cumule les cinq).
+  const NUANCE_ALPHA = [0.035, 0.05, 0.07, 0.1, 0.22];
+
   // Formes d'un village (contour, blanc), recalculées quand ses cellules changent (au plus 4 fois par seconde).
   const shapes = new WeakMap();
 
@@ -54,8 +57,8 @@
       at: r.time,
       extent,
       area: toPath(loops),
-      white: toPath(Territory.outline(v, 40)),
-      core: toPath(Territory.outline(v, 90)),
+      // Les cinq nuances du blanc, de la plus pâle au blanc pur.
+      nuances: Territory.NUANCES.map((w) => toPath(Territory.outline(v, w))),
     };
     shapes.set(v, shape);
     return shape;
@@ -75,13 +78,18 @@
     ctx.fillStyle = grad;
     ctx.fill(shape.area, 'evenodd');
 
-    // Le blanc : là où le territoire a mûri, la lumière perd sa teinte et devient pâle, presque pure.
-    ctx.fillStyle = 'rgba(235, 242, 255, 0.045)';
-    ctx.fill(shape.white, 'evenodd');
-    ctx.fill(shape.core, 'evenodd');
-    ctx.strokeStyle = 'rgba(240, 245, 255, 0.05)';
-    ctx.lineWidth = 8 / r.camera.scale;
-    ctx.stroke(shape.white);
+    // Le blanc : là où le territoire a mûri, la lumière perd sa teinte, nuance après nuance (elles s'empilent),
+    // jusqu'au blanc pur au cœur, cerné d'un liseré net.
+    NUANCE_ALPHA.forEach((a, n) => {
+      ctx.fillStyle = `rgba(240, 245, 255, ${a})`;
+      ctx.fill(shape.nuances[n], 'evenodd');
+    });
+    ctx.strokeStyle = 'rgba(245, 248, 255, 0.06)';
+    ctx.lineWidth = 6 / r.camera.scale;
+    ctx.stroke(shape.nuances[1]);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 1.4 / r.camera.scale;
+    ctx.stroke(shape.nuances[4]);
 
     ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.05)`;
     ctx.lineWidth = 12 / r.camera.scale;
