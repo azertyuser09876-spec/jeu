@@ -1,5 +1,25 @@
 # Historique des versions
 
+## 2.0.0 — Équilibrage et finitions
+
+La boucle est bouclée : du vide plein d'autrefois à la lueur seule, des premiers villages aux sept colosses
+apaisés, jusqu'à l'épilogue.
+
+- **Le duelliste** (`node tests/duel.js`) : un robot affronte chaque colosse avec ce qu'on possède à son éveil,
+  sans engins. Les sept sont apaisables, en une minute et demie à quatre minutes de combat pour un joueur adroit.
+  Réglages qui en découlent : la Méduse et la Nuée pliaient sans cesse sous une armée devenue grande (leur jauge
+  est bien plus solide), la Tisseuse un peu plus solide, sceaux de la Méduse et de la Nuée renforcés, la Nuée
+  perd moins d'éclats sous les coups, le Dormeur a des rêves plus tenaces et des cauchemars plus nombreux.
+- **La partie longue** : deux heures de robot, avec et sans renaissances ; la progression reste saine.
+  - Un colosse ne marche plus sur des villages sans défense (une vie qui recommence) : il lui faut face à lui au
+    moins quatre soldats ; et une vie neuve repart avec l'horloge des marches.
+- **Corrections** : la carte cadre le repaire d'un colosse entendu même hors des régions explorées (on peut y
+  envoyer des érudits) ; la barre du colosse s'affiche près du Dormeur endormi.
+- **Accessibilité** : le réglage « secousses, éclairs » adoucit aussi l'éclair plein écran de l'ouverture.
+- **Performances** : 426 êtres, tous les colosses et la Nuée à l'écran à 60 images par seconde.
+- README : présentation, captures, aide à jour.
+- 339 tests de logique, 41 vérifications navigateur.
+
 ## 1.9.0 — Cinématiques
 
 Des tableaux peints en code, sans un mot, qui racontent l'histoire du vide.

@@ -152,7 +152,7 @@ Tableaux peints en code qui racontent sans texte : ouverture, première rencontr
 4. Renaissance et épilogue : la lumière se dissout et renaît sous le ciel des colosses ; quand le Dormeur
    s'éveille, les sept constellations se rejoignent.
 
-### [ ] 2.0 — Équilibrage et finitions
+### [x] 2.0 — Équilibrage et finitions
 1. Le duelliste : un robot qui affronte chaque colosse avec ce qu'on possède quand il s'éveille. Il vérifie
    qu'aucun n'est impossible, mesure la durée du combat et les coups encaissés ; réglages en conséquence.
 2. La partie longue : robot de deux heures avec renaissances ; corriger ce qui cale ou s'emballe.
@@ -160,10 +160,9 @@ Tableaux peints en code qui racontent sans texte : ouverture, première rencontr
    avec tous les colosses et des centaines d'êtres, mobile.
 4. Release 2.0 : présentation du jeu (README), captures, journal.
 
-## Après 1.0 — pistes
+## Après 2.0 — pistes
 
-- D'autres colosses (le corps et les attaques sont des données : un oiseau aux ailes immenses, une méduse…).
 - Des zones plus rares (une zone inversée où la lumière blesse, un sanctuaire sans ombre…).
 - Une deuxième génération d'êtres (spécialisations, êtres qui en éveillent d'autres).
 - Des défis de renaissance (renaître avec des contraintes pour des souvenirs supplémentaires).
-- Exporter / importer sa sauvegarde (changer d'appareil).
+- Un village qui voyage (sur le dos d'un colosse en marche).

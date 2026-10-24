@@ -7,6 +7,11 @@ tu ne regardes pas des chiffres monter, tu te déplaces, tu attires la lumière,
 s'étend, même sans toi ; des êtres de lumière vivent, bâtissent et se défendent seuls ; et, aux confins,
 des colosses immenses attendent d'être mérités.
 
+Le vide était plein, autrefois : une lumière immense, entourée de colosses. Elle s'est brisée. Tu es ce qu'il
+en reste — une lueur. L'histoire se raconte sans un mot, en tableaux, et par fragments, dans ton journal.
+
+![L'ouverture : le vide plein, autour d'une lumière immense](docs/ouverture.jpg)
+
 ## Jouer
 
 Ouvre `index.html` dans un navigateur. C'est tout.
@@ -20,7 +25,8 @@ Ouvre `index.html` dans un navigateur. C'est tout.
 | Carte | ◎ en haut à droite | M |
 | Zoom | molette, pincement à deux doigts | + / − |
 | Capacités : ruée, fanal, retour | petits boutons au-dessus de la pulsation | Maj, F, R |
-| Expéditions | toucher un point de la carte | — |
+| Expéditions : éclaireurs, colons, érudits, sapeurs | toucher un point de la carte | — |
+| Passer un tableau | toucher l'écran | Échap, Espace, Entrée |
 | Menu / pause, options, journal | ≡ en haut à droite | Échap |
 
 La partie est sauvegardée automatiquement dans le navigateur ; le monde continue pendant ton absence.
@@ -38,21 +44,30 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Routes, échanges, cités** : relie tes villages par des routes de lumière ; des caravanes y portent la
   matière ◇ des ateliers, le savoir ✎ des observatoires, les soldats des bastions. Quand deux territoires se
   touchent, ils fusionnent en une cité qui garde toutes leurs spécialités.
-- **Expéditions et capacités** : depuis la carte, envoie des éclaireurs révéler le lointain ou des colons fonder
-  au loin, escortés si tu veux. Ta lumière apprend la ruée, le fanal et le retour.
+- **Expéditions et capacités** : depuis la carte, envoie des éclaireurs révéler le lointain, des colons fonder
+  au loin, des érudits étudier un colosse, des sapeurs bâtir balistes et chaînes — escortés si tu veux. Ta
+  lumière apprend la ruée, le fanal et le retour.
 - **Les ombres bâtissent** : des nids d'ombre, à l'obscurité qui épuise ta lumière, lancent des raids sur tes
   villages. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
-  (gardiens, étincelles, veilleuses) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
+  (gardiens, étincelles, veilleuses, harponneurs) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
 - **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.
 - **Les colosses** : le Veilleur, la Tisseuse, le Léviathan, l'Oiseau d'aube, la Méduse, la Nuée et le Dormeur,
-  immenses, chacun à sa manière. Fais étudier leurs sceaux voilés par tes
-  érudits, esquive leurs attaques annoncées, brise leurs sceaux phase après phase, fais-les plier avec ton armée,
-  tes balistes et tes chaînes… Ils marchent parfois sur tes villages. Apaisés, ils défendent, tissent et portent.
+  immenses, chacun à sa manière. Fais étudier leurs sceaux voilés par tes érudits, esquive leurs attaques
+  annoncées, brise leurs sceaux phase après phase, fais-les plier avec ton armée, tes balistes et tes chaînes…
+  Ils marchent parfois sur tes villages. Apaisés, ils défendent, tissent, portent, accompagnent, soignent,
+  rabattent la lumière — et le dernier te laisse bâtir sur son dos.
 - **La renaissance** : te dissoudre pour renaître avec des souvenirs ✧ et des bienfaits éternels.
 - **Les tableaux** : des cinématiques peintes en code, sans un mot — l'ouverture, chaque rencontre, chaque
   apaisement, la renaissance, et un épilogue.
 - **Le son et le récit** : tout est synthétisé en direct ; des fragments d'histoire se révèlent au fil du jeu.
+
+## Captures
+
+| | |
+| --- | --- |
+| ![Le Veilleur rugit : un séisme percé de brèches](docs/seisme.jpg) | ![La Méduse, ses fouets annoncés](docs/meduse.jpg) |
+| ![La Nuée referme son tourbillon](docs/nuee.jpg) | ![Les colosses apaisés veillent sur un village](docs/apaises.jpg) |
 
 ## Publier sur GitHub Pages
 
