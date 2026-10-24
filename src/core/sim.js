@@ -39,6 +39,7 @@
     game.structureHp = new Map(); // solidité des bâtiments abîmés (voir structures.js)
     Vide.Shadows.create(game);
     Vide.Combat.create(game);
+    Vide.Colossus.create(game);
     return game;
   }
 
@@ -165,6 +166,7 @@
       gained += brought;
     }
     Vide.Shadows.update(game, dt);
+    Vide.Colossus.update(game, dt);
     Vide.Combat.update(game, dt);
     game.glow *= 1 - util.damp(4, dt);
     game.rate += (gained / dt - game.rate) * util.damp(1 / 3, dt);

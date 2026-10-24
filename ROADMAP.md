@@ -57,7 +57,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 3. Annonce de zone, teintes, carte des régions explorées.
 4. Sauvegarde format 6.
 
-### [ ] 0.7 — Le premier colosse
+### [x] 0.7 — Le premier colosse
 1. Le Veilleur : créature immense à quatre pattes, marche procédurale, repaire lointain, battement à suivre.
 2. Combat : attaques annoncées (piétinement, souffle), sceaux à briser à la pulsation,
    l'armée le fait plier (genou à terre).

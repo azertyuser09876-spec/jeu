@@ -122,6 +122,8 @@
       s.lastWave = id;
       Shadows.damage(s, game.stats.pulseDamage);
     }
+    // Les sceaux des colosses aussi.
+    if (Vide.Colossus) Vide.Colossus.pulseHit(game, x, y, radius);
   }
 
   // --- Projectiles (traits des étincelles et des tours), légèrement guidés ---
@@ -151,6 +153,14 @@
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.life -= dt;
+      // Un trait lancé sur un colosse le frappe dès qu'il atteint son corps.
+      if (p.target && p.target.colossus) {
+        if (Math.hypot(p.target.x - p.x, p.target.y - p.y) <= p.target.radius * 0.7) {
+          Vide.Colossus.hit(game, p.target.colossus, p.damage);
+          list.splice(i, 1);
+          continue;
+        }
+      }
       const hit = Shadows.nearest(game, p.x, p.y, CONFIG.combat.projectileHit + 10);
       if (hit && Math.hypot(hit.x - p.x, hit.y - p.y) <= CONFIG.combat.projectileHit + Shadows.kind(hit.kind).radius) {
         Shadows.damage(hit, p.damage);
@@ -201,8 +211,20 @@
     }
   }
 
+  // Ennemi à combattre : l'ombre la plus proche dans la zone défendue, sinon un colosse hostile.
   function enemyFor(game, b, a) {
-    return Shadows.nearest(game, b.x, b.y, Infinity, (s) => Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
+    const shadow = Shadows.nearest(game, b.x, b.y, Infinity, (s) => Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
+    if (shadow) return shadow;
+    return Vide.Colossus ? Vide.Colossus.target(game, a.x, a.y, a.radius) : null;
+  }
+
+  function enemyRadius(enemy) {
+    return enemy.colossus ? enemy.radius : Shadows.kind(enemy.kind).radius;
+  }
+
+  function damageEnemy(game, enemy, amount) {
+    if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount);
+    else Shadows.damage(enemy, amount);
   }
 
   // Sans ennemi : en garde, ronde autour du foyer ; en escorte, cortège autour de la lumière.
@@ -228,10 +250,10 @@
       if (!enemy) return formation(game, b, a, speed, dt);
       b.task = 'fight';
       const d = Colony.steer(b, enemy.x, enemy.y, speed, dt);
-      if (d <= sp.range + Shadows.kind(enemy.kind).radius && b.cd <= 0) {
+      if (d <= sp.range + enemyRadius(enemy) && b.cd <= 0) {
         b.cd = sp.cooldown;
         b.flash = 1;
-        Shadows.damage(enemy, sp.damage * game.stats.armyDamage);
+        damageEnemy(game, enemy, sp.damage * game.stats.armyDamage);
       }
     },
 
@@ -243,7 +265,8 @@
       if (!enemy) return formation(game, b, a, speed, dt);
       b.task = 'fight';
       const dx = enemy.x - b.x, dy = enemy.y - b.y;
-      const d = Math.hypot(dx, dy) || 1;
+      // Distance au bord de la cible (un colosse est immense : on reste hors de son corps).
+      const d = (Math.hypot(dx, dy) || 1) - (enemy.colossus ? enemy.radius * 0.8 : 0);
       if (d > sp.range * 0.9) Colony.steer(b, enemy.x, enemy.y, speed, dt);
       else if (d < sp.range * 0.45) Colony.steer(b, b.x - dx, b.y - dy, speed, dt);
       else Colony.steer(b, b.x, b.y, speed, dt);

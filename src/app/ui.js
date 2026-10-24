@@ -67,6 +67,10 @@
       echoes: $('echoes'),
       echoAmount: $('echo-amount'),
       orders: $('orders'),
+      boss: $('boss'),
+      bossName: $('boss-name'),
+      bossSeals: $('boss-seals'),
+      bossStagger: $('boss-stagger'),
       orderButtons: [...document.querySelectorAll('#orders button')],
       shop: $('shop'),
       tabsEl: $('shop-tabs'),
@@ -130,6 +134,23 @@
     setClass(ui.pulseBtn, 'ready', Vide.Sim.pulseReady(game));
   }
 
+  // Combat contre un colosse : son nom, ses sceaux (● actif, ○ à venir, · brisé), la jauge qui le fait plier.
+  function updateBoss(ui) {
+    const { game } = ui;
+    const { player } = game.state;
+    const c = game.colossi.find((k) => (k.mode === 'hunt' || k.mode === 'kneel') &&
+      Math.hypot(k.x - player.x, k.y - player.y) < 1600);
+    setClass(ui.boss, 'hidden', !c);
+    if (!c) return;
+    setText(ui.bossName, c.mode === 'kneel' ? `${c.def.name} · à genou` : c.def.name);
+    const seals = c.seals.map((s, i) => (s.broken ? '<span class="broken">·</span>'
+      : i === c.active ? '<span class="active">●</span>' : '○')).join('');
+    if (ui.bossSeals.innerHTML !== seals) ui.bossSeals.innerHTML = seals;
+    const stagger = c.mode === 'kneel' ? 100 : Math.round((c.stagger / c.def.stagger) * 100);
+    const width = `${stagger}%`;
+    if (ui.bossStagger.style.width !== width) ui.bossStagger.style.width = width;
+  }
+
   function updateShop(ui) {
     const { state } = ui.game;
     const tabs = Catalog.tabs(state);
@@ -182,6 +203,7 @@
 
     updateShop(ui);
     updatePulse(ui);
+    updateBoss(ui);
   }
 
   Vide.UI = { create, update, buy, buyByIndex, nextTab };

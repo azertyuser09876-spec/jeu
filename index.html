@@ -25,6 +25,12 @@
     <div id="echoes" class="hidden"><span class="glyph">◆</span><span id="echo-amount">0</span></div>
   </div>
 
+  <div id="boss" class="hidden" aria-live="polite">
+    <div class="boss-name" id="boss-name"></div>
+    <div class="boss-seals" id="boss-seals"></div>
+    <div class="boss-stagger"><span id="boss-stagger"></span></div>
+  </div>
+
   <div id="orders" class="hidden" role="group" aria-label="Ordres de l’armée">
     <span class="orders-label">armée</span>
     <button type="button" data-posture="garde" title="Garder le territoire (G)">garder</button>
@@ -124,6 +130,8 @@
   <script src="src/core/colony.js"></script>
   <script src="src/core/shadows.js"></script>
   <script src="src/core/combat.js"></script>
+  <script src="src/core/colossi.js"></script>
+  <script src="src/core/colossus.js"></script>
   <script src="src/core/sim.js"></script>
   <script src="src/core/offline.js"></script>
   <script src="src/core/save.js"></script>
@@ -134,6 +142,7 @@
   <script src="src/app/draw-colony.js"></script>
   <script src="src/app/draw-structures.js"></script>
   <script src="src/app/draw-combat.js"></script>
+  <script src="src/app/draw-colossus.js"></script>
   <script src="src/app/input.js"></script>
   <script src="src/app/ui.js"></script>
   <script src="src/app/storage.js"></script>

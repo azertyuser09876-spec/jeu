@@ -63,6 +63,15 @@
     foyerAttacked: 'Des ombres rongent le foyer !',
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
+    heartbeat: () => 'Au loin, un battement immense… Quelque chose veille aux confins. Suis la flèche dorée.',
+    colossusFound: (e) => `Brise ses sceaux avec ta pulsation. Ton armée peut le faire plier.`,
+    sealBroken: (e) => (e.left ? `Un sceau se brise. Encore ${e.left}.` : null),
+    kneel: (e) => `${Vide.Colossus.def(e.id).name} pose un genou à terre ! Ses sceaux sont vulnérables.`,
+    colossusTamed: (e) => {
+      const d = Vide.Colossus.def(e.id);
+      return `${d.name} s’apaise. Il rejoint ton territoire. ${d.reward.text}`;
+    },
+    colossusLost: (e) => `${Vide.Colossus.def(e.id).name} se détourne et retourne à son repaire.`,
     beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au foyer.')),
     // Les danses sont fréquentes : on n'en parle qu'une fois par session.
     dance: () => (seen.dance ? null : (seen.dance = true, 'Deux êtres se croisent… et dansent un instant ensemble.')),
@@ -86,22 +95,31 @@
   }
 
   // Traduit les événements de la simulation en messages.
-  // Bannière de zone : son nom en grand, et sa description à la première découverte.
-  function showZone(id, discovered) {
-    const zone = Vide.Zones.get(id);
+  // Bannière : un nom en grand (zone, colosse) et une ligne en dessous.
+  function showTitle(name, sub, tint) {
     const el = $('zone-banner');
-    $('zone-name').textContent = zone.name;
-    $('zone-desc').textContent = discovered ? zone.desc : '';
-    el.style.setProperty('--zone', `rgb(${zone.tint.join(',')})`);
+    $('zone-name').textContent = name;
+    $('zone-desc').textContent = sub;
+    el.style.setProperty('--zone', `rgb(${tint.join(',')})`);
     el.classList.remove('shown');
     void el.offsetWidth;
     el.classList.add('shown');
+  }
+
+  // Bannière de zone : son nom, et sa description à la première découverte.
+  function showZone(id, discovered) {
+    const zone = Vide.Zones.get(id);
+    showTitle(zone.name, discovered ? zone.desc : '', zone.tint);
   }
 
   function readEvents(game) {
     const discovered = new Set(game.events.filter((e) => e.type === 'zoneDiscovered').map((e) => e.zone));
     for (const e of game.events) {
       if (e.type === 'zoneEnter') showZone(e.zone, discovered.has(e.zone));
+      if (e.type === 'colossusFound') {
+        const d = Vide.Colossus.def(e.id);
+        showTitle(d.name, d.epithet, [255, 226, 160]);
+      }
       const text = typeof MESSAGES[e.type] === 'function' ? MESSAGES[e.type](e) : MESSAGES[e.type];
       notify(text);
     }

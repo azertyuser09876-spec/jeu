@@ -135,6 +135,54 @@ button { font: inherit; letter-spacing: inherit; }
   opacity: 0.7;
 }
 
+/* --- Combat contre un colosse --- */
+
+#boss {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, calc(100% - 200px));
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 1.5s ease;
+}
+
+.boss-name {
+  font-size: 0.95rem;
+  letter-spacing: 0.35em;
+  margin-right: -0.35em;
+  color: #ffe2a6;
+  text-shadow: 0 0 14px rgba(255, 210, 140, 0.5);
+}
+
+.boss-seals {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  letter-spacing: 0.4em;
+  color: #ffe2a6;
+}
+
+.boss-seals .broken { opacity: 0.25; }
+.boss-seals .active { text-shadow: 0 0 8px #ffd98a; }
+
+/* Jauge : quand elle est pleine, le colosse plie le genou. */
+.boss-stagger {
+  height: 2px;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.boss-stagger span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #ffe2a6;
+  transition: width 0.2s;
+}
+
 /* --- Ordres de l'armée --- */
 
 #orders {

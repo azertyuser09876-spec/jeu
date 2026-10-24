@@ -38,6 +38,8 @@
     }
     // Les bâtiments achevés modifient ensuite ces valeurs (+places, croissance…).
     if (Vide.Structures) Vide.Structures.modify(state, stats);
+    // Puis les colosses apaisés.
+    if (Vide.Colossus) Vide.Colossus.modify(state, stats);
     return stats;
   }
 

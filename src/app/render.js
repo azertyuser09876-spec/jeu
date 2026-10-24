@@ -278,8 +278,11 @@
     drawDust(r, game.state.seed, game.region.zone.tint);
     edgePointer(r, 0, 0, '#fff', 0.3);
 
-    // Passage en coordonnées du monde, centrées sur la caméra.
-    ctx.translate(r.width / 2, r.height / 2);
+    // Passage en coordonnées du monde, centrées sur la caméra (secouée par les pas des colosses).
+    r.shake = (r.shake || 0) * (1 - Vide.util.damp(6, dt));
+    const shakeX = r.shake > 0.2 ? (Math.random() - 0.5) * r.shake : 0;
+    const shakeY = r.shake > 0.2 ? (Math.random() - 0.5) * r.shake : 0;
+    ctx.translate(r.width / 2 + shakeX, r.height / 2 + shakeY);
     ctx.scale(camera.scale, camera.scale);
     ctx.translate(-camera.x, -camera.y);
     ctx.globalCompositeOperation = 'lighter';
@@ -290,6 +293,7 @@
     drawPulse(r, game);
     drawParticles(r, game, game.garden.particles);
     drawParticles(r, game, game.field.particles, zoneGlow(r, game.region.zone));
+    Vide.Draw.colossi(r, game, dt);
     Vide.Draw.colony(r, game);
     Vide.Draw.combat(r, game, dt);
     drawTrail(r);
@@ -298,6 +302,7 @@
     // Retour aux coordonnées d'écran pour les effets plein écran.
     ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
     drawFog(r, game, dt);
+    Vide.Draw.colossiOverlay(r, game);
     Vide.Draw.combatOverlay(r, game);
 
     ctx.globalAlpha = 1;

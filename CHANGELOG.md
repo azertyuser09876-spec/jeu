@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 0.7.0 — Le premier colosse
+
+- **Le Veilleur**, gardien des confins : une créature immense à quatre pattes (près de la moitié de l'écran),
+  faite de lumière pâle — silhouette, côtes, colonne, queue qui ondule.
+- **Marche procédurale** : chaque pied reste planté au sol et ne se lève que quand le corps s'en éloigne trop,
+  par paires diagonales ; genoux calculés par cinématique inverse ; chaque pas lourd fait trembler l'écran.
+- **Le trouver** : après 15 ombres vaincues, un battement immense s'entend — une flèche dorée bat comme
+  un cœur sur le bord de l'écran, vers son repaire lointain (6 500 unités, direction propre à chaque partie).
+- **Le combat** : ses attaques sont toujours annoncées — **piétinement** (cercles au sol) et **souffle**
+  (cône) — on peut les esquiver. **Trois sceaux** (tête, dos, queue) à briser dans l'ordre à la pulsation.
+  **L'armée** frappe ses pattes et remplit une jauge : plein, il **pose un genou à terre** (plus d'attaques,
+  sceaux à double dégâts). S'éloigner : il renonce et ses sceaux se referment.
+- **Apaisé**, il devient doré, rejoint ton territoire et en fait la ronde : croissance du territoire ×2,
+  et ses pas écrasent les ombres qui approchent.
+- Jauge de combat (nom, sceaux, genou), bannière de rencontre, repère sur la carte.
+- Sauvegarde au format 7.
+- 165 tests de logique, 23 vérifications navigateur.
+
 ## 0.6.0 — Les zones
 
 - **Le vide se découpe en régions** irrégulières (stables pour une partie), dont la nature dépend

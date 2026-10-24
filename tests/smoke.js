@@ -148,6 +148,21 @@ const { chromium } = require('playwright');
   check(!(await page.isVisible('#map')), 'Échap referme la carte');
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
+  // Colosse : après assez d'ombres vaincues, son battement s'entend ; l'approcher le réveille.
+  await page.evaluate(() => { Vide.game.state.stats.shadows = 15; });
+  await page.waitForTimeout(300);
+  const heard = await page.evaluate(() => Vide.game.colossi.length === 1 && Vide.game.state.colossi.veilleur === 'heard');
+  check(heard, 'le battement du Veilleur s’entend après 15 ombres vaincues');
+  await page.evaluate(() => {
+    const c = Vide.game.colossi[0];
+    const p = Vide.game.state.player;
+    p.x = c.x - 600; p.y = c.y;
+  });
+  await page.waitForTimeout(600);
+  const found = await page.evaluate(() => Vide.game.state.colossi.veilleur === 'found');
+  check(found && (await page.isVisible('#boss')), 'approcher le Veilleur le réveille, sa jauge de combat apparaît');
+  await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
+
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
   const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
   await page.evaluate(() => {

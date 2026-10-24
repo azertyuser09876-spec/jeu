@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 6;
+  const FORMAT = 7;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -19,6 +19,8 @@
     4: (data) => ({ ...data, echoes: 0, tides: 0, army: { posture: 'garde' } }),
     // 0.6 : les zones du vide.
     5: (data) => ({ ...data, zones: { visited: [], discovered: [] } }),
+    // 0.7 : les colosses.
+    6: (data) => ({ ...data, colossi: {} }),
   };
 
   function serialize(state, now) {
@@ -121,6 +123,11 @@
     state.tides = Number.isInteger(raw.tides) && raw.tides > 0 ? raw.tides : 0;
     const army = isObject(raw.army) ? raw.army : {};
     if (Vide.Combat.POSTURES.includes(army.posture)) state.army.posture = army.posture;
+
+    const colossi = isObject(raw.colossi) ? raw.colossi : {};
+    for (const d of Vide.COLOSSI) {
+      if (['heard', 'found', 'tamed'].includes(colossi[d.id])) state.colossi[d.id] = colossi[d.id];
+    }
 
     const zones = isObject(raw.zones) ? raw.zones : {};
     const visited = Array.isArray(zones.visited) ? zones.visited : [];

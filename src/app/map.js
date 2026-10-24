@@ -103,7 +103,7 @@
     ctx.fill();
 
     // Repères supplémentaires (colosses…), fournis par d'autres modules.
-    for (const mark of Vide.Map.marks) mark(ctx, X, Y, state);
+    for (const mark of Vide.MapMarks || []) mark(ctx, X, Y, state);
 
     // Ta lumière.
     ctx.fillStyle = '#fff';
@@ -136,5 +136,5 @@
     if (map.button.classList.contains('hidden') === visible) map.button.classList.toggle('hidden', !visible);
   }
 
-  Vide.Map = { create, toggle, draw, update, marks: [] };
+  Vide.Map = { create, toggle, draw, update };
 })(globalThis.Vide);
