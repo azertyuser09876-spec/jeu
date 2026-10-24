@@ -101,4 +101,63 @@
     assert.equal(good.steward, 0.25);
     assert.equal(good.funds, 900);
   });
+
+  // --- Le cerveau commun des gouverneurs ---
+
+  test('le cerveau : l’action la plus voulue qu’il peut s’offrir ; sinon il économise, en ne s’accordant que de petites dépenses', () => {
+    const { decide } = Vide.Governors;
+    const a = { id: 'a', cost: 100, want: 1 }, b = { id: 'b', cost: 10, want: 0.8 }, c = { id: 'c', cost: 10, want: 0.2 };
+    assert.equal(decide([b, a, c], 500).action, a);
+    // Trop pauvre pour a : b (petite et presque aussi voulue) passe ; c (trop peu voulue) non.
+    assert.equal(decide([a, b, c], 50).action, b);
+    assert.equal(decide([a, b, c], 50).saving, a);
+    const saving = decide([a, c], 50);
+    assert.equal(saving.action, a);
+    assert.equal(saving.done, false);
+    assert.equal(decide([], 50), null);
+    assert.equal(Vide.Governors.ambition(0), 0);
+    assert.equal(Vide.Governors.ambition(1e9), 1);
+  });
+
+  test('le gouverneur bâtit selon le type de son village, et chaque exemplaire de plus lui fait moins envie', () => {
+    const state = State.create(4);
+    const v = village(state, { radius: 600, type: 'jardins', beings: { batisseur: 1, lueur: 6 } });
+    v.funds = 1e9;
+    const bought = Steward.catchUp(state, v, 40).filter((w) => w.kind === 'building').map((w) => w.id);
+    assert.ok(bought.includes('serre'), 'la serre des jardins');
+    assert.ok(bought.indexOf('serre') < bought.indexOf('archive') || !bought.includes('archive'));
+    for (const w of Steward.wishes(state, v)) {
+      if (w.kind !== 'building' || w.id === 'nid') continue;
+      const n = Structures.countIn(v, w.id, true);
+      assert.near(w.want, Steward.WANT[w.id] * Math.pow(0.75, n), 1e-9);
+    }
+  });
+
+  test('quand la menace monte (guerre, base proche), il lève une milice en lumière et monte une enceinte', () => {
+    const state = State.create(4);
+    const v = village(state, { radius: 600, beings: { batisseur: 1, lueur: 6 } });
+    v.funds = 1e9;
+    assert.equal(Steward.threat(state, v), 0);
+    assert.ok(!Steward.wishes(state, v).some((w) => w.id === 'gardien' || w.id === 'enceinte'));
+    Vide.War.begin(state);
+    assert.ok(Steward.threat(state, v) >= CONFIG.governors.militiaFrom);
+    const done = Steward.catchUp(state, v, 60);
+    const militia = done.filter((w) => w.id === 'gardien');
+    assert.ok(militia.length > 0, 'une milice');
+    assert.equal(militia[0].cost.light, Math.ceil(Colony.species('gardien').baseCost * CONFIG.governors.militiaPrice));
+    assert.ok(!militia[0].cost.echoes, 'jamais d’échos');
+    assert.ok(done.some((w) => w.id === 'enceinte'), 'une enceinte');
+    assert.equal(v.walls.length, 1);
+  });
+
+  test('il dit ce qu’il vise : il économise pour le plus voulu', () => {
+    const state = State.create(4);
+    const v = village(state, { radius: 300 });
+    v.funds = 10;
+    assert.equal(Steward.act(state, v), null);
+    const goal = Steward.intent(v);
+    assert.equal(goal.id, 'batisseur');
+    assert.ok(goal.saving);
+    assert.equal(Steward.label(goal), 'bâtisseur');
+  });
 })();

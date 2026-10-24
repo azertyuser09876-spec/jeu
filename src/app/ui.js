@@ -338,6 +338,9 @@
       ];
       if (walls) parts.push(`enceintes ${walls}`);
       const f = Vide.Factions.def(v.faction);
+      // Ce que vise son gouverneur, s'il a une réserve.
+      const goal = v.steward ? Vide.Steward.intent(v) : null;
+      if (goal) parts.push(`gouverneur : ${goal.saving ? 'vise' : 'fait'} ${Vide.Steward.label(goal)}`);
       setText(ui.ficheInfo, (f ? `${f.short} · ` : 'choisis sa sous-faction · ') + parts.join(' · '));
     }
     const composing = ui.activeTab === 'fonder';

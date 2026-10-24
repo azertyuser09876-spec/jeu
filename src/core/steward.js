@@ -1,16 +1,37 @@
-// L'intendant : chaque village peut garder une part de la lumière qu'il produit (village.steward : 0 à 50 %),
-// mise en réserve (village.funds). Son intendant la dépense seul pour faire grandir le village, en achetant
-// toujours le moins cher de ses souhaits : des lueurs tant qu'il y a de la place, un bâtisseur, des logis (nids)
-// quand la population est pleine, des relais et des phares à mesure que le territoire s'étend.
-// Il ne recrute pas d'armée : elle coûte des échos, qui restent au joueur.
+// Le gouverneur d'un village (l'« intendant » des premières versions) : chaque village peut garder une part de la
+// lumière qu'il produit (village.steward : 0 à 50 %), mise en réserve (village.funds). Son gouverneur la dépense
+// seul, avec le cerveau commun des gouverneurs (governors.js) : il veut d'abord ce qui fait vivre le village (lueurs,
+// bâtisseur, logis), puis bâtit selon le plan et le type du village, lève une milice et monte des enceintes quand
+// la menace monte. Il ne paie qu'en lumière (les échos restent au joueur : sa milice coûte plus cher en lumière).
 (function (Vide) {
   'use strict';
-  const { Catalog, Colony, Structures, Territory, Villages, util } = Vide;
+  const { CONFIG, Catalog, Colony, Structures, Territory, Villages, Walls, util } = Vide;
 
   const SHARES = [0, 0.1, 0.25, 0.5];
   const THINK = 2; // secondes entre deux décisions
 
-  // Ce que l'intendant voudrait faire pour son village, s'il en a les moyens : [{ kind, id, cost }].
+  // Envie de base de chaque bâtiment (un bâtiment propre au type du village est toujours très voulu) ; elle baisse à
+  // chaque exemplaire déjà là.
+  const WANT = {
+    prisme: 0.7, fontaine: 0.6, phare: 0.5, source: 0.45, archive: 0.35, rempart: 0.25, tour: 0.4, caserne: 0.3,
+    serre: 0.8, citadelle: 0.6, fonderie: 0.75, lunette: 0.7, autel: 0.75,
+  };
+
+  // La menace qui pèse sur un village (0 à 1) : la guerre, une base d'ombre proche, les marées.
+  function threat(state, v) {
+    let t = Vide.War ? Vide.War.intensity(state) : 0;
+    if (state.war) t = Math.max(t, CONFIG.governors.warThreat);
+    const R = Territory.radius(v);
+    for (const n of state.nests) {
+      if (Math.hypot(n.x - v.x, n.y - v.y) - R < CONFIG.governors.baseNear) t = Math.max(t, CONFIG.governors.baseThreat);
+    }
+    if (state.tides > 0 && R >= CONFIG.shadows.firstTideRadius) t = Math.max(t, CONFIG.governors.tideThreat);
+    return t;
+  }
+
+  const lightOnly = (cost) => Object.keys(cost).every((k) => k === 'light');
+
+  // Ce que le gouverneur pourrait faire pour son village : [{ kind, id, cost, want, act() }].
   function wishes(state, v) {
     const l = Villages.local(state, v);
     const pop = Colony.populationIn(v);
@@ -18,36 +39,72 @@
     const sites = Structures.sites(v);
     const pending = (id) => sites.some((b) => b.type === id);
     const R = Territory.radius(v);
+    const danger = threat(state, v);
     const list = [];
-    const being = (id) => list.push({ kind: 'being', id, cost: Colony.cost(state, Colony.species(id)) });
-    const building = (id) => {
+    const being = (id, want, price) => {
+      const cost = price || Colony.cost(state, Colony.species(id));
+      list.push({ kind: 'being', id, cost, want, act: () => { v.beings[id] = (v.beings[id] || 0) + 1; } });
+    };
+    const building = (id, want) => {
       const d = Structures.def(id);
-      if (!Structures.crowded(v, d)) list.push({ kind: 'building', id, cost: Structures.cost(state, d) });
+      if (Structures.crowded(v, d) || pending(id) || (d.only && d.only !== v.type && !(v.extra || []).includes(d.only))) return;
+      if (d.requires && !d.requires(state)) return;
+      list.push({ kind: 'building', id, cost: Structures.cost(state, d), want, act: () => Structures.plan(state, v, id) });
     };
 
-    if (builders < 1 && builders < l.builderCap) being('batisseur');
-    if (pop < l.beingCap) being('lueur');
+    // Ce qui fait vivre le village.
+    if (builders < 1 && builders < l.builderCap) being('batisseur', 1.3);
+    if (pop < l.beingCap) being('lueur', 1);
     if (builders > 0 && R >= Structures.MIN_TERRITORY) {
-      // Logis : dès que la population touche son plafond.
-      if (pop >= l.beingCap - 1 && !pending('nid')) building('nid');
-      if (R >= 220 && Structures.countIn(v, 'prisme', true) < Math.floor(R / 220) && !pending('prisme')) building('prisme');
-      if (R >= 300 && Structures.countIn(v, 'phare', true) < Math.floor(R / 350) && !pending('phare')) building('phare');
+      if (pop >= l.beingCap - 1) building('nid', 1.1);
+      // Le reste, selon le plan et le type ; la défense d'autant plus voulue que la menace monte.
+      for (const d of Vide.BUILDINGS) {
+        if (!(d.id in WANT)) continue;
+        const n = Structures.countIn(v, d.id, true);
+        const want = (WANT[d.id] + (d.family === 'defense' ? danger * 0.6 : 0)) * Math.pow(0.75, n);
+        building(d.id, want);
+      }
     }
-    if (builders > 0 && builders < l.builderCap && sites.length >= 2) being('batisseur');
-    // L'intendant ne paie qu'en lumière.
-    return list.filter((w) => Object.keys(w.cost).every((k) => k === 'light'));
+    if (builders > 0 && builders < l.builderCap && sites.length >= 2) being('batisseur', 0.8);
+    // Une milice, quand la menace monte : des gardiens, payés en lumière (bien plus cher).
+    const army = Colony.usedIn(v, 'armyCap');
+    if (danger >= CONFIG.governors.militiaFrom && army < l.armyCap && army < CONFIG.governors.militia * (1 + danger)) {
+      const sp = Colony.species('gardien');
+      being('gardien', 0.5 + danger * 0.6, { light: Math.ceil(sp.baseCost * CONFIG.governors.militiaPrice) });
+    }
+    // Une enceinte, avec la guerre.
+    const ring = builders > 0 && danger >= CONFIG.governors.wallFrom && !Walls.site(v) ? Walls.nextRing(v) : null;
+    if (ring) list.push({ kind: 'wall', id: 'enceinte', cost: Walls.cost(ring), want: 0.2 + danger * 0.7, act: () => Walls.plan(v) });
+    return list.filter((w) => lightOnly(w.cost));
   }
 
-  // Une décision : l'achat le moins cher que la réserve permet. Renvoie ce qui a été fait, ou null.
+  // Ce que vise chaque gouverneur (pour la fiche du village) : { id, kind, cost, saving }.
+  const intents = new WeakMap();
+
+  // Une décision : avec sa réserve, l'action la plus voulue (ou une petite dépense pendant qu'il économise).
+  // Renvoie ce qui a été fait, ou null.
   function act(state, v) {
-    const affordable = wishes(state, v).filter((w) => w.cost.light <= v.funds);
-    if (!affordable.length) return null;
-    affordable.sort((a, b) => a.cost.light - b.cost.light);
-    const w = affordable[0];
-    v.funds -= w.cost.light;
-    if (w.kind === 'being') v.beings[w.id] = (v.beings[w.id] || 0) + 1;
-    else Structures.plan(state, v, w.id);
-    return w;
+    const choice = Vide.Governors.decide(wishes(state, v).map((w) => ({ ...w, cost: w.cost.light, price: w.cost })), v.funds);
+    if (!choice) {
+      intents.delete(v);
+      return null;
+    }
+    const goal = choice.saving || choice.action;
+    intents.set(v, { id: goal.id, kind: goal.kind, cost: goal.cost, saving: !choice.done || Boolean(choice.saving) });
+    if (!choice.done) return null;
+    const w = choice.action;
+    v.funds -= w.cost;
+    w.act();
+    return { kind: w.kind, id: w.id, cost: w.price };
+  }
+
+  const intent = (v) => intents.get(v) || null;
+
+  // Le nom de ce qu'il vise.
+  function label(goal) {
+    if (goal.kind === 'being') return Colony.species(goal.id).name.toLowerCase();
+    if (goal.kind === 'building') return Structures.def(goal.id).name.toLowerCase();
+    return { enceinte: 'une enceinte', route: 'une route', colons: 'des colons', specialite: 'une cité' }[goal.id] || goal.id;
   }
 
   // Pendant le jeu : chaque village réfléchit toutes les deux secondes.
@@ -89,9 +146,10 @@
     tab: 'village',
     group: 'êtres',
     order: -20,
-    name: 'Intendant',
-    desc: 'Confie à l’intendant de ce village une part de la lumière qu’il produit : il la dépense seul pour '
-      + 'le faire grandir (bâtisseur, logis, lueurs, relais, phares). Touche pour changer la part.',
+    name: 'Gouverneur',
+    desc: 'Confie au gouverneur de ce village une part de la lumière qu’il produit : il la dépense seul — êtres, '
+      + 'logis, bâtiments selon le plan, milice et enceintes quand la menace monte ; ambitieux, il relie, fonde, '
+      + 'conquiert. Touche pour changer la part.',
     revealed: (state) => Villages.count(state, 'lueur') > 0,
     cost: () => ({}),
     blocked: (state) => (Villages.current(state) ? null : 'rejoins un village'),
@@ -106,9 +164,12 @@
     effect: (state) => {
       const v = Villages.current(state);
       if (!v) return '';
-      return v.steward || v.funds >= 1 ? `réserve ✦ ${util.formatNumber(v.funds)}` : 'part confiée';
+      if (!v.steward && v.funds < 1) return 'part confiée';
+      const goal = intent(v);
+      const aim = goal ? ` · ${goal.saving ? 'vise' : 'fait'} : ${label(goal)}` : '';
+      return `réserve ✦ ${util.formatNumber(v.funds)}${aim}`;
     },
   });
 
-  Vide.Steward = { SHARES, wishes, act, update, catchUp, share };
+  Vide.Steward = { SHARES, WANT, threat, wishes, act, intent, label, update, catchUp, share };
 })(globalThis.Vide);

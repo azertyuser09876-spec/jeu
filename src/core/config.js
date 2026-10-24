@@ -96,6 +96,21 @@
       packTame: 6,        // secondes dans le territoire d'une base de Meutes avant d'être prise par la meute
     },
 
+    // Gouverneurs (voir governors.js, steward.js).
+    governors: {
+      pocket: 0.15,        // en économisant, il ne s'accorde que des dépenses de moins de ce part du prix visé…
+      pocketWant: 0.5,     // …et presque aussi voulues (au moins cette part de l'envie)
+      ambitionTime: 2400,  // son ambition grandit sur ce temps (de jeu pour un village, d'âge pour une base)
+      warThreat: 0.4,      // menace ressentie dès que la guerre est ouverte…
+      baseThreat: 0.5,     // …une base d'ombre à moins de baseNear du bord du village…
+      baseNear: 4000,
+      tideThreat: 0.2,     // …des marées qui viennent
+      militiaFrom: 0.35,   // menace à partir de laquelle il lève une milice…
+      militia: 6,          // …jusqu'à ce nombre de soldats (davantage si la menace grandit)…
+      militiaPrice: 2,     // …payés en lumière, deux fois le prix d'un gardien
+      wallFrom: 0.35,      // menace à partir de laquelle il monte des enceintes
+    },
+
     // Sous-factions (voir factions.js).
     factions: {
       inherit: 0.85,     // chance qu'un village fondé depuis un autre (un avant-poste depuis sa base) en hérite
