@@ -88,8 +88,44 @@
     const { c } = facing(900);
     const hip = Colossus.toWorld(c, 65, -40);
     const foot = { x: hip.x + 60, y: hip.y - 90 };
-    const k = Colossus.knee(c, hip, foot, -1);
+    const k = Colossus.knee(c, hip, foot);
     assert.near(Math.hypot(k.x - hip.x, k.y - hip.y), c.body.thigh * c.def.size, 1e-6);
+  });
+
+  test('le genou est toujours tourné vers l’extérieur du corps', () => {
+    const { c } = facing(900);
+    for (const [hx, hy, fx, fy] of [[65, -40, 100, -105], [65, 40, 100, 105], [-45, -40, 40, -100], [-45, 40, -120, 90]]) {
+      const hip = Colossus.toWorld(c, hx, hy);
+      const foot = Colossus.toWorld(c, fx, fy);
+      const k = Colossus.knee(c, hip, foot);
+      const mid = { x: (hip.x + foot.x) / 2, y: (hip.y + foot.y) / 2 };
+      assert.ok(Math.hypot(k.x - c.x, k.y - c.y) >= Math.hypot(mid.x - c.x, mid.y - c.y) - 1e-6);
+    }
+  });
+
+  test('même en tournant sans cesse, aucune patte ne fouette', () => {
+    for (const id of ['veilleur', 'tisseuse']) {
+      const state = ready();
+      if (id === 'tisseuse') state.colossi.veilleur = 'tamed';
+      const game = newGame(state);
+      run(game, dt);
+      const c = game.colossi.find((k) => k.id === id);
+      c.attackCd = 1e9; // pas d'attaque : on observe la marche
+      const stride = c.body.stride * c.def.size;
+      // Vitesse maximale d'un pied : un pas de 1,5 foulée en 0,75 temps de pas, pic ×1,5 de l'interpolation.
+      const limit = (1.5 * stride) / (0.75 * c.body.stepTime) * 1.5 * dt + 1;
+      let worst = 0;
+      for (let i = 0; i < 60 * 20; i++) {
+        const a = i * dt * 0.8; // la lumière tourne autour du colosse
+        state.player.x = c.x + Math.cos(a) * 600;
+        state.player.y = c.y + Math.sin(a) * 600;
+        game.vitality.invulnerable = 0;
+        const before = c.legs.map((l) => ({ ...l.foot }));
+        Sim.step(game, dt, Sim.emptyInput());
+        c.legs.forEach((l, k) => { worst = Math.max(worst, Math.hypot(l.foot.x - before[k].x, l.foot.y - before[k].y)); });
+      }
+      assert.ok(worst <= limit, `${id} : un pied a bougé de ${worst.toFixed(1)} en un pas (limite ${limit.toFixed(1)})`);
+    }
   });
 
   test('il remarque la lumière qui approche : rencontre et chasse', () => {

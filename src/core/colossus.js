@@ -25,6 +25,7 @@
       shin: 80,
       stride: 75,
       stepTime: 0.6,
+      turn: 0.6,      // vitesse de rotation (rad/s) : une masse énorme tourne lentement
       points: { head: [160, 0], back: [10, 0], tail: 'tail' },
       eyes: [[170, -14], [170, 14]],
       radius: 110,
@@ -51,6 +52,7 @@
       shin: 120,
       stride: 70,
       stepTime: 0.45,
+      turn: 0.45,
       points: { head: [120, 0], back: [20, 0], abdomen: [-110, 0], spinneret: [-175, 0] },
       eyes: [[128, -8], [128, 8], [118, -15], [118, 15]],
       radius: 120,
@@ -60,6 +62,7 @@
       kind: 'serpent',
       segments: 30,
       spacing: 26,
+      turn: 1.6,
       eyes: [[22, -11], [22, 11]],
       radius: 90,
     },
@@ -74,6 +77,7 @@
   };
 
   const FOOT = { damage: 15, radius: 30, shadowRadius: 80, shadowDamage: 60 };
+  const MAX_STEP = 1.5; // longueur maximale d'un pas, en foulées
 
   function def(id) {
     const d = Vide.COLOSSI.find((c) => c.id === id);
@@ -140,16 +144,26 @@
     return seal ? pointOf(c, seal.at) : null;
   }
 
-  // Genou calculé par cinématique inverse à deux segments (cuisse, tibia).
-  function knee(c, hip, foot, side) {
+  // Genou calculé par cinématique inverse à deux segments (cuisse, tibia). Des deux solutions, on garde
+  // toujours celle qui s'écarte du corps : le genou ne bascule jamais de l'autre côté de la patte.
+  function knee(c, hip, foot) {
     const s = c.def.size;
     const a = c.body.thigh * s, b = c.body.shin * s;
     const dx = foot.x - hip.x, dy = foot.y - hip.y;
     const d = Math.min(Math.hypot(dx, dy), a + b - 1);
     const base = Math.atan2(dy, dx);
-    const cosA = util.clamp((a * a + d * d - b * b) / (2 * a * d || 1), -1, 1);
-    const angle = base + side * Math.acos(cosA);
-    return { x: hip.x + Math.cos(angle) * a, y: hip.y + Math.sin(angle) * a };
+    const bend = Math.acos(util.clamp((a * a + d * d - b * b) / (2 * a * d || 1), -1, 1));
+    let best = null;
+    let bestD = -1;
+    for (const angle of [base + bend, base - bend]) {
+      const k = { x: hip.x + Math.cos(angle) * a, y: hip.y + Math.sin(angle) * a };
+      const away = Math.hypot(k.x - c.x, k.y - c.y);
+      if (away > bestD) {
+        bestD = away;
+        best = k;
+      }
+    }
+    return best;
   }
 
   // --- Création ---
@@ -191,7 +205,7 @@
     if (body.kind === 'legged') {
       c.legs = body.legs.map((l) => {
         const foot = toWorld(c, l.rest[0], l.rest[1]);
-        return { foot, from: foot, to: foot, t: -1, lift: 0 };
+        return { foot, from: foot, to: foot, t: -1, lift: 0, duration: body.stepTime };
       });
     } else {
       c.segments = [];
@@ -237,7 +251,7 @@
     let diff = angle - c.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    const max = (c.body.kind === 'serpent' ? 1.6 : 0.7) * dt;
+    const max = c.body.turn * dt;
     c.angle += util.clamp(diff, -max, max);
   }
 
@@ -272,7 +286,7 @@
 
     c.legs.forEach((leg) => {
       if (leg.t < 0) return;
-      leg.t += dt / c.body.stepTime;
+      leg.t += dt / leg.duration;
       const p = Math.min(1, leg.t);
       const ease = p * p * (3 - 2 * p);
       leg.foot = { x: leg.from.x + (leg.to.x - leg.from.x) * ease, y: leg.from.y + (leg.to.y - leg.from.y) * ease };
@@ -293,8 +307,14 @@
       if (!far) continue;
       for (const i of group) {
         const leg = c.legs[i];
+        const dx = ideal[i].x - leg.foot.x, dy = ideal[i].y - leg.foot.y;
+        const d = Math.hypot(dx, dy);
+        if (d < stride * 0.3) continue; // déjà bien placée : elle reste au sol
+        // Un pas ne dépasse jamais 1,5 foulée, et dure d'autant plus qu'il est long : pas de patte qui fouette.
+        const k = Math.min(1, (stride * MAX_STEP) / d);
         leg.from = leg.foot;
-        leg.to = { x: ideal[i].x + c.vx * 0.25, y: ideal[i].y + c.vy * 0.25 };
+        leg.to = { x: leg.foot.x + dx * k, y: leg.foot.y + dy * k };
+        leg.duration = c.body.stepTime * util.clamp((d * k) / stride, 0.75, 1.4);
         leg.t = 0;
       }
       break;

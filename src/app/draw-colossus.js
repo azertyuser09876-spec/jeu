@@ -65,7 +65,7 @@
       const leg = c.legs[i];
       const hip = Colossus.toWorld(c, l.hip[0], l.hip[1]);
       const foot = leg.foot;
-      const knee = Colossus.knee(c, hip, foot, l.side);
+      const knee = Colossus.knee(c, hip, foot);
       ctx.globalAlpha = 0.55;
       line(ctx, [hip, knee, foot], (kneeling ? 4 : 3) * px * 1.4, rgb(tint, 1));
       ctx.globalAlpha = 0.12;
