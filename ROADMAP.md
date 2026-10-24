@@ -105,7 +105,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 3. Architecture propre à chaque type de village (cœur, bâtiments, teinte du territoire).
 4. Dispersion : animation, puis renaissance dans le village le plus proche (ou à l'origine).
 
-### [ ] 1.3 — Autonomie et bâtiments
+### [x] 1.3 — Autonomie et bâtiments
 1. Population sans plafond fixe (logements) ; intendant de village qui construit seul avec la part de
    lumière que tu lui confies.
 2. Nouveaux bâtiments par familles (économie, vie, savoir, défense) et bâtiments propres à chaque type.

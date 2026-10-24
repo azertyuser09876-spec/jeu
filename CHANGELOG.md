@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 1.3.0 — Autonomie et bâtiments
+
+- **L'intendant** : chaque village peut lui confier 10, 25 ou 50 % de la lumière qu'il produit. Il la dépense
+  seul, en achetant le moins cher de ses souhaits : lueurs tant qu'il y a de la place, un bâtisseur, des
+  **logis** (nids) quand la population est pleine, des relais et des phares quand le territoire s'étend.
+  La population n'a plus de plafond fixe : un village confié grandit seul. Il ne recrute pas d'armée (elle
+  coûte des échos). Pendant ton absence, il met de côté sa part et la dépense ; l'écran d'absence le raconte.
+- **Nouveaux bâtiments**, rangés par familles (économie, vie, savoir, défense) :
+  - Fontaine (jardin +25 %), Source (soins +50 %, êtres rallumés plus tôt), Archive (+1 h d'absence pour
+    tout ton monde), Rempart (ralentit de moitié les ombres qui le longent).
+  - Propres à un type de village : Serre (jardins), Citadelle (bastion), Fonderie (atelier : chantiers plus
+    rapides partout), Lunette (observatoire : croissance plus rapide partout), Autel (sanctuaire : blanc ×2).
+- **Performances** : grille spatiale ; des centaines d'êtres restent fluides (400 êtres : 2,3 ms par pas,
+  51 images/s dans un navigateur sans carte graphique).
+- La lumière dorée ne dépasse jamais une particule sur deux.
+- Sauvegarde au format 11 (intendants).
+- 240 tests de logique, 31 vérifications navigateur.
+
 ## 1.2.0 — Villages
 
 Il n'y a plus de base centrale. L'origine n'est plus que le lieu où naît la lumière.
