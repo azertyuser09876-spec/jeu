@@ -7,8 +7,9 @@
     step: 1 / 60,
     maxStepsPerFrame: 8,
 
-    // Le plus petit côté de l'écran montre toujours cette largeur du monde, quel que soit l'appareil.
-    viewSize: 700,
+    // Surface du monde visible à l'écran (unités²), identique quel que soit l'appareil :
+    // un téléphone en portrait ne voit ni plus ni moins de vide qu'un écran large.
+    viewArea: 700 * 1000,
 
     player: {
       radius: 6,

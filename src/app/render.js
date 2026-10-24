@@ -26,6 +26,8 @@
       height: 0,
       dpr: 1,
       camera: { x: 0, y: 0, scale: 1 },
+      trail: [],   // positions récentes de la lumière (purement visuel)
+      time: 0,
       glows: {
         white: makeGlow(255, 255, 255),
         light: makeGlow(214, 234, 255),
@@ -42,7 +44,7 @@
     r.height = window.innerHeight;
     r.canvas.width = Math.round(r.width * r.dpr);
     r.canvas.height = Math.round(r.height * r.dpr);
-    r.camera.scale = Math.min(r.width, r.height) / CONFIG.viewSize;
+    r.camera.scale = Math.sqrt((r.width * r.height) / CONFIG.viewArea);
   }
 
   function screenToWorld(r, sx, sy) {
@@ -56,6 +58,106 @@
   function drawGlow(ctx, glow, x, y, radius, alpha) {
     ctx.globalAlpha = alpha;
     ctx.drawImage(glow, x - radius, y - radius, radius * 2, radius * 2);
+  }
+
+  // Poussière lointaine, dessinée en coordonnées d'écran. Elle défile plus lentement que le monde
+  // (parallaxe) : on sent qu'on avance dans l'immensité. Générée par cellules, donc infinie et stable.
+  const DUST_LAYERS = [
+    { parallax: 0.15, cell: 90, chance: 0.35, size: 0.8, alpha: 0.18 },
+    { parallax: 0.4, cell: 140, chance: 0.4, size: 1.2, alpha: 0.28 },
+  ];
+
+  function drawDust(r, seed) {
+    const { ctx, camera } = r;
+    const s = camera.scale;
+    ctx.fillStyle = '#fff';
+    DUST_LAYERS.forEach((layer, li) => {
+      const ox = camera.x * layer.parallax;
+      const oy = camera.y * layer.parallax;
+      const hw = r.width / 2 / s;
+      const hh = r.height / 2 / s;
+      const x0 = Math.floor((ox - hw) / layer.cell), x1 = Math.floor((ox + hw) / layer.cell);
+      const y0 = Math.floor((oy - hh) / layer.cell), y1 = Math.floor((oy + hh) / layer.cell);
+      const layerSeed = seed + li * 7919;
+      for (let cx = x0; cx <= x1; cx++) {
+        for (let cy = y0; cy <= y1; cy++) {
+          if (Vide.util.hash2(cx, cy, layerSeed) > layer.chance) continue;
+          const wx = (cx + Vide.util.hash2(cx, cy, layerSeed + 1)) * layer.cell;
+          const wy = (cy + Vide.util.hash2(cx, cy, layerSeed + 2)) * layer.cell;
+          const sx = (wx - ox) * s + r.width / 2;
+          const sy = (wy - oy) * s + r.height / 2;
+          const shade = Vide.util.hash2(cx, cy, layerSeed + 3);
+          ctx.globalAlpha = layer.alpha * (0.4 + shade * 0.6);
+          const size = layer.size * (0.6 + shade * 0.8);
+          ctx.fillRect(sx, sy, size, size);
+        }
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // L'origine, là où tout a commencé : un foyer très faible qui respire lentement.
+  function drawOrigin(r) {
+    const { ctx } = r;
+    const breath = 0.5 + Math.sin(r.time * 0.7) * 0.5;
+    drawGlow(ctx, r.glows.white, 0, 0, 90, 0.07 + breath * 0.03);
+    ctx.globalAlpha = 0.1 + breath * 0.05;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1 / r.camera.scale;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26 + breath * 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Quand l'origine est hors de l'écran, une petite flèche sur le bord indique sa direction.
+  function drawOriginPointer(r) {
+    const { ctx, camera } = r;
+    const sx = (0 - camera.x) * camera.scale + r.width / 2;
+    const sy = (0 - camera.y) * camera.scale + r.height / 2;
+    const margin = 30;
+    if (sx > -margin && sx < r.width + margin && sy > -margin && sy < r.height + margin) return;
+
+    const cx = r.width / 2, cy = r.height / 2;
+    const dx = sx - cx, dy = sy - cy;
+    const angle = Math.atan2(dy, dx);
+    // Point d'intersection du rayon centre → origine avec le bord de l'écran (moins une marge).
+    const inset = 26;
+    const tx = (cx - inset) / Math.abs(dx || 1e-9);
+    const ty = (cy - inset) / Math.abs(dy || 1e-9);
+    const t = Math.min(tx, ty);
+    const px = cx + dx * t, py = cy + dy * t;
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(angle);
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-5, -6);
+    ctx.lineTo(3, 0);
+    ctx.lineTo(-5, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Traînée : quelques positions récentes de la lumière, qui s'estompent en ~0,6 s.
+  const TRAIL_LIFE = 0.6;
+
+  function updateTrail(r, game) {
+    const { x, y } = game.state.player;
+    const trail = r.trail;
+    const lastPoint = trail[trail.length - 1];
+    if (!lastPoint || Math.hypot(x - lastPoint.x, y - lastPoint.y) > 3) trail.push({ x, y, t: r.time });
+    while (trail.length && r.time - trail[0].t > TRAIL_LIFE) trail.shift();
+  }
+
+  function drawTrail(r) {
+    const { ctx } = r;
+    for (const p of r.trail) {
+      const life = 1 - (r.time - p.t) / TRAIL_LIFE;
+      drawGlow(ctx, r.glows.light, p.x, p.y, 6 + life * 6, life * 0.25);
+    }
   }
 
   // Rectangle visible en coordonnées du monde, avec une marge pour les halos.
@@ -139,12 +241,17 @@
 
   function draw(r, game, dt) {
     const { ctx, camera } = r;
+    r.time += dt;
     followCamera(r, game, dt);
+    updateTrail(r, game);
     ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, r.width, r.height);
+
+    drawDust(r, game.state.seed);
+    drawOriginPointer(r);
 
     // Passage en coordonnées du monde, centrées sur la caméra.
     ctx.translate(r.width / 2, r.height / 2);
@@ -152,9 +259,11 @@
     ctx.translate(-camera.x, -camera.y);
     ctx.globalCompositeOperation = 'lighter';
 
+    drawOrigin(r);
     drawReach(r, game);
     drawPulse(r, game);
     drawParticles(r, game);
+    drawTrail(r);
     drawPlayer(r, game);
 
     ctx.globalAlpha = 1;

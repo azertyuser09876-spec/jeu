@@ -46,6 +46,7 @@
     const ui = {
       game,
       hooks: hooks || {},
+      intro: $('intro'),
       hud: $('hud'),
       amount: $('light-amount'),
       rate: $('rate-amount'),
@@ -99,6 +100,8 @@
     const { game } = ui;
     const { state } = game;
 
+    // L'ouverture reste affichée jusqu'à la toute première particule récoltée.
+    setClass(ui.intro, 'hidden', state.totalLight > 0);
     setClass(ui.hud, 'hidden', state.totalLight <= 0);
     setText(ui.amount, util.formatNumber(state.light));
     setText(ui.rate, util.formatRate(game.rate));

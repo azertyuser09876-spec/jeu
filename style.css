@@ -32,6 +32,64 @@ html, body {
 
 button { font: inherit; letter-spacing: inherit; }
 
+/* --- Ambiance --- */
+
+#vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+#intro {
+  position: fixed;
+  inset: 0;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 2.5s ease;
+}
+
+#intro .title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22%;
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  font-weight: 200;
+  letter-spacing: 0.6em;
+  margin-right: -0.6em; /* compense l'espacement après la dernière lettre pour bien centrer */
+  color: var(--light);
+  opacity: 0.75;
+  animation: intro-title 5s ease both;
+}
+
+#intro .hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24%;
+  font-size: 0.85rem;
+  color: var(--dim);
+  animation: intro-hint 6s ease both;
+}
+
+#intro .for-touch { display: none; }
+
+@media (hover: none) {
+  #intro .for-mouse { display: none; }
+  #intro .for-touch { display: inline; }
+}
+
+@keyframes intro-title {
+  from { opacity: 0; letter-spacing: 0.9em; }
+  to { opacity: 0.75; }
+}
+
+@keyframes intro-hint {
+  0%, 45% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 /* --- Compteur de lumière --- */
 
 #hud {
