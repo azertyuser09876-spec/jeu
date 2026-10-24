@@ -37,6 +37,11 @@ const { chromium } = require('playwright');
   check(before.y - after.y > 50, 'le clic maintenu attire la lumière vers le pointeur');
 
   // Se promener quelques secondes doit rapporter de la lumière.
+  // Une particule est posée sur le chemin pour que la vérification ne dépende pas du hasard.
+  await page.evaluate(() => {
+    const p = Vide.game.state.player;
+    Vide.Field.place(Vide.game.field, p.x - 120, p.y, false, true);
+  });
   for (const key of ['KeyA', 'KeyS', 'KeyD', 'KeyW', 'KeyA']) {
     await page.keyboard.down(key);
     await page.waitForTimeout(1200);
@@ -49,7 +54,7 @@ const { chromium } = require('playwright');
   await page.evaluate(() => { Vide.game.state.light += 1000; Vide.game.state.totalLight += 1000; });
   await page.waitForTimeout(100);
   await page.keyboard.press('Digit1');
-  await page.click('#shop-list li:nth-child(2) .item');
+  await page.locator('#shop-list li:not([hidden]) .item').nth(1).click();
   const levels = await page.evaluate(() => ({ ...Vide.game.state.upgrades }));
   check(levels.reach === 1, 'la touche 1 achète la première amélioration');
   check(levels.speed === 1, 'un clic achète une amélioration');
