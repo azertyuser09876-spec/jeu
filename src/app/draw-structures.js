@@ -299,6 +299,54 @@
     Render.drawGlow(ctx, r.glows.light, b.x, b.y, d.size * (0.8 + progress), 0.1 + progress * 0.4);
   }
 
+  // Teinte de chaque famille de bâtiments (la parcelle qui le porte) : l'économie dorée, la vie verte, le savoir
+  // bleu, la défense d'un blanc d'acier.
+  const FAMILY = {
+    economie: '255, 214, 150',
+    vie: '160, 240, 205',
+    savoir: '170, 190, 255',
+    defense: '228, 234, 246',
+  };
+
+  // La parcelle d'un bâtiment : un îlot (un secteur d'anneau, tourné vers le cœur), et la ruelle qui le relie au
+  // boulevard du dedans. En chantier, son contour seulement.
+  function drawLot(r, v, b, d, done) {
+    const { ctx } = r;
+    const s = r.camera.scale;
+    const dist = Math.hypot(b.x - v.x, b.y - v.y);
+    if (dist < 20) return;
+    const a = Math.atan2(b.y - v.y, b.x - v.x);
+    const depth = Math.min(Vide.Plan.STREET * 0.3, dist - 38);
+    // Une demi-largeur constante : les côtés restent parallèles, comme un îlot de ville.
+    const half = Vide.Plan.SPACING * 0.4;
+    const inner = dist - depth, outer = dist + depth;
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, outer, a - half / outer, a + half / outer);
+    ctx.arc(v.x, v.y, inner, a + half / inner, a - half / inner, true);
+    ctx.closePath();
+    const tint = FAMILY[d.family] || FAMILY.defense;
+    if (done) {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = `rgba(${tint}, ${b.broken ? 0.03 : 0.07})`;
+      ctx.fill();
+    }
+    ctx.globalAlpha = done ? 0.3 : 0.18;
+    ctx.strokeStyle = `rgb(${tint})`;
+    ctx.lineWidth = 1 / s;
+    if (!done) ctx.setLineDash([3 / s, 4 / s]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // La ruelle, jusqu'au boulevard du dedans.
+    const street = Math.floor(inner / Vide.Plan.STREET) * Vide.Plan.STREET;
+    if (street > 0 && inner - street < Vide.Plan.STREET * 0.6) {
+      ctx.globalAlpha = 0.16;
+      ctx.beginPath();
+      ctx.moveTo(v.x + Math.cos(a) * inner, v.y + Math.sin(a) * inner);
+      ctx.lineTo(v.x + Math.cos(a) * street, v.y + Math.sin(a) * street);
+      ctx.stroke();
+    }
+  }
+
   Vide.Draw.structures = function (r, game) {
     if (!r.prismGlows) {
       r.prismGlows = [r.makeGlow(255, 150, 170), r.makeGlow(150, 255, 190), r.makeGlow(150, 180, 255)];
@@ -312,6 +360,7 @@
     for (const v of game.state.villages) for (const b of v.buildings) {
       if (b.x < view.left || b.x > view.right || b.y < view.top || b.y > view.bottom) continue;
       const d = Structures.def(b.type);
+      drawLot(r, v, b, d, Structures.isDone(b));
       // Un halo aux couleurs du village, sous chaque bâtiment : on sait d'un coup d'œil à qui il appartient.
       if (Structures.isDone(b) && !b.broken) Render.drawGlow(r.ctx, r.villageGlows[v.type], b.x, b.y, d.size * 2.6, 0.22);
       if (b.broken) {

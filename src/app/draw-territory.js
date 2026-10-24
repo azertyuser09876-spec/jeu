@@ -1,7 +1,7 @@
 // Dessin des villages (territoire de lumière, cœur) et de l'origine, où naît la lumière.
 (function (Vide) {
   'use strict';
-  const { Render, Territory, Villages, util } = Vide;
+  const { Render, Territory, Villages, Plan, util } = Vide;
 
   const MOTE_CELL = 80;
 
@@ -37,6 +37,58 @@
     return path;
   }
 
+  // Les rues du plan (voir plan.js), là où le territoire s'étend : les boulevards en anneaux, coupés au bord du
+  // territoire, et les avenues, du cœur jusqu'au bord. Deux tracés : { boulevards, avenues }.
+  function streetsOf(v) {
+    const boulevards = new Path2D();
+    const avenues = new Path2D();
+    const R = Territory.radius(v);
+    for (let n = 1; n * Plan.STREET < R * 1.6; n++) {
+      const rad = n * Plan.STREET;
+      const N = Math.max(48, Math.round((rad * Math.PI * 2) / 25));
+      let open = false;
+      for (let i = 0; i <= N; i++) {
+        const a = (i / N) * Math.PI * 2;
+        const x = v.x + Math.cos(a) * rad, y = v.y + Math.sin(a) * rad;
+        const inside = Territory.contains(v, x, y) && !nearDistrict(v, x, y);
+        if (inside && open) boulevards.lineTo(x, y);
+        else if (inside) boulevards.moveTo(x, y);
+        open = inside;
+      }
+    }
+    for (const a of Plan.avenues(v)) {
+      let rad = 24;
+      while (Territory.contains(v, v.x + Math.cos(a) * (rad + 10), v.y + Math.sin(a) * (rad + 10)) && rad < R * 2) rad += 10;
+      avenues.moveTo(v.x + Math.cos(a) * 24, v.y + Math.sin(a) * 24);
+      avenues.lineTo(v.x + Math.cos(a) * rad, v.y + Math.sin(a) * rad);
+    }
+    return { boulevards, avenues };
+  }
+
+  function nearDistrict(v, x, y) {
+    for (const d of v.districts || []) if (Math.hypot(d.x - x, d.y - y) < Plan.PLAZA * 0.8) return true;
+    return false;
+  }
+
+  function drawStreets(r, shape) {
+    const { ctx } = r;
+    const s = r.camera.scale;
+    // Des boulevards discrets : un voile et un trait fin.
+    ctx.strokeStyle = 'rgba(235, 242, 255, 0.035)';
+    ctx.lineWidth = 14;
+    ctx.stroke(shape.streets.boulevards);
+    ctx.strokeStyle = 'rgba(235, 242, 255, 0.11)';
+    ctx.lineWidth = 1 / s;
+    ctx.stroke(shape.streets.boulevards);
+    // Des avenues plus larges, qui mènent aux portes.
+    ctx.strokeStyle = 'rgba(240, 245, 255, 0.05)';
+    ctx.lineWidth = 22;
+    ctx.stroke(shape.streets.avenues);
+    ctx.strokeStyle = 'rgba(240, 245, 255, 0.16)';
+    ctx.lineWidth = 1.2 / s;
+    ctx.stroke(shape.streets.avenues);
+  }
+
   // Éclat de chaque nuance du blanc (elles s'additionnent : le blanc pur cumule les cinq).
   const NUANCE_ALPHA = [0.035, 0.05, 0.07, 0.1, 0.22];
 
@@ -59,6 +111,7 @@
       area: toPath(loops),
       // Les cinq nuances du blanc, de la plus pâle au blanc pur.
       nuances: Territory.NUANCES.map((w) => toPath(Territory.outline(v, w))),
+      streets: streetsOf(v),
     };
     shapes.set(v, shape);
     return shape;
@@ -90,6 +143,7 @@
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 1.4 / r.camera.scale;
     ctx.stroke(shape.nuances[4]);
+    drawStreets(r, shape);
 
     ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.05)`;
     ctx.lineWidth = 12 / r.camera.scale;

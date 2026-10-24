@@ -297,6 +297,17 @@
         }
         ctx.fill('evenodd');
       });
+      // Ses enceintes (des cercles nets ; une brèche en violet), si l'échelle le permet.
+      if (Territory.radius(v) * scale > 12) {
+        for (const w of v.walls) {
+          ctx.strokeStyle = Vide.Walls.isDone(w) ? (w.broken.length ? 'rgba(190, 160, 255, 0.8)' : 'rgba(240, 245, 255, 0.75)') : 'rgba(240, 245, 255, 0.3)';
+          ctx.lineWidth = Vide.Walls.isDone(w) ? 1.5 : 1;
+          ctx.beginPath();
+          ctx.arc(X(v.x), Y(v.y), Vide.Walls.radius(w) * scale, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.lineWidth = 1;
+      }
       ctx.fillStyle = 'rgba(255, 220, 170, 0.8)';
       for (const b of v.buildings) ctx.fillRect(X(b.x) - 1, Y(b.y) - 1, 2, 2);
       ctx.fillStyle = '#fff';
@@ -322,11 +333,24 @@
       ctx.lineWidth = 1;
       ctx.setLineDash(Vide.Roads.isDone(state, road) ? [] : [3, 4]);
       ctx.beginPath();
-      ctx.moveTo(X(a.x), Y(a.y));
-      ctx.lineTo(X(b.x), Y(b.y));
+      const path = Vide.Roads.route(state, a, b);
+      ctx.moveTo(X(path[0].x), Y(path[0].y));
+      for (const p of path) ctx.lineTo(X(p.x), Y(p.y));
       ctx.stroke();
       ctx.setLineDash([]);
     }
+    // Les troncs communs, plus larges.
+    ctx.strokeStyle = 'rgba(255, 236, 205, 0.4)';
+    for (const trunk of Vide.Roads.trunks(state)) {
+      const n = trunk.roads.filter((road) => Vide.Roads.isDone(state, road)).length;
+      if (n < 2) continue;
+      ctx.lineWidth = 1 + n;
+      ctx.beginPath();
+      ctx.moveTo(X(trunk.points[0].x), Y(trunk.points[0].y));
+      ctx.lineTo(X(trunk.points[1].x), Y(trunk.points[1].y));
+      ctx.stroke();
+    }
+    ctx.lineWidth = 1;
 
     // Expéditions en route : leur position, et un trait vers leur but (ou leur village, au retour).
     for (const e of state.expeditions) {
