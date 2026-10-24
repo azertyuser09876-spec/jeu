@@ -189,7 +189,7 @@
     // Colons : fondent leur village (ou, si la place est prise, rejoignent le village le plus proche).
     const free = state.villages.every((v) => Math.hypot(v.x - exp.tx, v.y - exp.ty) - Territory.radius(v) >= CONFIG.villages.gap * 0.5);
     remove(state, exp); // (avant de fonder : le prix des fondations compte les colons en route)
-    const home = free ? Villages.found(state, exp.type, { x: exp.tx, y: exp.ty }) : Villages.nearest(state, exp.tx, exp.ty);
+    const home = free ? Villages.found(state, exp.type, { x: exp.tx, y: exp.ty }, Villages.byId(state, exp.from)) : Villages.nearest(state, exp.tx, exp.ty);
     for (const [id, n] of Object.entries(exp.members)) home.beings[id] = (home.beings[id] || 0) + n;
     return { type: free ? 'settled' : 'colonsJoined', village: home.type, x: home.x, y: home.y };
   }

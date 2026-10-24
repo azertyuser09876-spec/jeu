@@ -102,6 +102,9 @@ const { chromium } = require('playwright');
   });
   await page.waitForTimeout(100);
   await page.click('.tab:has-text("territoire")');
+  // D'abord, la sous-faction (un choix pour toute la partie), puis le village.
+  await page.click('#shop-list li:not([hidden]) .item:has-text("Éleveurs")');
+  await page.waitForTimeout(100);
   await page.click('#shop-list li:not([hidden]) .item:has-text("Bastion")');
   await page.waitForTimeout(400);
   const founded = await page.evaluate(() => Vide.game.state.villages.map((v) => ({ type: v.type, x: Math.round(v.x) })));

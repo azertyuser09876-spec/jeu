@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 23;
+  const FORMAT = 24;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -115,6 +115,9 @@
         ? data.nests.map((n) => (n && typeof n === 'object' ? { ...n, parent: null, swarm: Vide.CONFIG.nests.outpostEvery } : n)) : data.nests,
       war: null,
     }),
+    // 2.4 : les sous-factions. Une partie en cours n'a pas encore choisi : la boutique le proposera, et ses
+    // villages prendront ce choix ; ses bases tirent la leur au chargement.
+    23: (data) => ({ ...data, faction: null }),
   };
 
   function serialize(state, now) {
@@ -248,6 +251,7 @@
         build: Number.isFinite(n.build) ? Math.max(0, Math.min(n.build, Vide.CONFIG.nests.buildEvery)) : Vide.CONFIG.nests.buildEvery,
         parent: Number.isInteger(n.parent) && n.parent > 0 && n.parent !== n.id ? n.parent : null,
         swarm: Number.isFinite(n.swarm) ? Math.max(0, Math.min(n.swarm, Vide.CONFIG.nests.outpostEvery)) : Vide.CONFIG.nests.outpostEvery,
+        faction: Vide.Factions.isDark(n.faction) ? n.faction : Vide.Factions.inherit(state, null, Vide.DARK_FACTIONS, n.id),
       });
       nest.hp = Math.min(positive(n.hp, Vide.Nests.maxHp(nest)), Vide.Nests.maxHp(nest)) || 1;
       const R = Vide.Nests.radius(nest);
@@ -269,6 +273,7 @@
     }
     state.nestTimer = Number.isFinite(raw.nestTimer) ? Math.max(0, raw.nestTimer) : null;
     state.war = isObject(raw.war) ? { age: positive(raw.war.age, 0) } : null;
+    state.faction = Vide.Factions.isLight(raw.faction) ? raw.faction : null;
 
     const beacon = isObject(raw.beacon) ? raw.beacon : null;
     if (beacon && Number.isFinite(beacon.x) && Number.isFinite(beacon.y)) {
@@ -349,6 +354,7 @@
       extra: [],
       districts: [],
       walls: [],
+      faction: Vide.Factions.isLight(raw.faction) ? raw.faction : null,
     };
     const known = (t) => Vide.VILLAGE_TYPES.some((x) => x.id === t);
     for (const t of Array.isArray(raw.extra) ? raw.extra : []) {

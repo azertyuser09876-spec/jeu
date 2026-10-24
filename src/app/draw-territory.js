@@ -280,6 +280,21 @@
     ctx.strokeStyle = `rgb(${mix(Villages.type(v.type).tint, 0.6)})`;
     ctx.lineWidth = 1 / r.camera.scale;
     HEARTS[v.type](ctx, v.x, v.y, r.time + v.id * 7, breath);
+    // Sa sous-faction : un anneau pointillé, à sa couleur, qui tourne lentement autour du cœur.
+    const f = Vide.Factions.def(v.faction);
+    if (f) {
+      const alpha = ctx.globalAlpha;
+      ctx.globalAlpha = 0.45 * flicker;
+      ctx.strokeStyle = `rgb(${f.tint.join(',')})`;
+      ctx.setLineDash([3 / r.camera.scale, 7 / r.camera.scale]);
+      ctx.lineDashOffset = -r.time * 4;
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, 44, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineDashOffset = 0;
+      ctx.globalAlpha = alpha;
+    }
     if (v.extra && v.extra.length) {
       // Une cité : un anneau de plus, autant de points que de spécialités.
       ctx.beginPath();

@@ -36,6 +36,7 @@
     state.engines = [];
     state.nestTimer = null;
     state.war = null;
+    state.faction = null; // une vie neuve : un nouveau choix
     state.echoes = 0;
     state.tides = 0;
     state.player.x = 0;

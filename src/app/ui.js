@@ -236,6 +236,8 @@
     let text = '';
     if (v) {
       text = [v.type, ...(v.extra || [])].map((t) => Vide.Villages.type(t).name).join(' · ');
+      const f = Vide.Factions.def(v.faction);
+      if (f) text += ` · ${f.name}`;
       for (const res of Vide.RESOURCES) {
         if (v.stock[res.id] >= 1) text += `  ${res.glyph} ${util.formatNumber(v.stock[res.id])}`;
       }

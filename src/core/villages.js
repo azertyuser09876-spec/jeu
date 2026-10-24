@@ -158,6 +158,7 @@
     }
     Vide.Structures.modify(village, l);
     type(village.type).modify(l);
+    if (Vide.Factions) Vide.Factions.modify(village, l);
     for (const t of village.extra || []) type(t).modify(l); // une cité cumule ses spécialités
     if (Vide.Trade && village.stock) Vide.Trade.modify(village, l);
     if (Vide.Colossus) Vide.Colossus.modifyLocal(state, village, l); // (un village bâti sur le Dormeur)
@@ -201,10 +202,12 @@
   }
 
   // Fonde un village du type donné à l'emplacement du joueur (ou en `at`, pour des colons). Le premier d'une vie
-  // reçoit les lueurs offertes par les souvenirs (Éveil précoce).
-  function found(state, typeId, at) {
+  // reçoit les lueurs offertes par les souvenirs (Éveil précoce). Sa sous-faction : celle que le joueur a choisie
+  // pour le premier ; ensuite, le plus souvent celle du village d'où il naît (`from`, sinon le plus proche).
+  function found(state, typeId, at, from) {
     const stats = Vide.Stats.compute(state);
     const where = at || state.player;
+    const parent = from || nearest(state, where.x, where.y);
     const village = {
       id: state.villages.reduce((m, v) => Math.max(m, v.id), 0) + 1,
       type: type(typeId).id,
@@ -221,7 +224,10 @@
       extra: [],
       districts: [],
       walls: [],
+      faction: null,
     };
+    village.faction = parent && parent.faction
+      ? Vide.Factions.inherit(state, parent.faction, Vide.FACTIONS, village.id) : state.faction;
     Territory.grow(village);
     if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;
     state.villages.push(village);
@@ -239,7 +245,7 @@
       revealed: (state) => !current(state) &&
         state.totalLight >= (state.villages.length ? foundCost(state) * 0.25 : CONFIG.villages.firstCost * 0.4),
       cost: (state) => ({ light: foundCost(state) }),
-      blocked: foundBlocked,
+      blocked: (state) => (state.faction ? foundBlocked(state) : 'choisis ta sous-faction'),
       apply: (state) => { found(state, t.id); },
       label: (state) => {
         const n = state.villages.filter((v) => v.type === t.id).length;

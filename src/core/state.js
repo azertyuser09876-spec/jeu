@@ -17,6 +17,7 @@
       nests: [],         // bases (nids) d'ombre : { id, x, y, hp, age, region, area, cells, buildings, walls, build } (voir nests.js)
       cleared: [],       // régions libérées d'un nid, pour de bon
       war: null,         // la guerre, une fois ouverte : { age } (voir war.js)
+      faction: null,     // sous-faction choisie par le joueur pour son premier village (voir factions.js)
       nestTimer: null,   // secondes avant le prochain nid près de tes villages
       echoes: 0,         // échos laissés par les ombres vaincues
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)

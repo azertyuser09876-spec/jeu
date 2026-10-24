@@ -78,6 +78,11 @@
       lotArea: 40000,    // un emplacement à bâtir de plus par tant de surface (un carré de 200 de côté)
     },
 
+    // Sous-factions (voir factions.js).
+    factions: {
+      inherit: 0.85,     // chance qu'un village fondé depuis un autre (un avant-poste depuis sa base) en hérite
+    },
+
     // La guerre (voir war.js) : elle s'ouvre avec le premier avant-poste.
     war: {
       ramp: 3600,        // elle atteint sa plus grande âpreté en une heure

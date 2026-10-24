@@ -53,8 +53,11 @@
         ctx.fillStyle = `rgba(70, 35, 125, ${a})`;
         ctx.fill(shape.nuances[n], 'evenodd');
       });
+      // Le liseré prend la teinte de sa sous-faction, mêlée de violet.
+      const f = Vide.Factions.def(nest.faction);
+      const c = f ? f.tint.map((x, i) => Math.round((x + [138, 96, 216][i]) / 2)) : [138, 96, 216];
       ctx.globalAlpha = 0.3;
-      ctx.strokeStyle = '#8a60d8';
+      ctx.strokeStyle = `rgb(${c.join(',')})`;
       ctx.lineWidth = 1.2 / r.camera.scale;
       ctx.stroke(shape.area);
       ctx.globalAlpha = 0.08;

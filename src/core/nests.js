@@ -74,8 +74,9 @@
       id: state.nests.reduce((m, n) => Math.max(m, n.id), 0) + 1,
       x, y, hp: 0, age: age || 0, region: regionKey || null,
       area: 0, cells: [], buildings: [], walls: [], build: CONFIG.nests.buildEvery,
-      parent: null, swarm: CONFIG.nests.outpostEvery,
+      parent: null, swarm: CONFIG.nests.outpostEvery, faction: null,
     });
+    nest.faction = Vide.Factions.inherit(state, null, Vide.DARK_FACTIONS, nest.id);
     nest.hp = maxHp(nest);
     state.nests.push(nest);
     spread(state, nest, 0);
@@ -167,6 +168,7 @@
       if (!clear || !apart) continue;
       const outpost = add(state, x, y, 0, null);
       outpost.parent = base.id;
+      outpost.faction = Vide.Factions.inherit(state, base.faction, Vide.DARK_FACTIONS, outpost.id);
       outpost.swarm = 0;
       return outpost;
     }

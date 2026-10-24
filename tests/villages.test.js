@@ -16,7 +16,11 @@
     state.player.x = 2500;
     state.player.y = -700;
     assert.ok(Catalog.get('village-observatoire').revealed(state));
+    // D'abord, sa sous-faction.
+    assert.equal(Catalog.get('village-observatoire').blocked(state), 'choisis ta sous-faction');
+    assert.ok(Catalog.buy(state, 'faction-illumines'));
     assert.ok(Catalog.buy(state, 'village-observatoire'));
+    assert.equal(state.villages[0].faction, 'illumines');
     assert.equal(state.villages.length, 1);
     const v = state.villages[0];
     assert.equal(v.type, 'observatoire');
@@ -42,6 +46,7 @@
   test('dans un village, on n’en fonde pas ; trop près non plus ; plus loin, oui, de plus en plus cher', () => {
     const state = State.create(1);
     state.light = state.totalLight = 1e9;
+    state.faction = 'eleveurs';
     village(state, { radius: 300 });
     state.player.x = 100;
     assert.equal(Catalog.get('village-jardins').revealed(state), false, 'dans un village, la boutique est la sienne');
