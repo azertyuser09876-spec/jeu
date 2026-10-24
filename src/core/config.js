@@ -141,6 +141,20 @@
       recallCooldown: 60,
     },
 
+    // Colosses : leur marche sur tes villages (pendant le jeu seulement, voir colossus.js) et leurs rôles une fois
+    // apaisés (voir allies.js).
+    colossi: {
+      marchFirst: 420,     // secondes de jeu avant la première marche…
+      marchEvery: 600,     // …puis entre deux marches
+      marchStay: 45,       // secondes passées à piétiner le village
+      marchRange: 14000,   // il ne marche que sur un village à cette distance
+      footStructure: 60,   // un pas sur un bâtiment (le double pour une patte abattue exprès)
+      stompEvery: 3,       // en marche sur un village, il abat une patte toutes les 3 s
+      guardStagger: 60,    // jauge remplie par seconde par le Veilleur qui affronte un colosse en marche
+      weave: 45,           // longueur de route tissée par seconde par la Tisseuse
+      carry: 3,            // le Léviathan porte une expédition trois fois plus vite
+    },
+
     // Engins de siège bâtis par des sapeurs (voir engines.js).
     engines: {
       max: 8,

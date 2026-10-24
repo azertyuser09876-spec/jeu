@@ -292,7 +292,10 @@
           if (d < 1500) play('footfall', 1 - d / 1500);
           break;
         }
-        case 'quake': case 'phase': play('quake'); break;
+        case 'quake':
+          if (!e.local || Math.hypot(e.points[0].x - player.x, e.points[0].y - player.y) < 900) play('quake');
+          break;
+        case 'phase': play('quake'); break;
         case 'colossusAttack': play('colossusAttack'); break;
         case 'web': play('web'); break;
         case 'bolt': play('bolt'); break;

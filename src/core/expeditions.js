@@ -303,7 +303,9 @@
   function update(game, dt) {
     const { state } = game;
     for (const exp of state.expeditions.slice()) {
-      const foe = Vide.Shadows.nearest(game, exp.x, exp.y, CONFIG.expeditions.engage);
+      // Porté par le Léviathan, elle va plus vite, hors d'atteinte des ombres.
+      const carried = Vide.Allies.carried(game, exp);
+      const foe = carried ? null : Vide.Shadows.nearest(game, exp.x, exp.y, CONFIG.expeditions.engage);
       const guards = exp.members.gardien || 0;
       if (foe && guards) {
         const sp = Colony.species('gardien');
@@ -317,7 +319,7 @@
         for (const event of (observing(exp) ? observe : erect)(state, exp, dt).events) Vide.Sim.emit(game, event.type, event);
         continue;
       }
-      const event = move(state, exp, dt);
+      const event = move(state, exp, dt * (carried ? CONFIG.colossi.carry : 1));
       if (event) Vide.Sim.emit(game, event.type, { ...event, kind: exp.kind });
     }
   }

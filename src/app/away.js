@@ -143,6 +143,7 @@
     raid: (e) => `Un raid d’ombres part d’un nid vers ${to(e.village)} (${e.count}).`,
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
+      if (e.woven) return `La Tisseuse achève la route ${a} — ${b}.`;
       return e.first
         ? `Une route relie ${a} et ${b}. Ta lumière y file plus vite ; bientôt, les caravanes y passeront.`
         : `Route achevée : ${a} — ${b}.`;
@@ -171,6 +172,11 @@
     },
     renaissance: 'Tu te dissous… et renais. Tes souvenirs t’attendent dans l’onglet souvenirs.',
     loreBatch: (e) => `Ton journal s’est rempli de ${e.count} fragments du récit (menu ≡).`,
+    march: (e) => `Le sol tremble : ${named(e.id)} quitte son repaire et marche sur ${to(e.village)} !`,
+    rampage: (e) => `${Vide.Colossus.def(e.id).name} piétine ${to(e.village)} ! Provoque-le, ou fais-le plier, pour le détourner.`,
+    colossusLeaves: (e) => `${Vide.Colossus.def(e.id).name} s’en retourne à son repaire.`,
+    guardClash: (e) => `Le Veilleur se dresse contre ${named(e.id)} !`,
+    carried: (e) => `Le Léviathan emporte tes ${{ colons: 'colons', scholars: 'érudits', sappers: 'sapeurs' }[e.kind] || 'éclaireurs'} sur son dos.`,
     colossusLost: (e) => `${Vide.Colossus.def(e.id).name} se détourne et retourne à son repaire.`,
     beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au cœur de son village.')),
     // Les danses sont fréquentes : on n'en parle qu'une fois par session.

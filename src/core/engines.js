@@ -51,7 +51,7 @@
     let best = null;
     let bestD = Infinity;
     for (const c of game.colossi) {
-      if (c.mode !== 'hunt' && c.mode !== 'kneel') continue;
+      if (!Vide.Colossus.engaged(c)) continue;
       const d = Math.hypot(c.core.x - x, c.core.y - y) - c.core.radius;
       if (d <= range && d < bestD) {
         bestD = d;

@@ -301,6 +301,23 @@ const { chromium } = require('playwright');
   const sent = await page.evaluate(() => Vide.game.state.expeditions.map((e) => e.kind));
   check(panel && sent.length === 1 && sent[0] === 'scouts', 'sur la carte, un point touché permet d’envoyer des éclaireurs');
   await page.keyboard.press('Escape');
+
+  // Érudits : toucher le repaire d'un colosse entendu propose de l'étudier.
+  await page.evaluate(() => { Vide.game.state.colossi.veilleur = 'heard'; });
+  await page.keyboard.press('m');
+  await page.waitForTimeout(200);
+  const lairAt = await page.evaluate(() => {
+    const lair = Vide.Colossus.lair(Vide.game.state, Vide.Colossus.def('veilleur'));
+    const m = Vide.map;
+    const rect = m.canvas.getBoundingClientRect();
+    return { x: rect.left + m.view.ox + lair.x * m.view.scale, y: rect.top + m.view.oy + lair.y * m.view.scale };
+  });
+  await page.mouse.click(lairAt.x, lairAt.y);
+  await page.waitForTimeout(100);
+  await page.click('#exp-scholars');
+  const scholars = await page.evaluate(() => Vide.game.state.expeditions.filter((e) => e.kind === 'scholars').length);
+  check(scholars === 1, 'sur la carte, le repaire d’un colosse permet d’envoyer des érudits l’étudier');
+  await page.keyboard.press('Escape');
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
   // Zoom : la molette éloigne la caméra, + la rapproche ; le choix survit au rechargement.

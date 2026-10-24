@@ -70,9 +70,10 @@
     game.rate = 0;
     // Un colosse en plein combat renonce et retourne à son repaire.
     for (const c of game.colossi) {
-      if (c.mode === 'hunt' || c.mode === 'kneel') {
+      if (c.mode === 'hunt' || c.mode === 'kneel' || c.mode === 'march') {
         c.mode = 'roam';
         c.attack = null;
+        c.march = null;
       }
     }
   }

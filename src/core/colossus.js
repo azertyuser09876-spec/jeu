@@ -2,6 +2,9 @@
 // État persistant : state.colossi[id] = 'heard' (battement entendu) | 'found' (rencontré) | 'tamed' (apaisé) ;
 // state.studied[id] = nombre de sceaux dévoilés par les érudits (voir expeditions.js) : un sceau voilé ne se
 // brise pas. Chaque sceau brisé ouvre une phase : il rugit, accélère, frappe plus vite et ajoute une attaque.
+// Pendant le jeu (jamais pendant l'absence), un colosse déjà rencontré quitte parfois son repaire pour marcher sur
+// un village : ses pas éteignent les bâtiments. On le détourne en le provoquant, ou en le faisant plier.
+// Apaisé, il a un rôle (voir allies.js).
 // Tout le reste (position, sceaux entamés, toiles…) est recréé au chargement : un combat abandonné repart de zéro.
 (function (Vide) {
   'use strict';
@@ -272,6 +275,7 @@
   function create(game) {
     game.colossi = [];
     game.webs = [];
+    game.marchClock = Vide.CONFIG.colossi.marchFirst;
     sync(game);
   }
 
@@ -315,6 +319,14 @@
     if (c.mode === 'calm') return;
     const r = FOOT.radius * c.def.size;
     Vide.Engines.damageAt(game, foot.x, foot.y, r + 30, Vide.CONFIG.engines.footDamage);
+    // En marche sur un village : ses pas éteignent les bâtiments.
+    if (c.mode === 'march') {
+      const v = Vide.Villages.byId(state, c.march.village);
+      for (const b of v ? v.buildings : []) {
+        if (Math.hypot(b.x - foot.x, b.y - foot.y) > r + 40) continue;
+        if (Vide.Structures.damage(game, b, Vide.CONFIG.colossi.footStructure)) Vide.Sim.emit(game, 'broken', { building: b.type });
+      }
+    }
     if (Math.hypot(state.player.x - foot.x, state.player.y - foot.y) <= r) {
       Vide.Combat.hurtPlayer(game, FOOT.damage, foot.x, foot.y);
     }
@@ -592,12 +604,18 @@
   // --- Sceaux, mise à genou, apaisement ---
 
   function hostile(c) {
-    return c.mode === 'roam' || c.mode === 'hunt' || c.mode === 'kneel';
+    return c.mode === 'roam' || c.mode === 'hunt' || c.mode === 'kneel' || c.mode === 'march';
+  }
+
+  // En combat (ou en marche sur un village) : l'armée, les balistes et les chaînes peuvent s'en prendre à lui.
+  function engaged(c) {
+    return c.mode === 'hunt' || c.mode === 'kneel' || c.mode === 'march';
   }
 
   function provoke(game, c) {
-    if (c.mode !== 'roam') return;
+    if (c.mode !== 'roam' && c.mode !== 'march') return;
     c.mode = 'hunt';
+    c.march = null;
     if (status(game.state, c.id) === 'heard') {
       game.state.colossi[c.id] = 'found';
       Vide.Sim.emit(game, 'colossusFound', { id: c.id, veiled: veiled(game.state, c, 0) });
@@ -674,11 +692,85 @@
   // Colosse hostile que l'armée peut frapper dans une zone, sous forme de cible (c.core).
   function target(game, ax, ay, radius) {
     for (const c of game.colossi) {
-      if ((c.mode === 'hunt' || c.mode === 'kneel') && Math.hypot(c.core.x - ax, c.core.y - ay) <= radius + c.core.radius) {
-        return c.core;
-      }
+      if (engaged(c) && Math.hypot(c.core.x - ax, c.core.y - ay) <= radius + c.core.radius) return c.core;
     }
     return null;
+  }
+
+  // --- Marche sur un village ---
+
+  // Un colosse rencontré, pas apaisé, qui flâne à son repaire, se met en marche vers le village le plus proche
+  // (s'il est à portée). Pendant le jeu seulement ; un à la fois.
+  function startMarch(game) {
+    const { state } = game;
+    const M = Vide.CONFIG.colossi;
+    if (game.colossi.some((c) => c.mode === 'march' || c.mode === 'hunt' || c.mode === 'kneel')) return null;
+    const ready = game.colossi.filter((c) => c.mode === 'roam' && status(state, c.id) === 'found');
+    for (const c of ready) {
+      const v = Vide.Villages.nearest(state, c.x, c.y);
+      if (!v || Math.hypot(v.x - c.x, v.y - c.y) > M.marchRange) continue;
+      c.mode = 'march';
+      c.march = { village: v.id, stay: M.marchStay, arrived: false };
+      c.wander = null;
+      Vide.Sim.emit(game, 'march', { id: c.id, village: v.type, x: v.x, y: v.y });
+      return c;
+    }
+    return null;
+  }
+
+  // Une patte abattue sur le bâtiment en état le plus proche (ou sur le cœur du village) : bâtiments, êtres et
+  // engins alentour en pâtissent.
+  function trample(game, c, v) {
+    let at = { x: v.x, y: v.y };
+    let best = Infinity;
+    for (const b of v.buildings) {
+      const d = Math.hypot(b.x - c.x, b.y - c.y);
+      if (Vide.Structures.isWorking(b) && d < best) {
+        best = d;
+        at = b;
+      }
+    }
+    const radius = ATTACKS.stomp.radius * reach(c);
+    for (const b of v.buildings) {
+      if (Math.hypot(b.x - at.x, b.y - at.y) > radius) continue;
+      if (Vide.Structures.damage(game, b, Vide.CONFIG.colossi.footStructure * 2)) Vide.Sim.emit(game, 'broken', { building: b.type });
+    }
+    for (const b of game.colony.beings) {
+      if (Colony.isActive(b) && Math.hypot(b.x - at.x, b.y - at.y) <= radius) Vide.Combat.hurtBeing(game, b, ATTACKS.stomp.beings);
+    }
+    Vide.Engines.damageAt(game, at.x, at.y, radius, Vide.CONFIG.engines.footDamage);
+    Vide.Sim.emit(game, 'quake', { points: [{ x: at.x, y: at.y }], radius, local: true });
+  }
+
+  function marching(game, c, dt) {
+    const { state } = game;
+    const v = Vide.Villages.byId(state, c.march.village);
+    if (!v) {
+      c.mode = 'roam';
+      c.march = null;
+      return;
+    }
+    const R = Territory.radius(v);
+    if (!c.march.arrived) {
+      if (walkTo(c, v.x, v.y, c.def.speed * 0.9, dt) > R + extent(c) * 0.3) return;
+      c.march.arrived = true;
+      Vide.Sim.emit(game, 'rampage', { id: c.id, village: v.type });
+    }
+    // Il piétine le village en tournant lentement autour de son cœur : toutes les quelques secondes, il abat une
+    // patte sur le bâtiment le plus proche. Puis il s'en retourne.
+    const a = Math.atan2(c.y - v.y, c.x - v.x) + 0.5;
+    const r = Math.max(60, R * 0.5);
+    walkTo(c, v.x + Math.cos(a) * r, v.y + Math.sin(a) * r, c.def.speed * 0.6, dt);
+    c.march.stomp = (c.march.stomp === undefined ? 1 : c.march.stomp) - dt;
+    if (c.march.stomp <= 0) {
+      c.march.stomp = Vide.CONFIG.colossi.stompEvery;
+      trample(game, c, v);
+    }
+    c.march.stay -= dt;
+    if (c.march.stay > 0) return;
+    c.mode = 'roam';
+    c.march = null;
+    Vide.Sim.emit(game, 'colossusLeaves', { id: c.id, village: v.type });
   }
 
   // --- Mise à jour ---
@@ -757,6 +849,10 @@
           Vide.Sim.emit(game, 'rise', { id: c.id });
         }
         break;
+      case 'march':
+        marching(game, c, dt);
+        if (c.mode === 'march' && dist < d.awareness && game.vitality.invulnerable <= 0) provoke(game, c);
+        break;
       case 'calm':
         stop(c, dt);
         c.calm = Math.min(1, c.calm + dt / 4);
@@ -769,7 +865,12 @@
         break;
       }
       case 'resident': {
-        // Ronde lente autour du territoire.
+        // Son rôle d'abord (voir allies.js) ; sans rien à faire, ronde lente autour du territoire.
+        const role = Vide.Allies.spot(game, c, dt);
+        if (role) {
+          walkTo(c, role.x, role.y, role.speed, dt);
+          break;
+        }
         const r = Territory.radius(Vide.Villages.main(state)) + 250;
         c.orbit += (16 / r) * dt;
         const spot = residentSpot(state, c.orbit);
@@ -805,6 +906,10 @@
 
   function update(game, dt) {
     unlock(game);
+    game.marchClock -= dt;
+    if (game.marchClock <= 0) {
+      game.marchClock = startMarch(game) ? Vide.CONFIG.colossi.marchEvery : 30;
+    }
     for (const c of game.colossi) updateOne(game, c, dt);
     for (let i = game.webs.length - 1; i >= 0; i--) {
       game.webs[i].life -= dt;
@@ -819,7 +924,8 @@
 
   Vide.Colossus = {
     BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot,
-    toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile,
+    toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile, engaged,
+    startMarch,
     modify, inCone, inGap, slowAt, startAttack,
   };
 })(globalThis.Vide);

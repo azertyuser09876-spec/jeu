@@ -30,6 +30,7 @@
       villageCount: state.villages.length, // pour détecter la fondation d'un village
       villageStats: new Map(),             // caractéristiques de chaque village (recalculées à chaque pas)
       expeditionsFighting: new Set(),      // expéditions arrêtées par un combat (affichage)
+      carried: null,                       // expédition portée par le Léviathan (voir allies.js)
       region: null,             // région du vide où se trouve la lumière (voir zones.js)
       zoneShown: null,          // dernière zone annoncée à l'écran
       loreCheck: 0,             // délai avant de vérifier les fragments du récit

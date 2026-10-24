@@ -398,7 +398,9 @@
         if (d < 700) r.shake = Math.max(r.shake || 0, 4 * (1 - d / 700));
       } else if (e.type === 'quake') {
         for (const p of e.points) r.quakes.push({ x: p.x, y: p.y, t: 0, size: e.radius * 1.6 });
-        r.shake = Math.max(r.shake || 0, 9);
+        // Une patte abattue au loin (colosse apaisé, ou en marche sur un village) ne secoue l'écran que de près.
+        const d = Math.hypot(e.points[0].x - player.x, e.points[0].y - player.y);
+        r.shake = Math.max(r.shake || 0, e.local ? 9 * Math.max(0, 1 - d / 900) : 9);
       }
     }
   }
@@ -422,6 +424,26 @@
     }
   }
 
+  // La Tisseuse apaisée tisse une route : des fils de son abdomen jusqu'au front du chantier.
+  function drawWeaving(r, game, c) {
+    if (!c.weaving || !game.state.roads.includes(c.weaving)) return;
+    const { ctx } = r;
+    const at = Vide.Allies.front(game.state, c.weaving);
+    const from = Colossus.pointOf(c, 'spinneret');
+    if (Math.hypot(at.x - from.x, at.y - from.y) > 700) return;
+    ctx.strokeStyle = '#eafff6';
+    ctx.lineWidth = 1.6 / r.camera.scale;
+    for (let k = 0; k < 5; k++) {
+      const sway = Math.sin(r.time * 3 + k * 1.7) * 30;
+      ctx.globalAlpha = 0.45 + 0.1 * k / 5;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.quadraticCurveTo((from.x + at.x) / 2 + sway, (from.y + at.y) / 2 - sway, at.x + (k - 2) * 12, at.y + (k - 2) * 8);
+      ctx.stroke();
+    }
+    Render.drawGlow(ctx, r.glows.light, at.x, at.y, 90, 0.6 + 0.2 * Math.sin(r.time * 5));
+  }
+
   Vide.Draw.colossi = function (r, game, dt) {
     collect(r, game);
     const view = Render.viewBounds(r, 1200);
@@ -432,6 +454,7 @@
       if (c.body.kind === 'serpent') drawSerpent(r, c);
       else drawBody(r, c);
       if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c, game.state);
+      else if (c.id === 'tisseuse') drawWeaving(r, game, c);
     }
     drawQuakes(r, dt);
   };

@@ -270,10 +270,7 @@
   function stillValid(e, a) {
     if (!e) return false;
     if (e.nest) return a.nest === e.nest && e.nest.hp > 0;
-    if (e.colossus) {
-      const m = e.colossus.mode;
-      return (m === 'hunt' || m === 'kneel') && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius + e.radius;
-    }
+    if (e.colossus) return Vide.Colossus.engaged(e.colossus) && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius + e.radius;
     return e.hp > 0 && !e.gone && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius;
   }
 

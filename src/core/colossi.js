@@ -41,7 +41,7 @@
       fury: ['quake', 'sweep'],
       requires: (state) => state.stats.shadows >= 15,
       reward: {
-        text: 'Il veille sur ton territoire : croissance ×2, et ses pas écrasent les ombres.',
+        text: 'Il veille sur tes villages : il marche vers le danger et l’écrase de ses pas. Croissance ×2.',
         modify: (stats) => { stats.territoryGrowth *= 2; },
       },
       tint: [190, 210, 255],
@@ -71,7 +71,7 @@
       fury: ['volley', 'quake', 'volley'],
       requires: (state) => state.colossi.veilleur === 'tamed',
       reward: {
-        text: 'Elle relie tes êtres entre eux : +10 places et des êtres plus rapides.',
+        text: 'Elle tisse tes routes en chantier, bien plus vite que tes bâtisseurs. +10 places, êtres plus rapides.',
         modify: (stats) => { stats.beingCap += 10; stats.beingSpeed *= 1.3; },
       },
       tint: [190, 255, 225],
@@ -101,7 +101,7 @@
       fury: ['quake', 'sweep', 'charge'],
       requires: (state) => state.colossi.tisseuse === 'tamed',
       reward: {
-        text: 'Il plonge pour toi dans les profondeurs : échos ×2, et ta mémoire porte 12 h de plus.',
+        text: 'Il porte tes expéditions, trois fois plus vite, hors d’atteinte des ombres. Échos ×2, mémoire +12 h.',
         modify: (stats) => { stats.echoGain *= 2; stats.offlineCap += 12 * 3600; },
       },
       tint: [170, 160, 255],

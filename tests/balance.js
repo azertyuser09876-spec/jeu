@@ -33,7 +33,7 @@ const lives = [];
 let lifeStart = 0;
 let lifeMillion = null;
 // Événements de combat comptés pendant la partie.
-const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, heartAttacked: 0 };
+const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, heartAttacked: 0, march: 0 };
 
 // Coût total d'un article, toutes ressources confondues (approximation suffisante pour choisir).
 const price = (item) => Object.values(item.cost(state)).reduce((a, b) => a + b, 0);
@@ -114,7 +114,8 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     const beings = Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(' ');
     const built = Vide.Structures.all(state).filter((x) => Vide.Structures.isDone(x)).map((x) => x.type[0]).join('');
     const colony = beings ? `  êtres [${beings}] bâtiments [${built}]` : '';
-    const fights = state.tides ? `  marées ${state.tides} ombres ${state.stats.shadows} ◆${Math.round(state.echoes)} dispersé ${events.dispersed} éteints ${events.beingDown} cassés ${events.broken}` : '';
+    const fights = state.tides ? `  marées ${state.tides} ombres ${state.stats.shadows} ◆${Math.round(state.echoes)} dispersé ${events.dispersed} éteints ${events.beingDown} cassés ${events.broken}`
+      + (Object.keys(state.colossi).length ? ` colosses ${Object.entries(state.colossi).map(([k, v]) => `${k}:${v}`).join(',')} marches ${events.march}` : '') : '';
     console.log(
       `${String(s / stepsPerMinute).padStart(3)} min  total ${util.formatNumber(state.totalLight).padEnd(6)}` +
         `  débit ${util.formatRate(game.rate).padEnd(6)}/s${territory}${fights}${colony}  ${levels}`
