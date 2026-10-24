@@ -419,9 +419,41 @@
     state.echoes += echoes;
     const key = nest.region || Zones.at(state.seed, nest.x, nest.y).key;
     if (!state.cleared.includes(key)) state.cleared.push(key);
-    state.nests.splice(state.nests.indexOf(nest), 1);
-    Vide.Sim.emit(game, 'nestDestroyed', { x: nest.x, y: nest.y, echoes, first: state.cleared.length === 1 });
+    const taken = fall(state, nest);
+    Vide.Sim.emit(game, 'nestDestroyed', {
+      x: nest.x, y: nest.y, echoes, first: state.cleared.length === 1,
+      village: taken ? taken.village.type : null, cells: taken ? taken.cells : 0,
+    });
     return true;
+  }
+
+  // Le village dont le territoire touche celui de la base, ou null.
+  function neighbor(state, nest) {
+    const N = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (const v of state.villages) {
+      for (let k = 0; k < nest.cells.length; k += 3) {
+        const i = nest.cells[k], j = nest.cells[k + 1];
+        for (const [di, dj] of N) if (Territory.has(v, i + di, j + dj)) return v;
+      }
+    }
+    return null;
+  }
+
+  // Une base tombe : ses ouvrages et ses remparts s'effondrent ; son terrain retourne au vide, ou rejoint ton
+  // village s'il le touche (une lumière neuve, qui devra blanchir). Renvoie { village, cells } ou null.
+  function fall(state, nest) {
+    state.nests.splice(state.nests.indexOf(nest), 1);
+    const heir = neighbor(state, nest);
+    if (!heir) return null;
+    let cells = 0;
+    for (let k = 0; k < nest.cells.length; k += 3) {
+      const i = nest.cells[k], j = nest.cells[k + 1];
+      if (Territory.has(heir, i, j) || Territory.owned(state.nests, i, j)) continue;
+      heir.cells.push(i, j, 0);
+      cells++;
+    }
+    heir.area += cells * Territory.CELL * Territory.CELL;
+    return { village: heir, cells };
   }
 
   // Pendant l'absence : elles vieillissent, grandissent, noircissent, bâtissent, essaiment (sans raid) ; la guerre
@@ -464,6 +496,6 @@
 
   Vide.Nests = {
     FAR_ZONES, level, maxHp, radius, create, darkAt, others, spread, shape, add, allowed, wallsAllowed, fortify, bonus,
-    spawnNear, discover, spawnOutpost, swarm, prowl, raid, update, shoot, offline, target, workTarget, nearestWork, hitWork, nearest, hit,
+    spawnNear, discover, spawnOutpost, swarm, prowl, raid, update, shoot, offline, neighbor, fall, target, workTarget, nearestWork, hitWork, nearest, hit,
   };
 })(globalThis.Vide);

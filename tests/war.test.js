@@ -103,6 +103,38 @@
     assert.ok(state.nests.some((n) => n.parent));
   });
 
+  // --- Prendre une base ---
+
+  test('abattre le cœur d’une base rend son terrain au vide, ou à ton village s’il le touche', () => {
+    // Une base collée au village : son terrain le rejoint.
+    const state = State.create(21);
+    const v = village(state, { radius: 350 });
+    const near = Nests.add(state, 700, 0, CONFIG.nests.levelEvery * 2);
+    const far = Nests.add(state, 9000, 0, CONFIG.nests.levelEvery * 2);
+    assert.ok(Nests.neighbor(state, near) === v, 'elle touche le village');
+    assert.equal(Nests.neighbor(state, far), null);
+    const cells = v.cells.length / 3, area = v.area, theirs = near.cells.length / 3;
+    state.player.x = -6000;
+    const game = Sim.create(state);
+    near.hp = 1;
+    assert.ok(Nests.hit(game, near, 10));
+    assert.ok(!state.nests.includes(near));
+    assert.equal(v.cells.length / 3, cells + theirs);
+    assert.near(v.area, area + theirs * Vide.Territory.CELL ** 2, 1e-6);
+    const e = game.events.find((x) => x.type === 'nestDestroyed');
+    assert.equal(e.village, v.type);
+    assert.equal(e.cells, theirs);
+    // Une lumière neuve, qui devra blanchir ; le territoire du village reste d'un seul tenant et peut grandir.
+    for (let k = cells * 3; k < v.cells.length; k += 3) assert.equal(v.cells[k + 2], 0);
+    assert.ok(Vide.Territory.contains(v, near.x, near.y));
+    // Une base loin de tout : son terrain retourne au vide.
+    far.hp = 1;
+    const before = v.cells.length;
+    Nests.hit(game, far, 10);
+    assert.equal(v.cells.length, before);
+    assert.equal(Nests.darkAt(state, far.x, far.y), null);
+  });
+
   test('sauvegarde : la guerre et les avant-postes se gardent ; les anciennes parties n’en ont pas ; renaissance', () => {
     const { state } = world();
     const outpost = Nests.spawnOutpost(state, state.nests[0]);
