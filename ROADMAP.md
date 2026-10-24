@@ -230,9 +230,17 @@ depuis un autre a de grandes chances d'être de la même.
    dans les régions lointaines), qui ne fait pas de mal — les Éleveurs et les Meutes l'apprivoisent.
 
 ### [ ] 2.5 — Les gouverneurs
-1. Chaque village (et chaque base d'ombre) a un gouverneur et un budget : il bâtit selon le plan, recrute, lance
-   des expéditions, fonde (des villages de sa sous-faction, le plus souvent), relie, forme des cités, conquiert.
-2. Les deux camps ont le même cerveau ; leur ambition grandit avec le temps.
+Choix : l'intendant devient gouverneur, et chaque base d'ombre a le sien : un même cerveau (governors.js) qui, avec
+un budget, choisit l'action qu'il veut le plus et peut s'offrir — ou économise pour elle —, selon le moment
+(menace, guerre) et son ambition, qui grandit avec le temps.
+1. Le cerveau commun, et le gouverneur d'un village : il bâtit selon le plan et selon le type de son village (chacun
+   ses priorités), lève une milice quand la menace monte, monte des enceintes avec la guerre ; la fiche dit ce
+   qu'il vise.
+2. Ambitieux, il agrandit le monde : il relie son village au plus proche, en fait une cité, lance des colons fonder
+   un village (de sa sous-faction, le plus souvent), et mène l'armée de son village contre une base proche.
+3. Le gouverneur d'une base : un budget de noirceur qui grandit avec elle, dépensé en ouvrages, remparts, bêtes,
+   avant-postes et assauts, avec le même cerveau.
+4. Équilibrage (robot) : le monde, vide au début, se remplit des deux côtés.
 
 ### [ ] 2.6 — La guerre
 1. Les fronts : territoire, bâtiments et troupes se gagnent et se perdent, des deux côtés ; le blanc pur et la
