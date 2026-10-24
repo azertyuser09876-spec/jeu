@@ -58,6 +58,7 @@
     const B = Vide.Colossus.BODIES[d.body];
     const lines = [];
     const nodes = [];
+    let shape = null; // silhouette translucide, s'il en a une
     const P = (x, y) => ({ x, y });
     switch (B.kind) {
       case 'legged': {
@@ -71,12 +72,24 @@
         lines.push(spine);
         for (const l of B.legs) {
           const hip = P(l.hip[0], l.hip[1]);
-          const foot = P(l.rest[0], l.rest[1]);
-          const knee = P((hip.x + foot.x) / 2 + Math.sign(l.rest[0] - l.hip[0] || 1) * 10, (hip.y + foot.y) / 2 + l.side * 40);
+          // Le pied un peu plus loin qu'au repos : la patte se déploie.
+          const foot = P(l.rest[0] * 1.15, l.rest[1] * 1.35);
+          // Genou à deux segments (cuisse, tibia), plié vers l'extérieur.
+          const dx = foot.x - hip.x, dy = foot.y - hip.y;
+          const dd = Math.min(Math.hypot(dx, dy), B.thigh + B.shin - 1);
+          const bend = Math.acos(util.clamp((B.thigh ** 2 + dd ** 2 - B.shin ** 2) / (2 * B.thigh * dd), -1, 1));
+          const base = Math.atan2(dy, dx);
+          const k1 = P(hip.x + Math.cos(base + bend) * B.thigh, hip.y + Math.sin(base + bend) * B.thigh);
+          const k2 = P(hip.x + Math.cos(base - bend) * B.thigh, hip.y + Math.sin(base - bend) * B.thigh);
+          const knee = Math.abs(k1.y) > Math.abs(k2.y) ? k1 : k2;
           lines.push([hip, knee, foot]);
           nodes.push(knee, foot);
         }
         nodes.push(...spine);
+        if (B.outline) {
+          const half = B.outline;
+          shape = half.concat(half.slice(1, -1).reverse().map(([x, y]) => [x, -y])).map(([x, y]) => P(x, y));
+        }
         break;
       }
       case 'serpent': {
@@ -147,7 +160,7 @@
       default:
         nodes.push(P(0, 0));
     }
-    return { lines, nodes, eyes: B.eyes && B.eyes.length ? B.eyes.map(([x, y]) => P(x, y)) : [P(0, 0)] };
+    return { lines, nodes, shape, eyes: B.eyes && B.eyes.length ? B.eyes.map(([x, y]) => P(x, y)) : [P(0, 0)] };
   }
 
   // Peint un colosse en constellation. opts : { angle, alpha, gold (0 → 1), eyes (0 → 1), time, seals (0 → 1) }.
@@ -161,6 +174,16 @@
     const alpha = o.alpha === undefined ? 1 : o.alpha;
     ctx.globalCompositeOperation = 'lighter';
     dot(g, tint, x, y, 360 * scale, 0.12 * alpha);
+    if (f.shape) {
+      ctx.globalAlpha = 0.1 * alpha;
+      ctx.fillStyle = rgb(tint);
+      path(ctx, f.shape.map(at), true);
+      ctx.fill();
+      ctx.globalAlpha = 0.3 * alpha;
+      ctx.strokeStyle = rgb(tint);
+      ctx.lineWidth = Math.max(1, 1.2 * scale);
+      ctx.stroke();
+    }
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     for (const l of f.lines) {
@@ -211,10 +234,11 @@
     return p ? { x: p[0], y: p[1] } : { x: 0, y: 0 };
   }
 
-  // Taille à laquelle peindre un colosse pour qu'il occupe `part` de la hauteur de l'écran.
+  // Taille à laquelle peindre un colosse pour qu'il occupe `part` de la hauteur de l'écran (sur un écran étroit,
+  // de sa largeur).
   function fit(g, d, part) {
     const B = Vide.Colossus.BODIES[d.body];
-    return (g.h * part) / (B.extent * 2);
+    return (Math.min(g.h, g.w * 1.1) * part) / (B.extent * 2);
   }
 
   // --- Registre ---
@@ -402,7 +426,145 @@
     ],
   });
 
+  // --- Le ciel des colosses apaisés ---
+  // Chacun y a sa place, en arc au-dessus de l'horizon : une petite constellation dorée.
+
+  function skySpot(g, d) {
+    const i = Vide.COLOSSI.indexOf(d);
+    const n = Vide.COLOSSI.length - 1;
+    return {
+      x: g.w * (0.14 + 0.72 * (i / n)),
+      y: g.h * (0.36 - 0.12 * Math.sin((i / n) * Math.PI)),
+      scale: fit(g, d, d.stays ? 0.16 : 0.12),
+    };
+  }
+
+  // Les colosses apaisés dans le ciel (sauf `except`), sur un ciel étoilé.
+  function sky(g, except, alpha) {
+    const { ctx, w, h } = g;
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, 'rgb(4, 5, 14)');
+    bg.addColorStop(1, 'rgb(14, 12, 18)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+    stars(g, 110, 0.6, 3);
+    for (const d of Vide.COLOSSI) {
+      if (d.id === except || g.state.colossi[d.id] !== 'tamed') continue;
+      const at = skySpot(g, d);
+      colossus(g, d, at.x, at.y, at.scale, { angle: -0.3, alpha: 0.55 * (alpha === undefined ? 1 : alpha), gold: 1, time: g.time * 0.4 });
+    }
+  }
+
+  // Le point où regardent ses yeux (sa tête), en coordonnées locales.
+  function headOf(d) {
+    const B = Vide.Colossus.BODIES[d.body];
+    if (B.points && B.points.head) return { x: B.points.head[0], y: B.points.head[1] };
+    if (B.eyes && B.eyes.length) return { x: B.eyes[0][0], y: 0 };
+    return { x: 0, y: 0 };
+  }
+
+  // --- La rencontre ---
+  // Une lueur minuscule au bas de l'écran ; le colosse se dresse au-dessus d'elle, immense. Puis ses yeux s'ouvrent
+  // (le Dormeur, lui, ne s'éveille pas : seuls ses rêves s'allument).
+
+  register('rencontre:', (d) => ({
+    shots: [
+      {
+        d: 2.6,
+        sound: 'heartbeat',
+        draw(g) {
+          const { ctx, w, h, cx, u, p } = g;
+          ctx.fillStyle = 'rgb(3, 4, 10)';
+          ctx.fillRect(0, 0, w, h);
+          stars(g, 60, 0.4, 0);
+          const k = ease(p);
+          const scale = fit(g, d, 0.8);
+          colossus(g, d, cx, h * (1.15 - 0.62 * k), scale, { angle: -Math.PI / 2, alpha: 0.85 * k, time: g.time * 0.5 });
+          dot(g, [255, 250, 240], cx, h * 0.84, 18 * u, 0.9);
+          dot(g, [255, 255, 255], cx, h * 0.84, 5 * u, 1);
+        },
+      },
+      {
+        d: 2.2,
+        sound: d.stays ? 'lore' : 'quake',
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          ctx.fillStyle = 'rgb(3, 4, 10)';
+          ctx.fillRect(0, 0, w, h);
+          const scale = fit(g, d, 0.8) * (2 + 0.3 * ease(p));
+          const head = headOf(d);
+          // La tête (vue de près) au centre : le corps est peint tourné vers le haut.
+          const x = cx + head.y * scale, y = cy + head.x * scale;
+          const wake = d.stays ? 0 : ease(clamp01((p - 0.25) / 0.3));
+          colossus(g, d, x, y, scale, { angle: -Math.PI / 2, alpha: 0.85, eyes: wake, seals: d.stays ? ease(p) : 0, time: g.time * 0.5 });
+          if (wake > 0) {
+            // Une onde part de son regard.
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = 0.5 * (1 - p);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2 * u;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 40 * u + (p - 0.25) * 700 * u, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        },
+      },
+    ],
+  }));
+
+  // --- L'apaisement ---
+  // Ses sceaux se brisent en éclats d'or, et l'or gagne tout son corps. Puis il s'élève et prend sa place dans le
+  // ciel, parmi les colosses déjà apaisés.
+
+  register('apaisement:', (d) => ({
+    shots: [
+      {
+        d: 2.8,
+        sound: 'sealBroken',
+        draw(g) {
+          const { ctx, w, h, cx, cy, u, p } = g;
+          ctx.fillStyle = 'rgb(4, 4, 10)';
+          ctx.fillRect(0, 0, w, h);
+          stars(g, 50, 0.4, 0);
+          const gold = ease(clamp01((p - 0.3) / 0.7));
+          const scale = fit(g, d, 0.6);
+          colossus(g, d, cx, cy, scale, { angle: -0.2, alpha: 0.9, gold, seals: 1 - gold, eyes: gold * 0.6, time: g.time * 0.5 });
+          // L'onde d'or.
+          if (p > 0.3) {
+            const k = (p - 0.3) / 0.7;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.globalAlpha = 0.45 * (1 - k);
+            ctx.strokeStyle = rgb(GOLD);
+            ctx.lineWidth = 3 * u;
+            ctx.beginPath();
+            ctx.arc(cx, cy, k * Math.max(w, h) * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+            for (let i = 0; i < 24; i++) {
+              const a = rand(i, 51) * Math.PI * 2;
+              const r = k * (200 + rand(i, 52) * 300) * u;
+              dot(g, GOLD, cx + Math.cos(a) * r, cy + Math.sin(a) * r, 8 * u, 1 - k);
+            }
+          }
+        },
+      },
+      {
+        d: 3.2,
+        sound: 'tamed',
+        draw(g) {
+          const { cx, h, p } = g;
+          sky(g, d.id);
+          const to = skySpot(g, d);
+          const k = ease(p);
+          const big = fit(g, d, 0.5);
+          colossus(g, d, cx + (to.x - cx) * k, h * 0.75 + (to.y - h * 0.75) * k, big + (to.scale - big) * k,
+            { angle: -0.3 * k, alpha: 0.6 + 0.3 * (1 - k), gold: 1, eyes: 0.5, time: g.time * 0.4 });
+        },
+      },
+    ],
+  }));
+
   Vide.Scenes = {
-    GOLD, BLUE, glow, rgb, mix, ease, clamp01, rand, dot, path, stars, figure, colossus, fit, register, get, title, seen,
+    GOLD, BLUE, glow, rgb, mix, ease, clamp01, rand, dot, path, stars, figure, colossus, fit, skySpot, sky, headOf, register,
+    get, title, seen,
   };
 })(globalThis.Vide);

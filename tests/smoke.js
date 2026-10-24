@@ -356,6 +356,12 @@ const { chromium } = require('playwright');
   });
   await page.waitForTimeout(600);
   const found = await page.evaluate(() => Vide.game.state.colossi.veilleur === 'found');
+  // Sa rencontre se joue en tableau ; on le passe.
+  const meeting = await page.evaluate(() => Vide.cinema.current && Vide.cinema.current.id);
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'rencontre.png') });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(1200);
+  check(meeting === 'rencontre:veilleur', 'la rencontre du Veilleur se joue en tableau');
   check(found && (await page.isVisible('#boss')), 'approcher le Veilleur le réveille, sa jauge de combat apparaît');
   const recoil = await page.evaluate(() => Vide.renderer.autoZoom);
   check(recoil < 0.9, `la caméra recule devant le colosse (${recoil.toFixed(2)})`);
