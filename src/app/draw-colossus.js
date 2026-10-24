@@ -4,6 +4,7 @@
   const { Render, Colossus } = Vide;
 
   const GOLD = [255, 226, 160];
+  const LIFT = 90; // hauteur dessinée d'un colosse en vol (taille de référence)
 
   function mix(a, b, t) {
     return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t));
@@ -192,8 +193,11 @@
     const { ctx } = r;
     const px = 1 / r.camera.scale;
     const k = Colossus.reach(c);
+    // (Un colosse en vol porte ses sceaux en l'air, avec son corps.)
+    const lift = (c.air || 0) * LIFT * k;
     c.seals.forEach((seal, i) => {
-      const p = Colossus.pointOf(c, seal.at);
+      const at = Colossus.pointOf(c, seal.at);
+      const p = { x: at.x, y: at.y - lift };
       if (seal.broken) {
         ctx.globalAlpha = 0.2;
         ctx.strokeStyle = '#fff3d6';
@@ -286,7 +290,11 @@
     const k = atk.phase === 'telegraph' ? Math.min(1, atk.t / (atk.telegraph || a.telegraph)) : 1;
     const px = 1 / r.camera.scale;
     ctx.globalCompositeOperation = 'source-over';
-    if (atk.kind === 'stomp') {
+    // Attaques des colosses de la 1.8 : dessinées par draw-beasts.js.
+    const custom = Vide.Draw.beastAttacks && Vide.Draw.beastAttacks[atk.kind];
+    if (custom) {
+      custom(r, c, atk, k);
+    } else if (atk.kind === 'stomp') {
       for (const p of atk.points) {
         ctx.globalAlpha = 0.12 + 0.25 * k;
         ctx.fillStyle = '#6b3fd1';
@@ -451,13 +459,18 @@
     for (const c of game.colossi) {
       if (c.core.x < view.left || c.core.x > view.right || c.core.y < view.top || c.core.y > view.bottom) continue;
       drawAttack(r, c);
-      if (c.body.kind === 'serpent') drawSerpent(r, c);
+      const custom = Vide.Draw.beasts && Vide.Draw.beasts[c.body.kind];
+      if (custom) custom(r, c, game);
+      else if (c.body.kind === 'serpent') drawSerpent(r, c);
       else drawBody(r, c);
       if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c, game.state);
       else if (c.id === 'tisseuse') drawWeaving(r, game, c);
     }
     drawQuakes(r, dt);
   };
+
+  // Outils partagés avec draw-beasts.js.
+  Vide.Draw.colossusKit = { GOLD, LIFT, mix, rgb, glowOf, line, drawEyes };
 
   // Battement : une flèche dorée qui bat comme un cœur, vers un colosse pas encore apaisé.
   Vide.Draw.colossiOverlay = function (r, game) {

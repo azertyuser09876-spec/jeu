@@ -4,6 +4,7 @@
 //   Tisseuse   tisse : elle parcourt les routes en chantier et y file sa toile ; elles s'achèvent bien plus vite.
 //   Léviathan  porte : il rejoint une expédition en route et l'emporte, trois fois plus vite, hors d'atteinte des
 //              ombres.
+//   Oiseau     accompagne : il tourne au-dessus de ta lumière et révèle les régions autour de lui.
 // Rien n'est sauvegardé : le rôle se recalcule à chaque pas (les recherches, deux fois par seconde).
 (function (Vide) {
   'use strict';
@@ -152,7 +153,34 @@
     return { x: target.x, y: target.y, speed: 260 };
   }
 
-  const ROLES = { veilleur: guard, tisseuse: weave, leviathan: carry };
+  // --- Oiseau d'aube ---
+
+  const SIGHT = 1500; // rayon des régions qu'il révèle
+
+  function escort(game, c, dt) {
+    const { state } = game;
+    const { player } = state;
+    c.roleCheck = (c.roleCheck || 0) - dt;
+    if (c.roleCheck <= 0) {
+      c.roleCheck = 1;
+      const step = Vide.Zones.CELL / 3;
+      const found = [];
+      for (let dx = -SIGHT; dx <= SIGHT; dx += step) {
+        for (let dy = -SIGHT; dy <= SIGHT; dy += step) {
+          if (dx * dx + dy * dy > SIGHT * SIGHT) continue;
+          const region = Vide.Zones.at(state.seed, c.x + dx, c.y + dy);
+          if (Vide.Zones.visit(state, region)) found.push(region.zone.id);
+        }
+      }
+      if (found.length) Vide.Sim.emit(game, 'sighted', { zones: found });
+    }
+    c.circle = (c.circle || 0) + 0.6 * dt;
+    // Loin de toi, il te rejoint à tire-d'aile.
+    const far = Math.hypot(player.x - c.x, player.y - c.y) > 2000;
+    return { x: player.x + Math.cos(c.circle) * 320, y: player.y + Math.sin(c.circle) * 320, speed: far ? 1400 : 450 };
+  }
+
+  const ROLES = { veilleur: guard, tisseuse: weave, leviathan: carry, oiseau: escort };
 
   // Où va un colosse apaisé, et à quelle vitesse : { x, y, speed }, ou null (il fait sa ronde).
   function spot(game, c, dt) {

@@ -317,10 +317,18 @@
     assert.ok(game.events.some((e) => e.type === 'heartbeat' && e.id === 'leviathan'));
   });
 
-  test('chaque colosse vit plus loin que le précédent', () => {
+  test('chaque colosse vit plus loin que tous ceux qu’il faut apaiser avant lui', () => {
     const state = State.create(8);
-    const dist = Vide.COLOSSI.map((d) => Math.hypot(Colossus.lair(state, d).x, Colossus.lair(state, d).y));
-    for (let i = 1; i < dist.length; i++) assert.ok(dist[i] > dist[i - 1]);
+    state.stats.shadows = 1e6;
+    const dist = (d) => Math.hypot(Colossus.lair(state, d).x, Colossus.lair(state, d).y);
+    for (const d of Vide.COLOSSI) {
+      for (const e of Vide.COLOSSI) {
+        if (e === d) continue;
+        // e est un préalable de d si, tous les autres apaisés, d reste muet tant que e ne l'est pas.
+        for (const o of Vide.COLOSSI) state.colossi[o.id] = o === e ? 'found' : 'tamed';
+        if (!d.requires(state)) assert.ok(dist(d) > dist(e), `${d.id} après ${e.id}`);
+      }
+    }
   });
 
   test('la Tisseuse marche à huit pattes, par tétrapodes alternés', () => {

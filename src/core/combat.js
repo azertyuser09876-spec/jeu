@@ -286,8 +286,8 @@
     return enemy.colossus || enemy.nest ? enemy.radius : Shadows.kind(enemy.kind).radius;
   }
 
-  function damageEnemy(game, enemy, amount) {
-    if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount);
+  function damageEnemy(game, enemy, amount, melee) {
+    if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount, melee);
     else if (enemy.nest) Vide.Nests.hit(game, enemy.nest, amount);
     else Shadows.damage(enemy, amount);
   }
@@ -319,7 +319,7 @@
       if (d <= sp.range + enemyRadius(enemy) && b.cd <= 0) {
         b.cd = sp.cooldown;
         b.flash = 1;
-        damageEnemy(game, enemy, sp.damage * Colony.statsOf(game, b).armyDamage);
+        damageEnemy(game, enemy, sp.damage * Colony.statsOf(game, b).armyDamage, true);
       }
     },
 

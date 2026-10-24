@@ -165,6 +165,8 @@
     setClass(ui.pulseBtn, 'ready', Vide.Sim.pulseReady(game));
   }
 
+  const GUARDS = { aloft: 'en vol', closed: 'refermée', shielded: 'à l’abri de sa nuée' };
+
   // Combat contre un colosse : son nom, ses sceaux (● actif, ○ à venir, · brisé, ◌ voilé), la jauge qui le fait plier.
   function updateBoss(ui) {
     const { game } = ui;
@@ -173,7 +175,11 @@
       Math.hypot(k.x - player.x, k.y - player.y) < 1600 + Vide.Colossus.extent(k));
     setClass(ui.boss, 'hidden', !c);
     if (!c) return;
-    setText(ui.bossName, c.mode === 'kneel' ? `${c.def.name} · vulnérable` : c.def.name);
+    // Ce qui protège son sceau (en vol, cloche refermée, noyau caché), ou sa faiblesse.
+    const guard = Vide.Colossus.beast(c).guard;
+    const why = guard ? guard(game, c) : null;
+    const state = c.mode === 'kneel' ? 'vulnérable' : GUARDS[why];
+    setText(ui.bossName, state ? `${c.def.name} · ${state}` : c.def.name);
     const seals = c.seals.map((s, i) => {
       if (s.broken) return '<span class="broken">·</span>';
       if (Vide.Colossus.veiled(game.state, c, i)) return '<span class="veiled">◌</span>';

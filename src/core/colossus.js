@@ -4,7 +4,15 @@
 // brise pas. Chaque sceau brisé ouvre une phase : il rugit, accélère, frappe plus vite et ajoute une attaque.
 // Pendant le jeu (jamais pendant l'absence), un colosse déjà rencontré quitte parfois son repaire pour marcher sur
 // un village : ses pas éteignent les bâtiments. On le détourne en le provoquant, ou en le faisant plier.
-// Apaisé, il a un rôle (voir allies.js).
+// Apaisé, il a un rôle (voir allies.js). Les corps venus avec la 1.8 (vol, cloche, nuée, dormeur) vivent dans
+// beasts.js : chacun s'accroche ici par Vide.Beasts[kind] (init, chasse, mise à jour, sceaux protégés).
+//   init(game, c)                     à la création
+//   hunt(game, c, dt, dist, held)     déplacement en chasse (renvoie vrai : il s'oriente lui-même)
+//   update(game, c, dt)               chaque pas, après le déplacement (pose, position du cœur)
+//   guard(game, c)                    raison pour laquelle son sceau actif ne peut être frappé, ou null
+//   aloft(c)                          vrai : hors d'atteinte du corps à corps
+//   rest(game, c, dt, dist)           mode propre ('sleep') : tout le comportement
+// Une attaque peut aussi porter ses propres crochets (voir ATTACKS) : start, strike, step.
 // Tout le reste (position, sceaux entamés, toiles…) est recréé au chargement : un combat abandonné repart de zéro.
 (function (Vide) {
   'use strict';
@@ -121,6 +129,10 @@
 
   const veiled = (state, c, i) => i >= revealed(state, c.id);
 
+  // Crochets du corps de ce colosse (voir l'en-tête), ou un objet vide.
+  const NONE = {};
+  const beast = (c) => (Vide.Beasts && Vide.Beasts[c.body.kind]) || NONE;
+
   // Phase du combat : nombre de sceaux déjà brisés.
   const phase = (c) => Math.min(c.active, c.seals.length);
 
@@ -176,6 +188,7 @@
   // Point nommé du corps : 'head', 'back'… ; 'tail' (queue) ; 'seg:K' (vertèbre K d'un serpent).
   function pointOf(c, at) {
     if (at.startsWith('seg:')) return c.segments[Number(at.slice(4))];
+    if (at.startsWith('core:')) return c.nuclei[Number(at.slice(5))];
     if (c.body.kind === 'serpent') return c.segments[0];
     const p = c.body.points[at];
     if (p === 'tail') {
@@ -222,7 +235,8 @@
     const { state } = game;
     const tamed = status(state, d.id) === 'tamed';
     const orbit = util.hash2(d.lair.angleSeed, 11, state.seed) * Math.PI * 2;
-    const at = tamed ? residentSpot(state, orbit) : lair(state, d);
+    // (Un colosse qui reste où il est, comme le Dormeur, ne rejoint jamais tes villages.)
+    const at = tamed && !d.stays ? residentSpot(state, orbit) : lair(state, d);
     const body = BODIES[d.body];
     const c = {
       id: d.id,
@@ -257,10 +271,11 @@
         const foot = toWorld(c, l.rest[0], l.rest[1]);
         return { foot, from: foot, to: foot, t: -1, lift: 0, duration: body.stepTime };
       });
-    } else {
+    } else if (body.kind === 'serpent') {
       c.segments = [];
       for (let k = 0; k < body.segments; k++) c.segments.push({ x: at.x - k * body.spacing * d.size, y: at.y });
     }
+    if (beast(c).init) beast(c).init(game, c);
     game.colossi.push(c);
     return c;
   }
@@ -414,7 +429,9 @@
     const head = pointOf(c, 'head');
     const dir = Math.atan2(player.y - head.y, player.x - head.x);
     const k = reach(c);
-    if (kind === 'stomp') {
+    if (a.start) {
+      c.attack = a.start(game, c, { dir, head, k });
+    } else if (kind === 'stomp') {
       const v = game.velocity;
       const angle = c.rng() * Math.PI * 2;
       const off = 90 + c.rng() * 60;
@@ -535,6 +552,10 @@
     const atk = c.attack;
     const a = ATTACKS[atk.kind];
     const { player } = game.state;
+    if (a.start) {
+      if (a.strike) a.strike(game, c);
+      return;
+    }
     if (atk.kind === 'web' || atk.kind === 'volley') {
       const web = ATTACKS.web;
       for (const at of atk.webs || [atk.at]) {
@@ -597,14 +618,16 @@
     } else if (atk.phase === 'active') {
       if (atk.kind === 'quake') quaking(game, c, dt);
       else if (atk.kind === 'sweep') sweeping(game, c, dt);
+      else if (a.step) a.step(game, c, dt);
       if (c.attack && a.active && atk.t >= a.active) endAttack(c);
     }
   }
 
   // --- Sceaux, mise à genou, apaisement ---
 
+  // Pas encore apaisé : ses sceaux peuvent être frappés (le Dormeur aussi, pendant son sommeil).
   function hostile(c) {
-    return c.mode === 'roam' || c.mode === 'hunt' || c.mode === 'kneel' || c.mode === 'march';
+    return c.mode === 'roam' || c.mode === 'hunt' || c.mode === 'kneel' || c.mode === 'march' || c.mode === 'sleep';
   }
 
   // En combat (ou en marche sur un village) : l'armée, les balistes et les chaînes peuvent s'en prendre à lui.
@@ -622,9 +645,10 @@
     }
   }
 
-  // Dégâts de l'armée : ils remplissent la jauge qui le fait plier.
-  function hit(game, c, amount) {
-    if (!hostile(c)) return;
+  // Dégâts de l'armée : ils remplissent la jauge qui le fait plier. Le corps à corps (`melee`) n'atteint pas un
+  // colosse hors de portée (en vol).
+  function hit(game, c, amount, melee) {
+    if (!hostile(c) || c.mode === 'sleep' || (melee && beast(c).aloft && beast(c).aloft(c))) return;
     provoke(game, c);
     c.hitFlash = Math.min(1, c.hitFlash + 0.3);
     if (c.mode === 'kneel') return;
@@ -655,6 +679,11 @@
     provoke(game, c);
     if (veiled(game.state, c, c.active)) {
       Vide.Sim.emit(game, 'veiled', { id: c.id });
+      return false;
+    }
+    const guarded = beast(c).guard && beast(c).guard(game, c);
+    if (guarded) {
+      Vide.Sim.emit(game, guarded, { id: c.id });
       return false;
     }
     seal.hp -= amount * (c.mode === 'kneel' ? 2 : 1);
@@ -832,10 +861,14 @@
         }
         const k = reach(c);
         const held = c.bound ? Vide.CONFIG.engines.chain.slow : 1; // une chaîne le retient
-        if (c.attack && c.attack.kind === 'charge') stop(c, dt); // il se ramasse avant de foncer
-        else if (dist > 380 * k) walkTo(c, player.x, player.y, d.speed * (1 + PHASE.speed * phase(c)) * held, dt);
-        else stop(c, dt);
-        turnTowards(c, Math.atan2(player.y - c.y, player.x - c.x), dt);
+        if (beast(c).hunt) {
+          if (!beast(c).hunt(game, c, dt, dist, held)) turnTowards(c, Math.atan2(player.y - c.y, player.x - c.x), dt);
+        } else {
+          if (c.attack && c.attack.kind === 'charge') stop(c, dt); // il se ramasse avant de foncer
+          else if (dist > 380 * k) walkTo(c, player.x, player.y, d.speed * (1 + PHASE.speed * phase(c)) * held, dt);
+          else stop(c, dt);
+          turnTowards(c, Math.atan2(player.y - c.y, player.x - c.x), dt);
+        }
         if (c.attack) updateAttack(game, c, dt);
         else if (c.attackCd <= 0 && dist < 800 * k) startAttack(game, c);
         break;
@@ -853,6 +886,9 @@
         marching(game, c, dt);
         if (c.mode === 'march' && dist < d.awareness && game.vitality.invulnerable <= 0) provoke(game, c);
         break;
+      case 'sleep':
+        beast(c).rest(game, c, dt, dist);
+        break;
       case 'calm':
         stop(c, dt);
         c.calm = Math.min(1, c.calm + dt / 4);
@@ -860,6 +896,10 @@
         if (c.calmTimer <= 0) c.mode = 'home';
         break;
       case 'home': {
+        if (d.stays) {
+          c.mode = 'resident';
+          break;
+        }
         const spot = residentSpot(state, c.orbit);
         if (walkTo(c, spot.x, spot.y, 80, dt) < 80) c.mode = 'resident';
         break;
@@ -869,6 +909,10 @@
         const role = Vide.Allies.spot(game, c, dt);
         if (role) {
           walkTo(c, role.x, role.y, role.speed, dt);
+          break;
+        }
+        if (d.stays) {
+          stop(c, dt);
           break;
         }
         const r = Territory.radius(Vide.Villages.main(state)) + 250;
@@ -896,12 +940,16 @@
       c.core.x = c.x;
       c.core.y = c.y;
       updateLegs(game, c, dt);
-    } else {
+    } else if (c.body.kind === 'serpent') {
       updateSegments(c);
       const mid = c.segments[Math.floor(c.segments.length / 2)];
       c.core.x = mid.x;
       c.core.y = mid.y;
+    } else {
+      c.core.x = c.x;
+      c.core.y = c.y;
     }
+    if (beast(c).update) beast(c).update(game, c, dt);
   }
 
   function update(game, dt) {
@@ -925,7 +973,7 @@
   Vide.Colossus = {
     BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot,
     toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile, engaged,
-    startMarch,
+    startMarch, provoke, walkTo, stop, turnTowards, endAttack, beast,
     modify, inCone, inGap, slowAt, startAttack,
   };
 })(globalThis.Vide);

@@ -108,5 +108,36 @@
       heartbeat: 'Sous le vide, un chant grave… Quelque chose nage au fond du Gouffre.',
       kneelText: 'se love sur lui-même',
     },
+    // --- 1.8 (corps et comportements dans beasts.js) ---
+    {
+      id: 'oiseau',
+      name: 'L’Oiseau d’aube',
+      epithet: 'qui ne touche jamais terre',
+      body: 'bird',
+      size: 1.9,
+      lair: { distance: 8000, angleSeed: 4 },
+      roam: 900,
+      speed: 150,
+      awareness: 1500,
+      leash: 3000,
+      seals: [
+        { at: 'head', hp: 300 },
+        { at: 'wingL', hp: 340 },
+        { at: 'wingR', hp: 340 },
+        { at: 'tail', hp: 400 },
+      ],
+      stagger: 800,
+      kneel: 7,
+      attacks: ['dive', 'gale'],
+      fury: ['feathers', 'dive', 'feathers'],
+      requires: (state) => state.colossi.veilleur === 'tamed',
+      reward: {
+        text: 'Il t’accompagne depuis le ciel et révèle le lointain autour de toi. Ta lumière file 15 % plus vite.',
+        modify: (stats) => { stats.speed *= 1.15; },
+      },
+      tint: [255, 205, 175],
+      heartbeat: 'Très haut, un cri clair… Quelque chose plane là où le vide pâlit, comme une aube.',
+      kneelText: 'est cloué au sol',
+    },
   ];
 })(globalThis.Vide);

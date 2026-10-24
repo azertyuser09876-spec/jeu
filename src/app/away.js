@@ -172,6 +172,12 @@
     },
     renaissance: 'Tu te dissous… et renais. Tes souvenirs t’attendent dans l’onglet souvenirs.',
     loreBatch: (e) => `Ton journal s’est rempli de ${e.count} fragments du récit (menu ≡).`,
+    aloft: (e) => (seen.aloft ? null : (seen.aloft = true,
+      'Il vole trop haut : ta pulsation ne l’atteint pas. Cloue-le au sol (chaînes, balistes, harpons, étincelles), '
+      + 'ou guette ses posés.')),
+    landed: () => 'L’Oiseau d’aube se pose… vite, ses sceaux sont à portée !',
+    gale: () => (seen.gale ? null : (seen.gale = true, 'Une rafale ! Elle repousse tout ce qui se tient devant lui.')),
+    sighted: (e) => `L’Oiseau d’aube a aperçu au loin : ${e.zones.map((z) => Vide.Zones.get(z).name).join(', ')}.`,
     march: (e) => `Le sol tremble : ${named(e.id)} quitte son repaire et marche sur ${to(e.village)} !`,
     rampage: (e) => `${Vide.Colossus.def(e.id).name} piétine ${to(e.village)} ! Provoque-le, ou fais-le plier, pour le détourner.`,
     colossusLeaves: (e) => `${Vide.Colossus.def(e.id).name} s’en retourne à son repaire.`,
@@ -196,7 +202,7 @@
   const to = (t) => article(t, false);
   // « le Veilleur », « du Veilleur », « de la Tisseuse ».
   const named = (id) => Vide.Colossus.def(id).name.replace(/^L/, 'l');
-  const ofNamed = (id) => Vide.Colossus.def(id).name.replace(/^Le /, 'du ').replace(/^La /, 'de la ');
+  const ofNamed = (id) => Vide.Colossus.def(id).name.replace(/^Le /, 'du ').replace(/^La /, 'de la ').replace(/^L’/, 'de l’');
 
   // Message à la naissance du premier être de chaque espèce.
   const FIRST_BIRTH = {

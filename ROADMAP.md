@@ -132,8 +132,15 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 3. Colosses qui marchent sur un village (seulement pendant le jeu) ; colosses apaisés avec un vrai rôle.
 
 ### [ ] 1.8 — Nouveaux colosses
-L'Oiseau d'aube (vole, à clouer au sol), la Méduse (sceaux au rythme de ses pulsations), la Nuée
-(milliers de fragments), le Colosse endormi (on peut bâtir sur son dos).
+1. L'Oiseau d'aube (après le Veilleur) : il vole, ses sceaux hors d'atteinte ; il pique et souffle des rafales.
+   On le cloue au sol (chaînes, balistes, harpons, étincelles), ou on guette ses rares posés. Apaisé, il
+   t'accompagne et révèle le lointain.
+2. La Méduse (après l'Oiseau et la Tisseuse) : une cloche qui pulse ; ses sceaux ne s'ouvrent qu'au rythme de
+   ses pulsations ; fouets de tentacules, ondes. Apaisée, elle soigne le village le plus abîmé.
+3. La Nuée (après le Léviathan) : des centaines de fragments qui protègent ses noyaux ; la pulsation les
+   disperse, l'armée les dévore. Apaisée, elle récolte la lumière autour de toi.
+4. Le Dormeur (quand tous les autres sont apaisés) : immense, il ne combat pas ; on apaise ses rêves debout sur
+   son dos, face à ses cauchemars. Éveillé, il te laisse bâtir sur son dos.
 
 ### [ ] 1.9 — Cinématiques
 Tableaux peints en code qui racontent sans texte : ouverture, première rencontre, apaisement, renaissance.
