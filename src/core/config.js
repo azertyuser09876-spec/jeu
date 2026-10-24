@@ -188,6 +188,8 @@
     // Colosses : leur marche sur tes villages (pendant le jeu seulement, voir colossus.js) et leurs rôles une fois
     // apaisés (voir allies.js).
     colossi: {
+      scale: 1.4,          // taille de tous les colosses (sur celle de leur catalogue)…
+      sealScale: 2,        // …et solidité de leurs sceaux
       marchFirst: 420,     // secondes de jeu avant la première marche…
       marchEvery: 600,     // …puis entre deux marches
       marchStay: 45,       // secondes passées à piétiner le village

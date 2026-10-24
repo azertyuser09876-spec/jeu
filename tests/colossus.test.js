@@ -333,7 +333,7 @@
   });
 
   test('la Tisseuse marche à huit pattes, par tétrapodes alternés', () => {
-    const { game, c } = near('tisseuse', 950, ['veilleur']);
+    const { game, c } = near('tisseuse', 950 * CONFIG.colossi.scale, ['veilleur']);
     assert.equal(c.legs.length, 8);
     let moved = false;
     for (let i = 0; i < 60 * 15; i++) {

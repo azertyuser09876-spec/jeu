@@ -237,4 +237,10 @@
       kneelText: 'soupire dans son sommeil',
     },
   ];
+
+  // Des colosses plus grands et bien plus solides que leur catalogue (2.4) : un seul réglage pour tous.
+  for (const d of Vide.COLOSSI) {
+    d.size *= Vide.CONFIG.colossi.scale;
+    for (const s of d.seals) s.hp *= Vide.CONFIG.colossi.sealScale;
+  }
 })(globalThis.Vide);
