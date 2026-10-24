@@ -15,9 +15,16 @@ const { chromium } = require('playwright');
   const checks = [];
   const check = (ok, label) => checks.push({ ok, label });
   const player = () => page.evaluate(() => ({ ...Vide.game.state.player }));
+  // Termine l'animation de lancement (après un rechargement), pour que les vérifications suivantes jouent.
+  const wake = () => page.evaluate(() => { Vide.intro.t = 99; });
 
   await page.goto('file://' + path.join(__dirname, '..', 'index.html'));
   await page.waitForTimeout(500);
+
+  // Éveil : au lancement, le monde attend la fin de l'animation ; une touche l'abrège.
+  const launch = await page.evaluate(() => ({ time: Vide.game.time, on: document.body.classList.contains('launching') }));
+  check(launch.on && launch.time === 0, 'au lancement, l’éveil se joue avant que le monde ne bouge');
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'eveil.png') });
 
   // Clavier : D (position physique, donc aussi D en AZERTY) pendant une seconde.
   let before = await player();
@@ -25,7 +32,7 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(1000);
   await page.keyboard.up('KeyD');
   let after = await player();
-  check(after.x - before.x > 50, 'le clavier déplace la lumière vers la droite');
+  check(after.x - before.x > 50, 'le clavier abrège l’éveil et déplace la lumière vers la droite');
 
   // Souris : maintenir le clic au-dessus de la lumière.
   before = after;
@@ -70,6 +77,7 @@ const { chromium } = require('playwright');
   // Sauvegarde : l'état survit à un rechargement (sauvegarde déclenchée en quittant la page).
   const saved = await page.evaluate(() => JSON.parse(JSON.stringify(Vide.game.state)));
   await page.reload();
+  await wake();
   await page.waitForTimeout(300);
   const reloaded = await page.evaluate(() => JSON.parse(JSON.stringify(Vide.game.state)));
   check(
@@ -157,6 +165,7 @@ const { chromium } = require('playwright');
   await page.waitForTimeout(50);
   const zoomedIn = await page.evaluate(() => Vide.renderer.zoom);
   await page.reload();
+  await wake();
   await page.waitForTimeout(300);
   const zoomKept = await page.evaluate(() => Vide.renderer.zoom);
   check(zoomed < 0.8 && zoomedIn > zoomed && Math.abs(zoomKept - zoomedIn) < 1e-9,
@@ -191,6 +200,7 @@ const { chromium } = require('playwright');
     Vide.Storage.readOnly = true; // empêche la sauvegarde de sortie d'écraser la sauvegarde vieillie
   });
   await page.reload();
+  await wake();
   await page.waitForTimeout(300);
   const awayShown = await page.isVisible('#away');
   const radiusAfter = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
@@ -226,6 +236,7 @@ const { chromium } = require('playwright');
   const fresh = await page.evaluate(() => ({ total: Vide.game.state.totalLight, ups: Vide.game.state.upgrades }));
   check(fresh.total === 0 && Object.keys(fresh.ups).length === 0, 'recommencer efface la partie');
   await page.reload();
+  await wake();
   await page.waitForTimeout(300);
   const totalAfterReset = await page.evaluate(() => Vide.game.state.totalLight);
   check(totalAfterReset === 0, 'la partie effacée ne revient pas au rechargement');

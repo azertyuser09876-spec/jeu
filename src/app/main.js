@@ -39,12 +39,18 @@
   const map = Vide.Map.create(game);
   Vide.Render.snapCamera(renderer, game);
   Vide.Away.init();
-  if (welcome && Vide.Offline.worthShowing(welcome)) Vide.Away.show(welcome);
+  // Le bilan de l'absence attend la fin de l'animation de lancement.
+  let welcomePending = welcome && Vide.Offline.worthShowing(welcome) ? welcome : null;
+  const intro = Vide.Intro.create();
 
-  const paused = () => menu.open || Vide.Away.open || map.open;
+  const paused = () => menu.open || Vide.Away.open || map.open || Vide.Intro.blocking(intro);
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
   input.onAction = (code, key) => {
+    if (Vide.Intro.blocking(intro)) {
+      Vide.Intro.skip(intro);
+      return true;
+    }
     const isMapKey = key === 'm' || key === 'M';
     if (map.open) {
       if (code === 'Escape' || isMapKey) Vide.Map.toggle(map, false);
@@ -101,6 +107,8 @@
   // Accès depuis la console du navigateur, pratique pour déboguer.
   Vide.game = game;
   Vide.renderer = renderer;
+  Vide.intro = intro;
+  canvas.addEventListener('pointerdown', () => Vide.Intro.skip(intro));
 
   let last = performance.now();
   let accumulator = 0;
@@ -111,6 +119,12 @@
     // Au retour d'un onglet en arrière-plan, on ne rattrape pas des minutes de simulation d'un coup.
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
+    Vide.Intro.update(intro, state, dt);
+    renderer.introZoom = Vide.Intro.zoom(intro);
+    if (welcomePending && Vide.Intro.done(intro)) {
+      Vide.Away.show(welcomePending);
+      welcomePending = null;
+    }
 
     if (paused() || document.hidden) {
       // Jeu en pause : on rafraîchit seulement le texte du menu.
@@ -141,6 +155,8 @@
     }
 
     Vide.Render.draw(renderer, game, paused() ? 0 : dt);
+    const light = Vide.Render.worldToScreen(renderer, state.player.x, state.player.y);
+    Vide.Intro.draw(renderer, intro, light.x, light.y);
     Vide.Audio.update(game, dt);
     Vide.Audio.readEvents(game);
     Vide.Away.readEvents(game);

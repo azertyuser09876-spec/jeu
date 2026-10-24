@@ -31,6 +31,7 @@
       fog: 0,      // brouillard affiché, qui suit en douceur celui de la zone
       zoom: Vide.util.clamp(Number(Vide.Settings.get('zoom', 1)) || 1, ZOOM_MIN, ZOOM_MAX),
       autoZoom: 1,
+      introZoom: 1, // rapprochement de l'animation de lancement
       time: 0,
       glows: {
         white: makeGlow(255, 255, 255),
@@ -49,7 +50,7 @@
     r.canvas.width = Math.round(r.width * r.dpr);
     r.canvas.height = Math.round(r.height * r.dpr);
     r.baseScale = Math.sqrt((r.width * r.height) / CONFIG.viewArea);
-    r.camera.scale = r.baseScale * r.zoom * r.autoZoom;
+    r.camera.scale = r.baseScale * r.zoom * r.autoZoom * r.introZoom;
   }
 
   // Zoom choisi par le joueur (molette, pincement, + / −), gardé dans les réglages.
@@ -73,7 +74,12 @@
       target = Math.min(target, 1 - 0.45 * near * Math.min(1.6, c.def.size / 1.3));
     }
     r.autoZoom += (target - r.autoZoom) * Vide.util.damp(1.2, dt);
-    r.camera.scale = r.baseScale * r.zoom * r.autoZoom;
+    r.camera.scale = r.baseScale * r.zoom * r.autoZoom * r.introZoom;
+  }
+
+  function worldToScreen(r, wx, wy) {
+    const cam = r.camera;
+    return { x: (wx - cam.x) * cam.scale + r.width / 2, y: (wy - cam.y) * cam.scale + r.height / 2 };
   }
 
   function screenToWorld(r, sx, sy) {
@@ -338,7 +344,7 @@
   }
 
   Vide.Render = {
-    create, resize, screenToWorld, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer, zoomBy,
+    create, resize, screenToWorld, worldToScreen, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer, zoomBy,
   };
   // Fonctions de dessin spécialisées (territoire, êtres…), définies dans src/app/draw-*.js.
   Vide.Draw = Vide.Draw || {};

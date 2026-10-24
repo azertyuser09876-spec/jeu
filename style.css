@@ -73,6 +73,16 @@ button { font: inherit; letter-spacing: inherit; }
   animation: intro-hint 6s ease both;
 }
 
+#intro.returning .hint { display: none; }
+
+/* Pendant l'éveil (animation de lancement), seule la scène compte. */
+body.launching > :not(#view):not(#vignette) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+body.launching #intro .title,
+body.launching #intro .hint { animation: none; }
+
 #intro .for-touch { display: none; }
 
 @media (hover: none) {
