@@ -19,6 +19,8 @@
       radiated: 0,
       brought: 0,
       built: [],
+      kept: 0,       // lumière mise de côté par les intendants
+      steward: [],   // ce qu'ils en ont fait
       villages: state.villages.length,
       radiusBefore: Territory.radius(largest),
       radiusAfter: Territory.radius(largest),
@@ -27,11 +29,15 @@
 
     for (const v of state.villages) {
       const local = Villages.local(state, v, stats);
-      report.radiated += Territory.advance(v, local, applied) * stats.lightMult;
+      const funds = v.funds;
+      report.radiated += Vide.Steward.share(state, v, Territory.advance(v, local, applied) * stats.lightMult);
       Territory.whiten(v, local, applied);
       report.built.push(...Vide.Structures.advanceOffline(v, local, applied));
       // Les êtres continuent leur travail au rythme mesuré avant le départ.
-      if (Object.keys(v.beings).length) report.brought += v.rate * applied * stats.lightMult;
+      if (Object.keys(v.beings).length) report.brought += Vide.Steward.share(state, v, v.rate * applied * stats.lightMult);
+      // L'intendant a mis de côté sa part, et l'a dépensée au fil du temps.
+      report.kept += v.funds - funds;
+      report.steward.push(...Vide.Steward.catchUp(state, v));
     }
     const light = report.radiated + report.brought;
     state.light += light;

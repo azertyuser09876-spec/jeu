@@ -152,6 +152,7 @@
       active: new Set(),                // chantiers où un bâtisseur travaille (pas précédent)
       activeNow: new Set(),             // … et pendant ce pas
       deposited: new Map(),             // lumière déposée dans chaque village pendant ce pas
+      gains: new Map(),                 // … et ce qu'elle rapporte (multiplicateurs des êtres appliqués)
     };
     sync(game, true);
     return game.colony;
@@ -417,10 +418,12 @@
     // Rendement de chaque village, mesuré et lissé : il sert pendant l'absence.
     let total = 0;
     const k = util.damp(1 / CONFIG.colony.rateMemory, dt);
+    colony.gains.clear();
     for (const v of game.state.villages) {
       const s = Villages.statsOf(game, v);
       const gained = (colony.deposited.get(v) || 0) * s.value * s.beingValue;
       v.rate += (gained / dt - v.rate) * k;
+      if (gained > 0) colony.gains.set(v, gained);
       total += gained;
     }
     return total;

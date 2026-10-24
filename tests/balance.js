@@ -57,7 +57,7 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     goal = null;
     // Les fondations ne se montrent que hors des villages : le robot les considère toujours.
     for (const i of Catalog.all()) {
-      if (i.maxed(state) || !Wallet.has(state, i.cost(state))) continue;
+      if (i.id === 'intendant' || i.maxed(state) || !Wallet.has(state, i.cost(state))) continue;
       const founding = i.id.startsWith('village-');
       if (!founding && !i.revealed(state)) continue;
       const why = i.blocked(state);
@@ -88,8 +88,10 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   }
 
   if (s % 30 === 0) {
+    // Chaque village confie un quart de sa lumière à son intendant.
+    for (const v of state.villages) if (!v.robot) { v.robot = true; v.steward = 0.25; }
     const buyable = Catalog.all()
-      .filter((i) => (reborn || i.id !== 'renaissance') && i.revealed(state) && Catalog.canBuy(state, i.id))
+      .filter((i) => (reborn || i.id !== 'renaissance') && i.id !== 'intendant' && i.revealed(state) && Catalog.canBuy(state, i.id))
       .sort((a, b) => price(a) - price(b));
     // Le type de village change à chaque fondation, pour les essayer tous.
     const founding = buyable.filter((i) => i.id.startsWith('village-'));

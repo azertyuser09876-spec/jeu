@@ -174,10 +174,11 @@
       emit(game, 'village', { village: v.type, x: v.x, y: v.y, first: k === 0 });
     }
     game.villageCount = state.villages.length;
+    // Ce que produisent les villages : leur intendant en garde sa part, le reste revient au joueur.
     let radiated = 0;
     for (const v of state.villages) {
       const local = Vide.Villages.statsOf(game, v);
-      radiated += Vide.Territory.advance(v, local, dt) * mult;
+      radiated += Vide.Steward.share(state, v, Vide.Territory.advance(v, local, dt) * mult);
       Vide.Territory.whiten(v, local, dt);
     }
     if (radiated > 0) {
@@ -185,11 +186,14 @@
       gained += radiated;
     }
     Vide.Colony.sync(game);
-    const brought = Vide.Colony.update(game, dt) * mult;
+    Vide.Colony.update(game, dt);
+    let brought = 0;
+    for (const [v, g] of game.colony.gains) brought += Vide.Steward.share(state, v, g * mult);
     if (brought > 0) {
       gainLight(game, brought);
       gained += brought;
     }
+    Vide.Steward.update(game, dt);
     Vide.Shadows.update(game, dt);
     Vide.Colossus.update(game, dt);
     Vide.Combat.update(game, dt);

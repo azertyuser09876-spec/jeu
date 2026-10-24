@@ -11,6 +11,7 @@
 //   beings     nombre d'êtres par espèce
 //   buildings  bâtiments : { type, x, y, work, broken? }
 //   rate       lumière/s rapportée par ses êtres (mesurée, sert pendant l'absence)
+//   steward    part de la lumière produite confiée à son intendant (0 à 0,5), funds : sa réserve
 (function (Vide) {
   'use strict';
   const { CONFIG, Catalog, Territory } = Vide;
@@ -188,6 +189,8 @@
       beings: {},
       buildings: [],
       rate: 0,
+      steward: 0,
+      funds: 0,
     };
     Territory.grow(village);
     if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;

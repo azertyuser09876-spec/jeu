@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 10;
+  const FORMAT = 11;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -38,6 +38,11 @@
       }
       return { ...rest, villages };
     },
+    // 1.3 : l'intendant de chaque village (part confiée, réserve).
+    10: (data) => ({
+      ...data,
+      villages: (Array.isArray(data.villages) ? data.villages : []).map((v) => ({ ...v, steward: 0, funds: 0 })),
+    }),
   };
 
   function serialize(state, now) {
@@ -169,6 +174,8 @@
       id: raw.id, type, x: raw.x, y: raw.y,
       area: Math.max(positive(raw.area, start), start),
       cells: [], beings: {}, buildings: [], rate: positive(raw.rate, 0),
+      steward: Vide.Steward.SHARES.includes(raw.steward) ? raw.steward : 0,
+      funds: positive(raw.funds, 0),
     };
     const beings = isObject(raw.beings) ? raw.beings : {};
     for (const sp of Vide.SPECIES) {

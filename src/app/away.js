@@ -31,6 +31,14 @@
       const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
       lines.push(`Les bâtisseurs ont achevé : ${names.join(', ')}.`);
     }
+    if (report.kept > 0) {
+      const beings = report.steward.filter((w) => w.kind === 'being').length;
+      const plans = report.steward.length - beings;
+      const deeds = [beings ? `éveillé ${beings} être${beings > 1 ? 's' : ''}` : '',
+        plans ? `planifié ${plans} bâtiment${plans > 1 ? 's' : ''}` : ''].filter(Boolean);
+      lines.push(`Tes intendants ont mis de côté ✦ ${util.formatNumber(report.kept)}`
+        + (deeds.length ? ` et ont ${deeds.join(' et ')}.` : '.'));
+    }
     if (report.capped) {
       lines.push(`Le territoire ne se souvient que de ${formatDuration(report.applied)} (amélioration Mémoire).`);
     }
@@ -66,6 +74,14 @@
     shadowDown: (e) => (e.first ? 'Une ombre se dissipe et laisse un écho ◆. Les échos éveillent une armée.' : null),
     dispersed: (e) => `Ta lumière se disperse… et renaît ${e.village ? 'au village le plus proche' : 'à l’origine'}. `
       + `✦ ${util.formatNumber(e.lost)} perdue.`,
+    steward: (e) => {
+      if (seen.steward) return null;
+      seen.steward = true;
+      const what = e.kind === 'being'
+        ? `éveillé : ${Vide.Colony.species(e.id).name.toLowerCase()}`
+        : `planifié : ${Vide.Structures.def(e.id).name.toLowerCase()}`;
+      return `L’intendant d’un village agit seul (${what}). Il dépense la part de lumière que tu lui confies.`;
+    },
     heartAttacked: (e) => `Des ombres rongent le cœur d’un village (${Vide.Villages.type(e.village).name}) !`,
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,

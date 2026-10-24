@@ -230,6 +230,6 @@
 
   Vide.Structures = {
     def, isDone, isWorking, count, countIn, all, working, sites, cost, site, plan, addWork, nearestSite, nearestDeposit,
-    modify, advanceOffline, hp, damage, repair, mostDamaged,
+    modify, advanceOffline, hp, damage, repair, mostDamaged, MIN_TERRITORY,
   };
 })(globalThis.Vide);
