@@ -237,7 +237,7 @@
     sting: 6,         // vitalité perdue par seconde et par fragment au contact de la lumière…
     stingMax: 10,     // …comptés jusqu'à dix (sinon, un assaut serait fatal d'un coup)
     contact: 40,
-    eat: 6,           // dégâts d'armée pour détruire un fragment
+    eat: 30,          // dégâts d'armée pour détruire un fragment
   };
 
   function shardAt(c, k) {
@@ -380,8 +380,8 @@
   // --- Le Dormeur ---
 
   const SLEEPER = {
-    nightmares: 10,   // ombres lâchées par le premier rêve apaisé…
-    worse: 8,         // …et en plus à chaque rêve suivant
+    nightmares: 16,   // ombres lâchées par le premier rêve apaisé…
+    worse: 12,        // …et en plus à chaque rêve suivant
   };
 
   // Rayon de son dos, dans le monde.

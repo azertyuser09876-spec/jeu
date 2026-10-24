@@ -66,6 +66,7 @@ node tests/run.js                         # tests de la logique (aussi : ouvrir 
 node tests/smoke.js                       # test de fumée dans Chromium (nécessite Playwright)
 node tests/balance.js 60                  # robot d'équilibrage : une heure de jeu simulée
 node tests/balance.js 120 --renaissance   # … avec renaissances, vie après vie
+node tests/duel.js                        # robot duelliste : chaque colosse est-il apaisable ?
 ```
 
 ```

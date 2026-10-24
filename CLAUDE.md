@@ -74,6 +74,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 
 - Après tout réglage, lancer `node tests/balance.js 60` : le robot joue une heure sans défendre activement.
   Vérifier que la progression ne cale pas et ne s'emballe pas.
+- Après tout réglage d'un colosse (ou de l'armée, de la pulsation), lancer `node tests/duel.js` : un robot
+  affronte chaque colosse avec l'équipement attendu à son éveil (`KIT`). Aucun ne doit rester « NON » ; viser
+  quelques minutes de combat chacun.
 - Améliorations sans maximum : pour une même source de revenu, Σ ln(multiplicateur par niveau) / ln(croissance
   du prix) doit rester < 0,75 (garde-fou dans tests/economy.test.js — y rattacher toute nouvelle amélioration
   illimitée). Une marge est nécessaire : d'autres facteurs (nombre d'êtres, jardin…) grandissent en même temps.

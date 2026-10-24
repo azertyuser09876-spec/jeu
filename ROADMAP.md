@@ -153,6 +153,12 @@ Tableaux peints en code qui racontent sans texte : ouverture, première rencontr
    s'éveille, les sept constellations se rejoignent.
 
 ### [ ] 2.0 — Équilibrage et finitions
+1. Le duelliste : un robot qui affronte chaque colosse avec ce qu'on possède quand il s'éveille. Il vérifie
+   qu'aucun n'est impossible, mesure la durée du combat et les coups encaissés ; réglages en conséquence.
+2. La partie longue : robot de deux heures avec renaissances ; corriger ce qui cale ou s'emballe.
+3. Finitions : aide et textes à jour, réglage « animations réduites » (tableaux, secousses), performances
+   avec tous les colosses et des centaines d'êtres, mobile.
+4. Release 2.0 : présentation du jeu (README), captures, journal.
 
 ## Après 1.0 — pistes
 
