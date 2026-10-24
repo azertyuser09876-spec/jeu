@@ -10,18 +10,30 @@
 <body>
   <canvas id="view"></canvas>
 
+  <div id="hud" class="hidden">
+    <div id="light"><span class="glyph">✦</span><span id="light-amount">0</span></div>
+    <div id="light-rate"><span id="rate-amount">0,0</span> / s</div>
+  </div>
+
+  <aside id="upgrades" class="hidden" aria-label="Améliorations">
+    <ol id="upgrade-list"></ol>
+  </aside>
+
   <!-- Logique pure (testée par tests/run.js) -->
   <script src="src/core/vide.js"></script>
   <script src="src/core/util.js"></script>
   <script src="src/core/config.js"></script>
   <script src="src/core/state.js"></script>
+  <script src="src/core/upgrades.js"></script>
   <script src="src/core/stats.js"></script>
+  <script src="src/core/economy.js"></script>
   <script src="src/core/field.js"></script>
   <script src="src/core/sim.js"></script>
 
   <!-- Navigateur : affichage, contrôles, interface -->
   <script src="src/app/render.js"></script>
   <script src="src/app/input.js"></script>
+  <script src="src/app/ui.js"></script>
   <script src="src/app/main.js"></script>
 </body>
 </html>

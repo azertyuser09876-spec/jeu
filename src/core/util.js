@@ -63,5 +63,12 @@
     return formatNumber(n);
   }
 
-  Vide.util = { clamp, lerp, damp, rng, hash2, formatNumber, formatRate };
+  // Multiplicateur : "×1,40", "×12,5", "×340", "×1,20k".
+  function formatMultiplier(n) {
+    if (n >= 1000) return '×' + formatNumber(n);
+    const decimals = n < 10 ? 2 : n < 100 ? 1 : 0;
+    return '×' + n.toFixed(decimals).replace('.', ',');
+  }
+
+  Vide.util = { clamp, lerp, damp, rng, hash2, formatNumber, formatRate, formatMultiplier };
 })(globalThis.Vide);

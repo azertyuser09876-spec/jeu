@@ -10,7 +10,15 @@
   const state = Vide.State.create((Math.random() * 2 ** 32) >>> 0);
   const game = Vide.Sim.create(state);
   const input = Vide.Input.create(canvas);
+  const ui = Vide.UI.create(game);
   Vide.Render.snapCamera(renderer, game);
+
+  // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
+  input.onAction = (code) => {
+    const digit = /^(?:Digit|Numpad)([1-9])$/.exec(code);
+    if (digit) return Vide.UI.buyByIndex(ui, Number(digit[1]));
+    return false;
+  };
 
   // Accès depuis la console du navigateur, pratique pour déboguer.
   Vide.game = game;
@@ -34,6 +42,7 @@
     if (steps === CONFIG.maxStepsPerFrame) accumulator = 0;
 
     Vide.Render.draw(renderer, game, dt);
+    Vide.UI.update(ui);
     requestAnimationFrame(frame);
   }
 
