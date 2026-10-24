@@ -28,6 +28,8 @@
       camera: { x: 0, y: 0, scale: 1 },
       glows: {
         white: makeGlow(255, 255, 255),
+        light: makeGlow(214, 234, 255),
+        rare: makeGlow(255, 214, 140),
       },
     };
     resize(r);
@@ -56,12 +58,51 @@
     ctx.drawImage(glow, x - radius, y - radius, radius * 2, radius * 2);
   }
 
+  // Rectangle visible en coordonnées du monde, avec une marge pour les halos.
+  function viewBounds(r, margin) {
+    const cam = r.camera;
+    const hw = r.width / 2 / cam.scale + margin;
+    const hh = r.height / 2 / cam.scale + margin;
+    return { left: cam.x - hw, right: cam.x + hw, top: cam.y - hh, bottom: cam.y + hh };
+  }
+
+  function drawParticles(r, game) {
+    const { ctx } = r;
+    const fadeIn = Vide.CONFIG.field.fadeIn;
+    const b = viewBounds(r, 30);
+    const t = game.time;
+    for (const p of game.field.particles) {
+      if (p.x < b.left || p.x > b.right || p.y < b.top || p.y > b.bottom) continue;
+      const appear = Math.min(1, p.age / fadeIn);
+      const twinkle = 0.75 + Math.sin(t * 2.3 + p.phase) * 0.25;
+      const caught = p.caught >= 0 ? 1.3 : 1;
+      if (p.rare) {
+        drawGlow(ctx, r.glows.rare, p.x, p.y, 16 * caught, appear * twinkle);
+      } else {
+        drawGlow(ctx, r.glows.light, p.x, p.y, 9 * caught, appear * twinkle * 0.9);
+      }
+    }
+  }
+
+  function drawReach(r, game) {
+    const { ctx } = r;
+    const { x, y } = game.state.player;
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1 / r.camera.scale;
+    ctx.beginPath();
+    ctx.arc(x, y, game.stats.reach, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   function drawPlayer(r, game) {
     const { ctx } = r;
     const { x, y } = game.state.player;
-    // Légère respiration du halo pour que la lumière paraisse vivante même à l'arrêt.
+    // Légère respiration du halo pour que la lumière paraisse vivante même à l'arrêt,
+    // et éclat bref à chaque récolte.
     const breath = 1 + Math.sin(game.time * 1.6) * 0.06;
-    drawGlow(ctx, r.glows.white, x, y, 46 * breath, 0.55);
+    const glow = game.glow;
+    drawGlow(ctx, r.glows.white, x, y, 46 * breath * (1 + glow * 0.35), 0.55 + glow * 0.3);
     drawGlow(ctx, r.glows.white, x, y, 14, 1);
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#fff';
@@ -97,6 +138,8 @@
     ctx.translate(-camera.x, -camera.y);
     ctx.globalCompositeOperation = 'lighter';
 
+    drawReach(r, game);
+    drawParticles(r, game);
     drawPlayer(r, game);
 
     ctx.globalAlpha = 1;

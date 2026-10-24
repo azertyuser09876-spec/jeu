@@ -6,6 +6,9 @@
   function compute(state) {
     return {
       speed: CONFIG.player.speed,
+      reach: CONFIG.attraction.radius,
+      density: 1,   // multiplicateur de la densité du champ
+      value: 1,     // multiplicateur de la lumière gagnée par particule
     };
   }
 

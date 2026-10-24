@@ -35,6 +35,15 @@ const { chromium } = require('playwright');
   after = await player();
   check(before.y - after.y > 50, 'le clic maintenu attire la lumière vers le pointeur');
 
+  // Se promener quelques secondes doit rapporter de la lumière.
+  for (const key of ['KeyA', 'KeyS', 'KeyD', 'KeyW', 'KeyA']) {
+    await page.keyboard.down(key);
+    await page.waitForTimeout(1200);
+    await page.keyboard.up(key);
+  }
+  const collected = await page.evaluate(() => Vide.game.state.stats.collected);
+  check(collected > 0, `se promener récolte de la lumière (${collected} particules)`);
+
   const shot = process.argv[2];
   if (shot) await page.screenshot({ path: shot });
 

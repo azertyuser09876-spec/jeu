@@ -9,12 +9,17 @@
   }
 
   function create(state) {
-    return {
+    const game = {
       state,
       stats: Vide.Stats.compute(state),
+      field: Vide.Field.create(state.seed),
       velocity: { x: 0, y: 0 },
       time: 0,
+      rate: 0,   // lumière par seconde, lissée sur quelques secondes
+      glow: 0,   // éclat bref de la lumière après une récolte (0 à 1), purement visuel
     };
+    Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
+    return game;
   }
 
   function movePlayer(game, dt, move) {
@@ -28,12 +33,29 @@
     player.y += v.y * dt;
   }
 
-  function step(game, dt, input) {
-    game.stats = Vide.Stats.compute(game.state);
-    game.time += dt;
-    game.state.stats.playTime += dt;
-    movePlayer(game, dt, input.move);
+  function gainLight(game, amount) {
+    game.state.light += amount;
+    game.state.totalLight += amount;
   }
 
-  Vide.Sim = { create, step, emptyInput };
+  function step(game, dt, input) {
+    const { state } = game;
+    game.stats = Vide.Stats.compute(state);
+    game.time += dt;
+    state.stats.playTime += dt;
+
+    movePlayer(game, dt, input.move);
+
+    const harvest = Vide.Field.update(game.field, state.player, game.stats, dt);
+    const gained = harvest.value * game.stats.value;
+    if (harvest.count) {
+      gainLight(game, gained);
+      state.stats.collected += harvest.count;
+      game.glow = Math.min(1, game.glow + 0.25 * harvest.count);
+    }
+    game.glow *= 1 - util.damp(4, dt);
+    game.rate += (gained / dt - game.rate) * util.damp(1 / 3, dt);
+  }
+
+  Vide.Sim = { create, step, emptyInput, gainLight };
 })(globalThis.Vide);
