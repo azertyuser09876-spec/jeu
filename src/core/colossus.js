@@ -741,11 +741,13 @@
   // --- Marche sur un village ---
 
   // Un colosse rencontré, pas apaisé, qui flâne à son repaire, se met en marche vers le village le plus proche
-  // (s'il est à portée). Pendant le jeu seulement ; un à la fois.
+  // (s'il est à portée). Pendant le jeu seulement ; un à la fois ; et jamais sur des villages sans défense (une
+  // vie qui recommence, par exemple) : il faut une petite armée pour lui faire face.
   function startMarch(game) {
     const { state } = game;
     const M = Vide.CONFIG.colossi;
     if (game.colossi.some((c) => c.mode === 'march' || c.mode === 'hunt' || c.mode === 'kneel')) return null;
+    if (Vide.Combat.armySize(state) < M.marchArmy) return null;
     const ready = game.colossi.filter((c) => c.mode === 'roam' && status(state, c.id) === 'found');
     for (const c of ready) {
       const v = Vide.Villages.nearest(state, c.x, c.y);

@@ -241,11 +241,17 @@
       return { ...Zones.center(i, j, seed), zone: Zones.get(Zones.typeOf(i, j, seed)) };
     });
 
-    // Cadrage : toutes les régions visitées, l'origine, les villages et la lumière.
+    // Cadrage : toutes les régions visitées, l'origine, la lumière, et les repaires des colosses entendus (on doit
+    // pouvoir y envoyer des érudits).
     const pad = Zones.CELL * 0.7;
     let minX = Math.min(0, state.player.x) - pad, maxX = Math.max(0, state.player.x) + pad;
     let minY = Math.min(0, state.player.y) - pad, maxY = Math.max(0, state.player.y) + pad;
-    for (const c of cells) {
+    const points = cells.slice();
+    for (const d of Vide.COLOSSI) {
+      const st = Vide.Colossus.status(state, d.id);
+      if (st === 'heard' || st === 'found') points.push(Vide.Colossus.lair(state, d));
+    }
+    for (const c of points) {
       minX = Math.min(minX, c.x - pad); maxX = Math.max(maxX, c.x + pad);
       minY = Math.min(minY, c.y - pad); maxY = Math.max(maxY, c.y + pad);
     }

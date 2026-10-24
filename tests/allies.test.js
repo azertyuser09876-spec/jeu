@@ -8,10 +8,11 @@
     for (let i = 0; i < Math.round(seconds / dt); i++) Sim.step(game, dt, Sim.emptyInput());
   }
 
-  // Un village bâti ; la lumière loin de tout (elle ne provoque personne) ; le Veilleur dans l'état voulu.
+  // Un village bâti, gardé par une petite armée ; la lumière loin de tout (elle ne provoque personne) ; le
+  // Veilleur dans l'état voulu.
   function world(status) {
     const state = State.create(31);
-    const v = village(state, { radius: 400 });
+    const v = village(state, { radius: 400, beings: { gardien: CONFIG.colossi.marchArmy } });
     Structures.plan(state, v, 'nid');
     for (const b of v.buildings) b.work = Structures.def(b.type).work;
     state.stats.shadows = 15;
@@ -30,6 +31,8 @@
     run(game, 1.1);
     assert.equal(c.mode, 'march');
     assert.ok(game.events.some((e) => e.type === 'march'));
+    // (Sa petite armée part : rien ne le détourne, il va au bout.)
+    v.beings.gardien = 0;
     // Il arrive (on l'approche pour ne pas attendre sa longue marche).
     const a = Math.atan2(c.y - v.y, c.x - v.x);
     const d = Vide.Territory.radius(v) + Colossus.extent(c) * 0.2;
@@ -46,6 +49,15 @@
     assert.ok(broken, 'ses pas abîment les bâtiments');
     assert.equal(c.mode, 'roam', 'puis il s’en retourne');
     assert.ok(game.events.some((e) => e.type === 'colossusLeaves'));
+  });
+
+  test('il ne marche pas sur des villages sans défense (une vie qui recommence)', () => {
+    const { state, v } = world('found');
+    v.beings.gardien = 0;
+    const game = Sim.create(state);
+    assert.equal(Colossus.startMarch(game), null);
+    v.beings.gardien = CONFIG.colossi.marchArmy;
+    assert.ok(Colossus.startMarch(game));
   });
 
   test('il ne marche jamais pendant l’absence, ni s’il n’a pas été rencontré, ni apaisé', () => {

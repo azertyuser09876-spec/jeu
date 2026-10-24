@@ -68,6 +68,8 @@
     Vide.Villages.refresh(game);
     game.villageCount = state.villages.length;
     game.rate = 0;
+    // Une vie neuve : les colosses attendent avant de marcher sur ses villages.
+    game.marchClock = CONFIG.colossi.marchFirst;
     // Un colosse en plein combat renonce et retourne à son repaire.
     for (const c of game.colossi) {
       if (c.mode === 'hunt' || c.mode === 'kneel' || c.mode === 'march') {

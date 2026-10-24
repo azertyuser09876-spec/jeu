@@ -147,7 +147,8 @@
       marchFirst: 420,     // secondes de jeu avant la première marche…
       marchEvery: 600,     // …puis entre deux marches
       marchStay: 45,       // secondes passées à piétiner le village
-      marchRange: 14000,   // il ne marche que sur un village à cette distance
+      marchRange: 14000,   // il ne marche que sur un village à cette distance…
+      marchArmy: 4,        // …et seulement si tu as au moins cette armée
       footStructure: 60,   // un pas sur un bâtiment (le double pour une patte abattue exprès)
       stompEvery: 3,       // en marche sur un village, il abat une patte toutes les 3 s
       guardStagger: 60,    // jauge remplie par seconde par le Veilleur qui affronte un colosse en marche
