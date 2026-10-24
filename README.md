@@ -45,7 +45,8 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
   (gardiens, étincelles, veilleuses) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
 - **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.
-- **Les colosses** : le Veilleur, la Tisseuse, le Léviathan, immenses. Fais étudier leurs sceaux voilés par tes
+- **Les colosses** : le Veilleur, la Tisseuse, le Léviathan, l'Oiseau d'aube, la Méduse, la Nuée et le Dormeur,
+  immenses, chacun à sa manière. Fais étudier leurs sceaux voilés par tes
   érudits, esquive leurs attaques annoncées, brise leurs sceaux phase après phase, fais-les plier avec ton armée,
   tes balistes et tes chaînes… Ils marchent parfois sur tes villages. Apaisés, ils défendent, tissent et portent.
 - **La renaissance** : te dissoudre pour renaître avec des souvenirs ✧ et des bienfaits éternels.

@@ -50,6 +50,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   pas), phases (`fury`, `PHASE`), marche sur un village (mode 'march', pendant le jeu seulement : `game.marchClock`),
   `Colossus.engaged` pour tout ce qui peut s'en prendre à lui. Engins de siège : `engines.js` (state.engines, bâtis
   par l'expédition 'sappers'). Rôles des colosses apaisés : `allies.js`.
+  Corps singuliers (vol, cloche, nuée, dormeur) : `beasts.js`, branchés par `Vide.Beasts[kind]` (crochets décrits
+  en tête de colossus.js) ; une attaque peut porter ses crochets (`start`, `strike`, `step`) ; dessin :
+  `draw-beasts.js` (`Vide.Draw.beasts`, `Vide.Draw.beastAttacks`).
 - **Performances** : `grid.js` (grille spatiale) pour tout voisinage d'êtres ; ne pas réintroduire de boucle sur
   tous les êtres à chaque pas et pour chaque être (banc d'essai : 400 êtres sous 12 ms par pas, test colony).
 - **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`

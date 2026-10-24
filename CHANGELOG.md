@@ -1,5 +1,28 @@
 # Historique des versions
 
+## 1.8.0 — Nouveaux colosses
+
+Quatre colosses de plus, chacun avec sa façon d'être affronté — et un rôle une fois apaisé.
+
+- **L'Oiseau d'aube** (après le Veilleur) : il vole, hors d'atteinte de la pulsation et du corps à corps. Il
+  tourne autour de toi, pique au ras du sol, souffle des rafales qui repoussent, fait pleuvoir des plumes.
+  Cloue-le au sol : une chaîne le tire à terre, sa jauge pleine (traits, harpons, balistes) l'y abat ; il se
+  pose aussi, rarement, de lui-même. Apaisé, il t'accompagne et révèle le lointain ; ta lumière file plus vite.
+- **La Méduse** (après l'Oiseau et la Tisseuse) : une cloche qui pulse et avance par à-coups. Ses sceaux ne
+  s'ouvrent qu'au sommet de chaque pulsation : frappe au bon moment. Fouet de tentacules, séisme, toiles.
+  Apaisée, elle flotte jusqu'au village le plus abîmé et le répare à chaque pulsation.
+- **La Nuée** (après le Léviathan) : des centaines d'éclats autour de quatre noyaux. Tant qu'ils entourent le
+  noyau, il est à l'abri : ton onde les détruit, ton armée les dévore, ils renaissent. Leur contact brûle.
+  Assaut sur l'endroit marqué, tourbillon qui se referme sur toi. Apaisée, elle tourne autour de toi et rabat la
+  lumière (portée ×1,5).
+- **Le Dormeur** (quand tous les autres sont apaisés) : immense, il ne combat pas. Ses rêves sont sur son dos ;
+  tiens-toi sur lui pour les apaiser, et affronte les cauchemars que chacun libère. Éveillé, il te laisse bâtir
+  sur son dos : ce village grandit trois fois plus vite et rayonne deux fois plus.
+- La barre du colosse dit ce qui protège son sceau (en vol, refermée, protégée).
+- Les colosses apaisés font leur ronde plus loin, selon leur taille : le village reste visible.
+- Cinq fragments du récit (29 au total).
+- 337 tests de logique, 36 vérifications navigateur.
+
 ## 1.7.0 — Colosses redoutables
 
 - **Bien plus grands** : chaque colosse a pris une fois et demie à presque deux fois sa taille. La caméra recule

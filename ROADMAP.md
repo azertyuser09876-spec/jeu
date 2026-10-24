@@ -131,7 +131,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 2. La relève : balistes et chaînes construites sur place par des sapeurs, troupes de siège.
 3. Colosses qui marchent sur un village (seulement pendant le jeu) ; colosses apaisés avec un vrai rôle.
 
-### [ ] 1.8 — Nouveaux colosses
+### [x] 1.8 — Nouveaux colosses
 1. L'Oiseau d'aube (après le Veilleur) : il vole, ses sceaux hors d'atteinte ; il pique et souffle des rafales.
    On le cloue au sol (chaînes, balistes, harpons, étincelles), ou on guette ses rares posés. Apaisé, il
    t'accompagne et révèle le lointain.
