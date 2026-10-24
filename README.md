@@ -50,6 +50,8 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
   érudits, esquive leurs attaques annoncées, brise leurs sceaux phase après phase, fais-les plier avec ton armée,
   tes balistes et tes chaînes… Ils marchent parfois sur tes villages. Apaisés, ils défendent, tissent et portent.
 - **La renaissance** : te dissoudre pour renaître avec des souvenirs ✧ et des bienfaits éternels.
+- **Les tableaux** : des cinématiques peintes en code, sans un mot — l'ouverture, chaque rencontre, chaque
+  apaisement, la renaissance, et un épilogue.
 - **Le son et le récit** : tout est synthétisé en direct ; des fragments d'histoire se révèlent au fil du jeu.
 
 ## Publier sur GitHub Pages

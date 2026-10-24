@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 1.9.0 — Cinématiques
+
+Des tableaux peints en code, sans un mot, qui racontent l'histoire du vide.
+
+- **L'ouverture** (une partie neuve) : le vide était plein, une lumière immense entourée des colosses ; elle se
+  fend et éclate ; ses éclats filent au loin, et chaque colosse s'endort autour de l'un d'eux. Il ne reste
+  qu'une lueur — toi.
+- **Rencontres** : chaque colosse se dresse au-dessus de ta lueur minuscule, et ouvre les yeux.
+- **Apaisements** : l'or gagne son corps, puis il prend sa place dans le ciel des colosses apaisés.
+- **Renaissance** : ta lumière se dissout, tes villages s'éteignent ; le ciel des colosses demeure, et à
+  l'aube une lueur se rallume.
+- **Épilogue** : quand le Dormeur s'éveille, les sept constellations se rejoignent et la lumière d'avant
+  renaît.
+- Plein écran, bandes noires, fondus ; un toucher, Échap, Espace ou Entrée passe le tableau ; le monde attend.
+  Les tableaux vus se revoient depuis le menu (« tableaux ») ; un réglage permet de les couper.
+- Sauvegarde au format 19 (tableaux vus ; une partie en cours compte ce qu'elle a déjà vécu comme vu).
+- 338 tests de logique, 41 vérifications navigateur.
+
 ## 1.8.0 — Nouveaux colosses
 
 Quatre colosses de plus, chacun avec sa façon d'être affronté — et un rôle une fois apaisé.

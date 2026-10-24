@@ -53,6 +53,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   Corps singuliers (vol, cloche, nuée, dormeur) : `beasts.js`, branchés par `Vide.Beasts[kind]` (crochets décrits
   en tête de colossus.js) ; une attaque peut porter ses crochets (`start`, `strike`, `step`) ; dessin :
   `draw-beasts.js` (`Vide.Draw.beasts`, `Vide.Draw.beastAttacks`).
+- **Tableaux** (cinématiques, côté app) : `cinema.js` (lecteur, déclenché par les événements, met le jeu en
+  pause), `scenes.js` (tableaux : plans { d, draw(g) }, peintre de colosses en constellations). Vus :
+  `state.cinematics`. Un tableau par colosse se fabrique à la demande ('rencontre:' + id).
 - **Performances** : `grid.js` (grille spatiale) pour tout voisinage d'êtres ; ne pas réintroduire de boucle sur
   tous les êtres à chaque pas et pour chaque être (banc d'essai : 400 êtres sous 12 ms par pas, test colony).
 - **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`

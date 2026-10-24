@@ -142,7 +142,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 4. Le Dormeur (quand tous les autres sont apaisés) : immense, il ne combat pas ; on apaise ses rêves debout sur
    son dos, face à ses cauchemars. Éveillé, il te laisse bâtir sur son dos.
 
-### [ ] 1.9 — Cinématiques
+### [x] 1.9 — Cinématiques
 Tableaux peints en code qui racontent sans texte : ouverture, première rencontre, apaisement, renaissance.
 1. Le projecteur : un lecteur de tableaux plein écran (bandes noires, fondus, un toucher pour passer) ; le monde
    attend ; les tableaux vus restent dans la sauvegarde et se revoient depuis le menu ; on peut les couper.
