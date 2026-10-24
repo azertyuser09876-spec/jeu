@@ -17,6 +17,7 @@ Ouvre `index.html` dans un navigateur. Aucune installation, aucune dépendance.
 | Pulsation | bouton rond | Espace |
 | Acheter | clic sur une carte | 1 à 9 (Tab : onglet suivant) |
 | Ordres de l’armée | barre sous le compteur | G garder · E escorter · C chasser |
+| Carte | ◎ en haut à droite | M |
 | Menu / pause | ≡ en haut à droite | Échap |
 
 La partie est sauvegardée automatiquement dans le navigateur.

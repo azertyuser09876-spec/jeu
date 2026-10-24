@@ -135,6 +135,19 @@ const { chromium } = require('playwright');
   const posture = await page.evaluate(() => Vide.game.state.army.posture);
   check(posture === 'escorte', 'la barre d’ordres change l’ordre de l’armée');
 
+  // Zones et carte : visiter une autre région, puis ouvrir la carte avec M.
+  await page.evaluate(() => {
+    const p = Vide.game.state.player;
+    p.x = 9000; p.y = 4000;
+  });
+  await page.waitForTimeout(300);
+  await page.keyboard.press('m');
+  await page.waitForTimeout(200);
+  check(await page.isVisible('#map'), 'la touche M ouvre la carte des régions explorées');
+  await page.keyboard.press('Escape');
+  check(!(await page.isVisible('#map')), 'Échap referme la carte');
+  await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
+
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
   const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
   await page.evaluate(() => {

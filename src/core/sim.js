@@ -28,7 +28,10 @@
       // Événements de ce qui vient de se passer ({ type, … }), lus puis vidés par l'interface.
       events: [],
       lit: state.territory.lit, // pour détecter l'allumage du foyer
+      region: null,             // région du vide où se trouve la lumière (voir zones.js)
+      zoneShown: null,          // dernière zone annoncée à l'écran
     };
+    updateRegion(game, true);
     Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
     game.garden = Vide.Garden.create(state.seed);
     Vide.Garden.fill(game.garden, state, game.stats);
@@ -39,6 +42,35 @@
     return game;
   }
 
+  // Effets de la zone pour le champ de particules.
+  function zoneMods(game) {
+    const { zone, current } = game.region;
+    return { density: zone.density, rare: zone.rare, current };
+  }
+
+  // Suit la région traversée : visite, découverte, annonce (avec un peu d'hystérésis aux frontières).
+  function updateRegion(game, silent) {
+    const { state } = game;
+    const region = Vide.Zones.at(state.seed, state.player.x, state.player.y);
+    const changed = !game.region || game.region.key !== region.key;
+    game.region = region;
+    if (!changed) return;
+    const discovered = Vide.Zones.visit(state, region);
+    if (silent) {
+      game.zoneShown = region.zone.id;
+      return;
+    }
+    if (discovered) emit(game, 'zoneDiscovered', { zone: region.zone.id });
+  }
+
+  function announceZone(game) {
+    const { region } = game;
+    if (region.zone.id !== game.zoneShown && region.edge > 120) {
+      game.zoneShown = region.zone.id;
+      emit(game, 'zoneEnter', { zone: region.zone.id });
+    }
+  }
+
   function movePlayer(game, dt, move) {
     const { player } = game.state;
     const v = game.velocity;
@@ -46,8 +78,10 @@
     const k = util.damp(CONFIG.player.acceleration, dt);
     v.x += (move.x * speed - v.x) * k;
     v.y += (move.y * speed - v.y) * k;
-    player.x += v.x * dt;
-    player.y += v.y * dt;
+    // Le courant de la zone emporte la lumière.
+    const current = game.region.current;
+    player.x += (v.x + current.x) * dt;
+    player.y += (v.y + current.y) * dt;
   }
 
   function gainLight(game, amount) {
@@ -100,9 +134,11 @@
     }
 
     movePlayer(game, dt, input.move);
+    updateRegion(game, false);
+    announceZone(game);
     updatePulse(game, dt);
 
-    const harvest = Vide.Field.update(game.field, state.player, game.stats, dt);
+    const harvest = Vide.Field.update(game.field, state.player, game.stats, dt, zoneMods(game));
     const picked = Vide.Garden.update(game.garden, state, game.stats, dt);
     harvest.value += picked.value;
     harvest.count += picked.count;

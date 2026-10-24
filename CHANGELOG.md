@@ -1,5 +1,21 @@
 # Historique des versions
 
+## 0.6.0 — Les zones
+
+- **Le vide se découpe en régions** irrégulières (stables pour une partie), dont la nature dépend
+  de la distance au foyer : plus loin, plus riche et plus dangereux.
+  - **Le Calme** autour du foyer : sûr, aucune ombre errante.
+  - **La Brume** : lumière abondante, brouillard qui resserre la vue.
+  - **Les Courants** : un flot qui emporte ta lumière et les particules.
+  - **Le Murmure** : ombres nombreuses, lumière rare ×3, échos ×1,5.
+  - **L'Éclat** : lumière rare ×6, ombres redoutables, échos ×2.
+  - **Le Gouffre** : le fond du vide, lumière rare ×10, échos ×3, massives.
+- **Annonce de zone** (nom en grand, description à la découverte), **teinte** de la lumière et de la
+  poussière propre à chaque zone, **brouillard** qui se lève en douceur.
+- **Carte** des régions explorées (touche M ou bouton en haut à droite), avec territoire et bâtiments.
+- Sauvegarde au format 6.
+- 146 tests de logique, 21 vérifications navigateur.
+
 ## 0.5.0 — Les ombres
 
 - **Marées d'ombres** : attirées par le territoire (dès un rayon de 160), elles arrivent d'une direction

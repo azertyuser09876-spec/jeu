@@ -48,6 +48,24 @@
 
   <div id="toast" aria-live="polite"></div>
 
+  <div id="zone-banner" aria-live="polite">
+    <div class="zone-name" id="zone-name"></div>
+    <div class="zone-desc" id="zone-desc"></div>
+  </div>
+
+  <div id="map" class="overlay" hidden>
+    <div class="map-card" role="dialog" aria-label="Carte">
+      <canvas id="map-canvas"></canvas>
+      <div id="map-legend" class="map-legend"></div>
+      <div class="menu-actions">
+        <span class="version">régions explorées · M pour fermer</span>
+        <button id="map-close" type="button">fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="map-btn" class="hidden" type="button" aria-label="Carte (M)" title="Carte (M)"><span></span></button>
+
   <div id="away" class="overlay" hidden>
     <div class="menu-card" role="dialog" aria-label="Pendant ton absence">
       <h2>Pendant ton absence</h2>
@@ -72,6 +90,7 @@
         <dt>pulsation</dt><dd>Espace ou le bouton rond</dd>
         <dt>acheter</dt><dd>clic ou touches 1 à 9 · Tab : onglet suivant</dd>
         <dt>armée</dt><dd>G garder · E escorter · C chasser</dd>
+        <dt>carte</dt><dd>M</dd>
         <dt>menu</dt><dd>Échap</dd>
       </dl>
 
@@ -96,6 +115,7 @@
   <script src="src/core/stats.js"></script>
   <script src="src/core/economy.js"></script>
   <script src="src/core/territory.js"></script>
+  <script src="src/core/zones.js"></script>
   <script src="src/core/buildings.js"></script>
   <script src="src/core/structures.js"></script>
   <script src="src/core/field.js"></script>
@@ -119,6 +139,7 @@
   <script src="src/app/storage.js"></script>
   <script src="src/app/menu.js"></script>
   <script src="src/app/away.js"></script>
+  <script src="src/app/map.js"></script>
   <script src="src/app/main.js"></script>
 </body>
 </html>

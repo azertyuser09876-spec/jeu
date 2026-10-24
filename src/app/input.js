@@ -49,7 +49,8 @@
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLElement && e.target.closest('input, textarea')) return;
       input.keys.add(e.code);
-      if (input.onAction && !e.repeat && input.onAction(e.code)) e.preventDefault();
+      // Le caractère (e.key) est aussi transmis : utile pour les touches qui changent de place selon le clavier (M).
+      if (input.onAction && !e.repeat && input.onAction(e.code, e.key)) e.preventDefault();
       if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
     });
     window.addEventListener('keyup', (e) => input.keys.delete(e.code));

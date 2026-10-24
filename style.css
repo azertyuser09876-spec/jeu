@@ -396,6 +396,109 @@ button { font: inherit; letter-spacing: inherit; }
   }
 }
 
+/* --- Bannière de zone --- */
+
+#zone-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 18%;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#zone-banner.shown { animation: banner 5s ease both; }
+
+#zone-banner .zone-name {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 200;
+  letter-spacing: 0.45em;
+  margin-right: -0.45em;
+  color: var(--zone, var(--light));
+  text-shadow: 0 0 24px #000;
+}
+
+#zone-banner .zone-desc {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--dim);
+  text-shadow: 0 0 10px #000;
+}
+
+@keyframes banner {
+  0% { opacity: 0; transform: translateY(6px); }
+  15%, 70% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+
+/* --- Carte --- */
+
+#map-btn {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: calc(max(14px, env(safe-area-inset-right)) + 42px);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.3s;
+}
+
+#map-btn:hover { opacity: 0.85; }
+
+/* Un cercle et un point : la carte. */
+#map-btn span {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+}
+
+#map-btn span::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+}
+
+.map-card {
+  padding: 16px;
+  border: 1px solid var(--faint);
+  border-radius: 14px;
+  background: #050506;
+}
+
+#map-canvas {
+  display: block;
+  border-radius: 8px;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
+.map-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
 /* --- Menu --- */
 
 #menu-btn {

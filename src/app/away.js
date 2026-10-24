@@ -86,8 +86,22 @@
   }
 
   // Traduit les événements de la simulation en messages.
+  // Bannière de zone : son nom en grand, et sa description à la première découverte.
+  function showZone(id, discovered) {
+    const zone = Vide.Zones.get(id);
+    const el = $('zone-banner');
+    $('zone-name').textContent = zone.name;
+    $('zone-desc').textContent = discovered ? zone.desc : '';
+    el.style.setProperty('--zone', `rgb(${zone.tint.join(',')})`);
+    el.classList.remove('shown');
+    void el.offsetWidth;
+    el.classList.add('shown');
+  }
+
   function readEvents(game) {
+    const discovered = new Set(game.events.filter((e) => e.type === 'zoneDiscovered').map((e) => e.zone));
     for (const e of game.events) {
+      if (e.type === 'zoneEnter') showZone(e.zone, discovered.has(e.zone));
       const text = typeof MESSAGES[e.type] === 'function' ? MESSAGES[e.type](e) : MESSAGES[e.type];
       notify(text);
     }

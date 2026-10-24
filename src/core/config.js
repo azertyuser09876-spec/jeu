@@ -113,8 +113,8 @@
       sense: 380,            // distance à laquelle une ombre repère une proie
       max: 90,
       despawn: 2600,         // une ombre trop loin du joueur et du foyer se dissipe
-      roamBeyond: 900,       // au-delà du bord du territoire + cette distance, des ombres errent près du joueur
-      roamRate: 1 / 30,      // apparitions par seconde
+      roamBeyond: 300,       // au-delà du bord du territoire + cette distance, la zone fait errer ses ombres
+      roamRate: 1 / 18,      // apparitions par seconde (multipliées par la dangerosité de la zone)
       roamMax: 5,
     },
   };

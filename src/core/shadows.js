@@ -30,7 +30,7 @@
       nextId: 1,
       rng,
       tideTimer: c.tideInterval * (0.6 + rng() * 0.4), // la première marée arrive un peu plus vite
-      roamTimer: 1 / c.roamRate,
+      roamTimer: 4 + rng() * 4, // en zone dangereuse, la première ombre ne tarde pas
     };
     return game.shadows;
   }
@@ -55,6 +55,18 @@
     };
     game.shadows.list.push(s);
     return s;
+  }
+
+  // Tirage pondéré d'une sorte d'ombre : { errante: 2, rodeuse: 1 } → 'errante' deux fois sur trois.
+  function pickKind(weights, roll) {
+    const entries = Object.entries(weights);
+    const total = entries.reduce((sum, [, w]) => sum + w, 0);
+    let acc = 0;
+    for (const [id, w] of entries) {
+      acc += w / total;
+      if (roll < acc) return id;
+    }
+    return entries[entries.length - 1][0];
   }
 
   // Taille d'une marée : grandit avec le nombre de marées passées et la taille du territoire.
@@ -144,16 +156,18 @@
       }
     }
 
-    // Errance : loin du territoire, des ombres surgissent près du joueur.
+    // Errance : hors du territoire, la zone traversée fait surgir ses ombres près du joueur.
+    const zone = game.region ? game.region.zone : null;
     const far = Math.hypot(state.player.x, state.player.y) - Territory.radius(state);
-    if (far > c.roamBeyond) {
-      sh.roamTimer -= dt;
+    if (zone && zone.shadows > 0 && far > c.roamBeyond) {
+      sh.roamTimer -= dt * zone.shadows;
       const roaming = sh.list.filter((s) => s.origin === 'roam').length;
-      if (sh.roamTimer <= 0 && roaming < c.roamMax) {
+      if (sh.roamTimer <= 0 && roaming < c.roamMax * Math.ceil(zone.shadows)) {
         const a = sh.rng() * Math.PI * 2;
         const d = 500 + sh.rng() * 200;
-        const k = state.tides >= 2 && sh.rng() < 0.4 ? 'rodeuse' : 'errante';
-        spawn(game, k, state.player.x + Math.cos(a) * d, state.player.y + Math.sin(a) * d, 'roam');
+        const s = spawn(game, pickKind(zone.kinds, sh.rng()), state.player.x + Math.cos(a) * d,
+          state.player.y + Math.sin(a) * d, 'roam');
+        s.echoMult = zone.echoes;
         sh.roamTimer = (1 / c.roamRate) * (0.6 + sh.rng() * 0.8);
       }
     }
@@ -205,7 +219,7 @@
       const s = sh.list[i];
       if (s.hp <= 0) {
         const k = kind(s.kind);
-        const echoes = k.echoes * game.stats.echoGain;
+        const echoes = k.echoes * game.stats.echoGain * (s.echoMult || 1);
         state.echoes += echoes;
         state.stats.shadows++;
         Vide.Sim.emit(game, 'shadowDown', { kind: s.kind, x: s.x, y: s.y, echoes, first: state.stats.shadows === 1 });
@@ -243,5 +257,5 @@
     return best;
   }
 
-  Vide.Shadows = { kind, create, spawn, tideBudget, startTide, update, damage, nearest };
+  Vide.Shadows = { kind, create, spawn, pickKind, tideBudget, startTide, update, damage, nearest };
 })(globalThis.Vide);

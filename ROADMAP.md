@@ -51,7 +51,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 5. Tour de lumière, réparation des bâtiments, améliorations de combat.
 6. Sauvegarde format 5.
 
-### [ ] 0.6 — Les zones
+### [x] 0.6 — Les zones
 1. Le vide se découpe en zones (Calme, Brume, Courants, Murmure, Éclat, Gouffre) selon la distance.
 2. Chaque zone change les règles : densité, lumière rare, courants, brouillard, ombres errantes.
 3. Annonce de zone, teintes, carte des régions explorées.

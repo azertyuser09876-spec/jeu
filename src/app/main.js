@@ -34,14 +34,20 @@
       window.location.reload();
     },
   });
+  const map = Vide.Map.create(game);
   Vide.Render.snapCamera(renderer, game);
   Vide.Away.init();
   if (welcome && Vide.Offline.worthShowing(welcome)) Vide.Away.show(welcome);
 
-  const paused = () => menu.open || Vide.Away.open;
+  const paused = () => menu.open || Vide.Away.open || map.open;
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
-  input.onAction = (code) => {
+  input.onAction = (code, key) => {
+    const isMapKey = key === 'm' || key === 'M';
+    if (map.open) {
+      if (code === 'Escape' || isMapKey) Vide.Map.toggle(map, false);
+      return true;
+    }
     if (Vide.Away.open) {
       if (code === 'Escape' || code === 'Enter' || code === 'Space') Vide.Away.close();
       return true;
@@ -56,6 +62,10 @@
       return true;
     }
     if (code === 'Tab') return Vide.UI.nextTab(ui);
+    if (isMapKey && state.zones.visited.length > 1) {
+      Vide.Map.toggle(map, true);
+      return true;
+    }
     const posture = { KeyG: 'garde', KeyE: 'escorte', KeyC: 'chasse' }[code];
     if (posture && Vide.Combat.armySize(state) > 0) return Vide.Combat.setPosture(state, posture);
     const digit = /^(?:Digit|Numpad)([1-9])$/.exec(code);
@@ -121,6 +131,7 @@
     Vide.Away.readEvents(game);
     Vide.Away.updateToast(now);
     Vide.UI.update(ui);
+    Vide.Map.update(map);
     requestAnimationFrame(frame);
   }
 

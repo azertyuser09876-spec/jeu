@@ -12,9 +12,13 @@
     };
   }
 
-  function targetCount(stats) {
+  // Effets de la zone traversée (voir zones.js) ; par défaut : aucun.
+  const NO_ZONE = { density: 1, rare: 1, current: { x: 0, y: 0 } };
+
+  function targetCount(stats, zone) {
+    zone = zone || NO_ZONE;
     const f = CONFIG.field;
-    const n = Math.round(f.density * Math.PI * f.radius * f.radius * stats.density);
+    const n = Math.round(f.density * Math.PI * f.radius * f.radius * stats.density * zone.density);
     return Math.min(f.maxParticles, n);
   }
 
@@ -36,7 +40,8 @@
   }
 
   // Tirage uniforme dans le disque autour de (cx, cy), hors du rayon d'attraction.
-  function spawn(field, cx, cy, stats, visible) {
+  function spawn(field, cx, cy, stats, visible, zone) {
+    zone = zone || NO_ZONE;
     const f = CONFIG.field;
     const r = field.rng;
     const minDist = stats.reach + f.spawnGap;
@@ -44,7 +49,7 @@
       const angle = r() * Math.PI * 2;
       const dist = f.radius * Math.sqrt(r());
       if (dist < minDist) continue;
-      const rare = r() < f.rareChance;
+      const rare = r() < f.rareChance * zone.rare;
       return place(field, cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, rare, visible);
     }
     return null;
@@ -67,7 +72,9 @@
   // poursuite, récolte, et effacement au-delà de despawnRadius (Infinity : jamais).
   // Une particule retirée de la liste est marquée `gone` (utile à qui la visait, comme une lueur).
   // Renvoie la lumière brute récoltée (avant multiplicateur) et le nombre de particules.
-  function attract(list, player, stats, dt, despawnRadius) {
+  function attract(list, player, stats, dt, despawnRadius, current) {
+    const cx = current ? current.x : 0;
+    const cy = current ? current.y : 0;
     const a = CONFIG.attraction;
     const reach2 = stats.reach * stats.reach;
     const collect2 = a.collectRadius * a.collectRadius;
@@ -105,26 +112,27 @@
         p.x += (dx / d) * move;
         p.y += (dy / d) * move;
       } else {
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
+        p.x += (p.vx + cx) * dt;
+        p.y += (p.vy + cy) * dt;
       }
     }
     return { value, count };
   }
 
   // Avance le champ d'un pas. Renvoie la lumière brute récoltée (avant multiplicateur) et le nombre de particules.
-  function update(field, player, stats, dt) {
+  function update(field, player, stats, dt, zone) {
+    zone = zone || NO_ZONE;
     const f = CONFIG.field;
     const list = field.particles;
-    const result = attract(list, player, stats, dt, f.despawnRadius);
+    const result = attract(list, player, stats, dt, f.despawnRadius, zone.current);
 
     // Reremplissage progressif : le vide se recharge, mais pas instantanément.
-    const target = targetCount(stats);
+    const target = targetCount(stats, zone);
     if (list.length < target) {
       field.budget = Math.min(field.budget + (target / f.refillTime) * dt, 5);
       while (field.budget >= 1 && list.length < target) {
         field.budget--;
-        spawn(field, player.x, player.y, stats, false);
+        spawn(field, player.x, player.y, stats, false, zone);
       }
     } else {
       field.budget = 0;

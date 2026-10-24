@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 5;
+  const FORMAT = 6;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -17,6 +17,8 @@
     3: (data) => ({ ...data, buildings: [] }),
     // 0.5 : les ombres, les échos et l'armée.
     4: (data) => ({ ...data, echoes: 0, tides: 0, army: { posture: 'garde' } }),
+    // 0.6 : les zones du vide.
+    5: (data) => ({ ...data, zones: { visited: [], discovered: [] } }),
   };
 
   function serialize(state, now) {
@@ -119,6 +121,19 @@
     state.tides = Number.isInteger(raw.tides) && raw.tides > 0 ? raw.tides : 0;
     const army = isObject(raw.army) ? raw.army : {};
     if (Vide.Combat.POSTURES.includes(army.posture)) state.army.posture = army.posture;
+
+    const zones = isObject(raw.zones) ? raw.zones : {};
+    const visited = Array.isArray(zones.visited) ? zones.visited : [];
+    for (const key of visited) {
+      if (typeof key === 'string' && /^-?\d+,-?\d+$/.test(key) && !state.zones.visited.includes(key)) {
+        state.zones.visited.push(key);
+      }
+    }
+    state.zones.visited = state.zones.visited.slice(-Vide.Zones.MAX_VISITED);
+    const discovered = Array.isArray(zones.discovered) ? zones.discovered : [];
+    for (const id of discovered) {
+      if (Vide.ZONES.some((z) => z.id === id) && !state.zones.discovered.includes(id)) state.zones.discovered.push(id);
+    }
 
     const stats = isObject(raw.stats) ? raw.stats : {};
     state.stats.playTime = positive(stats.playTime, 0);

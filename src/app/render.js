@@ -28,6 +28,7 @@
       makeGlow,
       camera: { x: 0, y: 0, scale: 1 },
       trail: [],   // positions récentes de la lumière (purement visuel)
+      fog: 0,      // brouillard affiché, qui suit en douceur celui de la zone
       time: 0,
       glows: {
         white: makeGlow(255, 255, 255),
@@ -74,10 +75,10 @@
     { parallax: 0.4, cell: 140, chance: 0.4, size: 1.2, alpha: 0.28 },
   ];
 
-  function drawDust(r, seed) {
+  function drawDust(r, seed, tint) {
     const { ctx, camera } = r;
     const s = camera.scale;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = `rgb(${tint.join(',')})`;
     DUST_LAYERS.forEach((layer, li) => {
       const ox = camera.x * layer.parallax;
       const oy = camera.y * layer.parallax;
@@ -164,7 +165,32 @@
     return { left: cam.x - hw, right: cam.x + hw, top: cam.y - hh, bottom: cam.y + hh };
   }
 
-  function drawParticles(r, game, list) {
+  // Halo des particules du champ, teinté par la zone traversée.
+  function zoneGlow(r, zone) {
+    r.zoneGlows = r.zoneGlows || {};
+    if (!r.zoneGlows[zone.id]) r.zoneGlows[zone.id] = makeGlow(zone.tint[0], zone.tint[1], zone.tint[2]);
+    return r.zoneGlows[zone.id];
+  }
+
+  // Brouillard (Brume, Gouffre…) : la vue se resserre autour de la lumière. Il se lève et retombe en douceur.
+  function drawFog(r, game, dt) {
+    const target = game.region.zone.fog;
+    r.fog += (target - r.fog) * Vide.util.damp(0.8, dt);
+    if (r.fog < 0.02) return;
+    const { ctx, camera } = r;
+    const sx = (game.state.player.x - camera.x) * camera.scale + r.width / 2;
+    const sy = (game.state.player.y - camera.y) * camera.scale + r.height / 2;
+    const visible = (1100 - 820 * r.fog) * camera.scale;
+    const grad = ctx.createRadialGradient(sx, sy, visible * 0.35, sx, sy, visible);
+    grad.addColorStop(0, 'rgba(6, 8, 12, 0)');
+    grad.addColorStop(1, `rgba(6, 8, 12, ${0.96 * r.fog})`);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, r.width, r.height);
+  }
+
+  function drawParticles(r, game, list, glowLight) {
     const { ctx } = r;
     const fadeIn = Vide.CONFIG.field.fadeIn;
     const b = viewBounds(r, 30);
@@ -177,7 +203,7 @@
       if (p.rare) {
         drawGlow(ctx, r.glows.rare, p.x, p.y, 16 * caught, appear * twinkle);
       } else {
-        drawGlow(ctx, r.glows.light, p.x, p.y, 9 * caught, appear * twinkle * 0.9);
+        drawGlow(ctx, glowLight || r.glows.light, p.x, p.y, 9 * caught, appear * twinkle * 0.9);
       }
     }
   }
@@ -249,7 +275,7 @@
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, r.width, r.height);
 
-    drawDust(r, game.state.seed);
+    drawDust(r, game.state.seed, game.region.zone.tint);
     edgePointer(r, 0, 0, '#fff', 0.3);
 
     // Passage en coordonnées du monde, centrées sur la caméra.
@@ -263,7 +289,7 @@
     drawReach(r, game);
     drawPulse(r, game);
     drawParticles(r, game, game.garden.particles);
-    drawParticles(r, game, game.field.particles);
+    drawParticles(r, game, game.field.particles, zoneGlow(r, game.region.zone));
     Vide.Draw.colony(r, game);
     Vide.Draw.combat(r, game, dt);
     drawTrail(r);
@@ -271,6 +297,7 @@
 
     // Retour aux coordonnées d'écran pour les effets plein écran.
     ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
+    drawFog(r, game, dt);
     Vide.Draw.combatOverlay(r, game);
 
     ctx.globalAlpha = 1;
