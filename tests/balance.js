@@ -57,7 +57,8 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     goal = null;
     // Les fondations ne se montrent que hors des villages : le robot les considère toujours.
     for (const i of Catalog.all()) {
-      if (i.id === 'intendant' || i.maxed(state) || !Wallet.has(state, i.cost(state))) continue;
+      const cost = i.cost(state);
+      if (i.id === 'intendant' || i.maxed(state) || !Object.keys(cost).length || !Wallet.has(state, cost)) continue;
       const founding = i.id.startsWith('village-');
       if (!founding && !i.revealed(state)) continue;
       const why = i.blocked(state);

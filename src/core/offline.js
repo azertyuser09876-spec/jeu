@@ -39,6 +39,7 @@
       report.kept += v.funds - funds;
       report.steward.push(...Vide.Steward.catchUp(state, v));
     }
+    report.roads = Vide.Roads.advance(state, (v) => Villages.local(state, v, stats), applied).length;
     const light = report.radiated + report.brought;
     state.light += light;
     state.totalLight += light;

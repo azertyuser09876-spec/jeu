@@ -84,8 +84,9 @@
   function movePlayer(game, dt, move) {
     const { player } = game.state;
     const v = game.velocity;
-    // Une toile de colosse ralentit fortement la lumière.
-    const speed = game.stats.speed * (game.webs ? Vide.Colossus.slowAt(game, player.x, player.y) : 1);
+    // Une toile de colosse ralentit fortement la lumière ; une route la fait filer.
+    let speed = game.stats.speed * (game.webs ? Vide.Colossus.slowAt(game, player.x, player.y) : 1);
+    if (game.state.roads.length && Vide.Roads.onRoad(game.state, player.x, player.y)) speed *= CONFIG.roads.speedBonus;
     const k = util.damp(CONFIG.player.acceleration, dt);
     v.x += (move.x * speed - v.x) * k;
     v.y += (move.y * speed - v.y) * k;
@@ -194,6 +195,10 @@
       gained += brought;
     }
     Vide.Steward.update(game, dt);
+    for (const r of Vide.Roads.advance(state, (v) => Vide.Villages.statsOf(game, v), dt)) {
+      const [a, b] = Vide.Roads.ends(state, r);
+      emit(game, 'road', { a: a.type, b: b.type, first: state.roads.filter((x) => Vide.Roads.isDone(state, x)).length === 1 });
+    }
     Vide.Shadows.update(game, dt);
     Vide.Colossus.update(game, dt);
     Vide.Combat.update(game, dt);

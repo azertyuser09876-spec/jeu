@@ -184,6 +184,20 @@
     ctx.arc(X(0), Y(0), 3, 0, Math.PI * 2);
     ctx.stroke();
 
+    // Routes : pleines une fois achevées, en pointillés tant qu'elles sont en chantier.
+    for (const road of state.roads) {
+      const [a, b] = Vide.Roads.ends(state, road);
+      if (!a || !b) continue;
+      ctx.strokeStyle = 'rgba(255, 236, 205, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash(Vide.Roads.isDone(state, road) ? [] : [3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(X(a.x), Y(a.y));
+      ctx.lineTo(X(b.x), Y(b.y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     // Repères supplémentaires (colosses…), fournis par d'autres modules.
     for (const mark of Vide.MapMarks || []) mark(ctx, X, Y, state);
 

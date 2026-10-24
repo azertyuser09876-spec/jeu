@@ -342,6 +342,7 @@
     ctx.globalCompositeOperation = 'lighter';
 
     Vide.Draw.territory(r, game);
+    Vide.Draw.roads(r, game);
     Vide.Draw.structures(r, game);
     drawReach(r, game);
     drawPulse(r, game);

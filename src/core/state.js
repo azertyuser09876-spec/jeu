@@ -11,6 +11,7 @@
       upgrades: {},      // niveau de chaque amélioration, par identifiant
       player: { x: 0, y: 0 },
       villages: [],      // villages fondés : territoire, êtres, bâtiments (voir villages.js)
+      roads: [],         // routes entre villages : { a, b, work } (voir roads.js)
       echoes: 0,         // échos laissés par les ombres vaincues
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
       army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse

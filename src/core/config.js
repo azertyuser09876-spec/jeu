@@ -76,6 +76,16 @@
       max: 40,
     },
 
+    // Routes entre villages.
+    roads: {
+      costPerUnit: 12,   // lumière par unité de longueur…
+      growth: 1.6,       // …×1,6 à chaque nouvelle route
+      buildSpeed: 8,     // longueur bâtie par seconde et par bâtisseur (aux deux bouts)
+      maxLength: 6000,   // portée maximale d'une route
+      near: 45,          // distance à la route où la lumière file plus vite…
+      speedBonus: 1.6,   // …et de combien
+    },
+
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
     renaissance: {
       threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître

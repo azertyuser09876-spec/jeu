@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 11;
+  const FORMAT = 12;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -43,6 +43,8 @@
       ...data,
       villages: (Array.isArray(data.villages) ? data.villages : []).map((v) => ({ ...v, steward: 0, funds: 0 })),
     }),
+    // 1.4 : les routes entre villages.
+    11: (data) => ({ ...data, roads: [] }),
   };
 
   function serialize(state, now) {
@@ -127,6 +129,17 @@
       if (!village || state.villages.some((o) => o.id === village.id)) continue;
       state.villages.push(village);
       if (state.villages.length >= Vide.CONFIG.villages.max) break;
+    }
+
+    // Routes : entre deux villages existants et distincts, une seule par paire, jamais plus longue que bâtie.
+    const roads = Array.isArray(raw.roads) ? raw.roads : [];
+    for (const r of roads) {
+      if (!isObject(r) || r.a === r.b) continue;
+      const a = state.villages.find((v) => v.id === r.a), b = state.villages.find((v) => v.id === r.b);
+      if (!a || !b || state.roads.some((o) => (o.a === a.id && o.b === b.id) || (o.a === b.id && o.b === a.id))) continue;
+      const road = { a: Math.min(a.id, b.id), b: Math.max(a.id, b.id), work: 0 };
+      road.work = Math.min(positive(r.work, 0), Math.hypot(a.x - b.x, a.y - b.y));
+      state.roads.push(road);
     }
 
     state.echoes = positive(raw.echoes, 0);

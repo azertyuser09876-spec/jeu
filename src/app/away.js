@@ -27,6 +27,7 @@
     }
     if (report.radiated > 0) lines.push(`Les territoires ont rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
     if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au cœur des villages.`);
+    if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
       const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
       lines.push(`Les bâtisseurs ont achevé : ${names.join(', ')}.`);
@@ -81,6 +82,12 @@
         ? `éveillé : ${Vide.Colony.species(e.id).name.toLowerCase()}`
         : `planifié : ${Vide.Structures.def(e.id).name.toLowerCase()}`;
       return `L’intendant d’un village agit seul (${what}). Il dépense la part de lumière que tu lui confies.`;
+    },
+    road: (e) => {
+      const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
+      return e.first
+        ? `Une route relie ${a} et ${b}. Ta lumière y file plus vite ; bientôt, les caravanes y passeront.`
+        : `Route achevée : ${a} — ${b}.`;
     },
     heartAttacked: (e) => `Des ombres rongent le cœur d’un village (${Vide.Villages.type(e.village).name}) !`,
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
