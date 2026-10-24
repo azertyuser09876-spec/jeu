@@ -15,6 +15,7 @@
         area: 0,         // surface du territoire (unités²)
       },
       beings: {},        // nombre d'êtres par espèce
+      buildings: [],     // bâtiments : { type, x, y, work }
       colonyRate: 0,     // lumière/s rapportée par la colonie (mesurée, sert pendant l'absence)
       stats: {
         playTime: 0,     // secondes de jeu actif

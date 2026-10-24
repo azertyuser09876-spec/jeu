@@ -24,6 +24,10 @@
     }
     if (report.radiated > 0) lines.push(`Il a rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
     if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au foyer.`);
+    if (report.built.length) {
+      const names = report.built.map((type) => Vide.Structures.def(type).name.toLowerCase());
+      lines.push(`Les bâtisseurs ont achevé : ${names.join(', ')}.`);
+    }
     if (report.capped) {
       lines.push(`Le territoire ne se souvient que de ${formatDuration(report.applied)} (amélioration Mémoire).`);
     }
@@ -50,11 +54,17 @@
   const MESSAGES = {
     foyer: 'Le foyer s’allume. Ton territoire grandira, même sans toi.',
     birth: (e) => (e.first ? FIRST_BIRTH[e.species] : null),
+    built: (e) => `${Vide.Structures.def(e.building).name} achevé.`,
+    // Les danses sont fréquentes : on n'en parle qu'une fois par session.
+    dance: () => (seen.dance ? null : (seen.dance = true, 'Deux êtres se croisent… et dansent un instant ensemble.')),
   };
+
+  const seen = {};
 
   // Message à la naissance du premier être de chaque espèce.
   const FIRST_BIRTH = {
     lueur: 'Une lueur s’éveille. Elle récoltera le jardin pour toi.',
+    batisseur: 'Un bâtisseur s’éveille. Planifie un bâtiment : il choisira où le construire.',
   };
 
   const toast = { queue: [], current: null, until: 0 };

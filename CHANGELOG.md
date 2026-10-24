@@ -1,5 +1,19 @@
 # Historique des versions
 
+## 0.4.0 — Vie autonome
+
+- **Les bâtisseurs**, deuxième espèce : ils vivent au foyer (hors population, 2 au plus).
+- **Bâtiments** : tu achètes un plan, la colonie choisit l'emplacement (à la bonne distance du foyer,
+  loin des autres) et le construit seule. **Nid** (+4 places), **Prisme** (relais de dépôt loin du foyer,
+  lumière ×1,25), **Phare** (+25 % de croissance du territoire, faisceau tournant).
+- **Interactions** : les lueurs ravitaillent les chantiers actifs sur leur chemin ; deux êtres oisifs
+  qui se croisent dansent un instant ensemble.
+- **Absence** : les chantiers avancent pendant que tu n'es pas là.
+- Amélioration Ardeur (vitesse de construction).
+- **Équilibrage** : Éclat et Ferveur réglées pour que le revenu ne s'emballe plus (test garde-fou ajouté).
+- Sauvegarde au format 4.
+- 109 tests de logique, 17 vérifications navigateur.
+
 ## 0.3.0 — Premières lueurs
 
 - **Le jardin** : la lumière naît d'elle-même dans le territoire, d'autant plus qu'il est grand.

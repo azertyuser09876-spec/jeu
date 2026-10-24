@@ -207,18 +207,19 @@ button { font: inherit; letter-spacing: inherit; }
 
 #shop-tabs {
   display: flex;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 2px;
   margin-bottom: 10px;
 }
 
 .tab {
   position: relative;
-  padding: 4px 10px;
+  padding: 4px 7px;
   border: 0;
   border-bottom: 1px solid transparent;
   background: none;
   color: var(--dim);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: color 0.3s, border-color 0.3s;
   animation: reveal 1.6s ease both;

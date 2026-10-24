@@ -37,7 +37,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 4. Absence : les lueurs continuent de travailler (rendement mesuré).
 5. Sauvegarde format 3.
 
-### [ ] 0.4 — Vie autonome
+### [x] 0.4 — Vie autonome
 1. Les bâtisseurs, deuxième espèce d'êtres.
 2. Bâtiments planifiés par le joueur, placés et construits seuls par la colonie (Nid, Phare, Prisme).
 3. Interactions : les lueurs ravitaillent les chantiers, les êtres se rencontrent et dansent.

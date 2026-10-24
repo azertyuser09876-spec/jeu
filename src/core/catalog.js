@@ -17,6 +17,7 @@
     { id: 'lumiere', name: 'lumière' },
     { id: 'territoire', name: 'territoire' },
     { id: 'etres', name: 'êtres' },
+    { id: 'batiments', name: 'bâtiments' },
   ];
 
   const items = [];

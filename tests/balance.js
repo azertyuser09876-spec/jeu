@@ -60,9 +60,12 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   if (s % (2 * stepsPerMinute) === 0) {
     const levels = Object.entries(state.upgrades).map(([k, v]) => `${k} ${v}`).join(', ');
     const territory = state.territory.lit ? `  territoire r=${Math.round(Territory.radius(state))}` : '';
+    const beings = Object.entries(state.beings).map(([k, v]) => `${k} ${v}`).join(' ');
+    const built = state.buildings.filter((x) => Vide.Structures.isDone(x)).map((x) => x.type[0]).join('');
+    const colony = beings ? `  êtres [${beings}] bâtiments [${built}]` : '';
     console.log(
       `${String(s / stepsPerMinute).padStart(3)} min  total ${util.formatNumber(state.totalLight).padEnd(6)}` +
-        `  débit ${util.formatRate(game.rate).padEnd(6)}/s${territory}  ${levels}`
+        `  débit ${util.formatRate(game.rate).padEnd(6)}/s${territory}${colony}  ${levels}`
     );
   }
 }

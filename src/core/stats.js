@@ -20,6 +20,8 @@
       beingCapacity: 3,     // particules portées par une lueur avant de rentrer
       beingValue: 1,        // multiplicateur de la lumière rapportée par les êtres
       beingSense: 320,      // distance à laquelle une lueur repère la lumière
+      buildRate: 1,         // travail fourni par un bâtisseur par seconde
+      builderCap: 2,        // nombre maximal de bâtisseurs (ils ne comptent pas dans la population)
     };
   }
 
@@ -29,6 +31,8 @@
       const level = state.upgrades[up.id] || 0;
       for (const key in up.effects) stats[key] = up.effects[key](level);
     }
+    // Les bâtiments achevés modifient ensuite ces valeurs (+places, croissance…).
+    if (Vide.Structures) Vide.Structures.modify(state, stats);
     return stats;
   }
 

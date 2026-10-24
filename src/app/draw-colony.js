@@ -34,6 +34,16 @@
     Render.drawGlow(ctx, glow, x, y, 9 * birth, 1);
     Render.drawGlow(ctx, r.glows.white, x, y, 4 * birth, 0.9);
 
+    // Bâtisseur au travail : des étincelles jaillissent vers le chantier.
+    if (b.working && b.site) {
+      for (let i = 0; i < 2; i++) {
+        const k = (t * 2.3 + b.phase + i * 0.5) % 1;
+        const sx = x + (b.site.x - x) * k + Math.sin(t * 13 + i) * 3;
+        const sy = y + (b.site.y - y) * k + Math.cos(t * 11 + i) * 3;
+        Render.drawGlow(ctx, glow, sx, sy, 5, 0.9 * (1 - k));
+      }
+    }
+
     // Charge portée : de petits points qui tournent autour de l'être.
     for (let i = 0; i < b.carry; i++) {
       const a = t * 3 + b.phase + (i / Math.max(b.carry, 1)) * Math.PI * 2;

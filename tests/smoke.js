@@ -102,6 +102,20 @@ const { chromium } = require('playwright');
   const beings = await page.evaluate(() => Vide.game.colony.beings.length);
   check(beings === 1, 'une lueur s’éveille depuis l’onglet êtres');
 
+  // Bâtiments : avec un bâtisseur et un territoire assez grand, un nid se planifie.
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    s.light += 1e5; s.totalLight += 1e5;
+    s.territory.area = Math.PI * 200 * 200;
+    s.beings.batisseur = 1;
+  });
+  await page.waitForTimeout(200);
+  await page.click('.tab:has-text("bâtiments")');
+  await page.click('#shop-list li:not([hidden]) .item:has-text("Nid")');
+  await page.waitForTimeout(1500);
+  const site = await page.evaluate(() => Vide.game.state.buildings[0]);
+  check(site && site.type === 'nid' && site.work > 0, 'un nid planifié est mis en chantier par le bâtisseur');
+
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
   const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
   await page.evaluate(() => {

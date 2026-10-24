@@ -16,14 +16,16 @@
       light: 0,
       radiated: 0,
       brought: 0,
+      built: [],
       radiusBefore: Territory.radius(state),
       radiusAfter: Territory.radius(state),
     };
     if (applied <= 0) return report;
 
     const radiated = Territory.advance(state, stats, applied);
+    report.built = Vide.Structures.advanceOffline(state, stats, applied);
     // Les êtres continuent leur travail au rythme mesuré avant le départ.
-    const brought = Vide.Colony.population(state) > 0 ? state.colonyRate * applied : 0;
+    const brought = Vide.Colony.total(state) > 0 ? state.colonyRate * applied : 0;
     const light = radiated + brought;
     state.light += light;
     state.totalLight += light;
@@ -36,7 +38,7 @@
 
   // Inutile de déranger le joueur pour une absence courte ou sans effet.
   function worthShowing(report) {
-    return report.seconds >= 60 && report.light > 0;
+    return report.seconds >= 60 && (report.light > 0 || report.built.length > 0);
   }
 
   Vide.Offline = { apply, worthShowing };

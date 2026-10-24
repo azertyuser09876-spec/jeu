@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 3;
+  const FORMAT = 4;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -13,6 +13,8 @@
     1: (data) => ({ ...data, territory: { lit: false, area: 0 } }),
     // 0.3 : les êtres de lumière.
     2: (data) => ({ ...data, beings: {}, colonyRate: 0 }),
+    // 0.4 : les bâtiments.
+    3: (data) => ({ ...data, buildings: [] }),
   };
 
   function serialize(state, now) {
@@ -100,6 +102,14 @@
       if (Number.isInteger(n) && n > 0) state.beings[sp.id] = n;
     }
     state.colonyRate = positive(raw.colonyRate, 0);
+
+    const buildings = Array.isArray(raw.buildings) ? raw.buildings : [];
+    for (const b of buildings) {
+      if (!isObject(b)) continue;
+      const def = Vide.BUILDINGS.find((d) => d.id === b.type);
+      if (!def || !Number.isFinite(b.x) || !Number.isFinite(b.y)) continue;
+      state.buildings.push({ type: b.type, x: b.x, y: b.y, work: Math.min(positive(b.work, 0), def.work) });
+    }
 
     const stats = isObject(raw.stats) ? raw.stats : {};
     state.stats.playTime = positive(stats.playTime, 0);

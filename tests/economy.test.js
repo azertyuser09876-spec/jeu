@@ -102,6 +102,38 @@
     assert.throws(() => Economy.get('nexistepas'));
   });
 
+  // Garde-fou contre l'emballement : pour chaque source de revenu, les améliorations sans maximum
+  // qui la multiplient doivent avoir Σ ln(multiplicateur par niveau) / ln(croissance du prix) < 1,
+  // sinon le revenu grandit plus vite que les prix et la partie explose (vu au robot en 0.4).
+  // Une nouvelle amélioration sans maximum doit être rattachée ici à la caractéristique qu'elle multiplie.
+  const STREAMS = {
+    champ: ['value'],
+    etres: ['value', 'beingValue'],
+    territoire: ['territoryYield'],
+  };
+
+  test("aucune combinaison d'améliorations illimitées ne fait exploser le revenu", () => {
+    const state = State.create(1);
+    for (const [stream, statKeys] of Object.entries(STREAMS)) {
+      let sum = 0;
+      for (const up of UPGRADES) {
+        if (up.max !== null) continue;
+        for (const key of statKeys) {
+          if (!up.effects[key]) continue;
+          const perLevel = up.effects[key](11) / up.effects[key](10);
+          sum += Math.log(perLevel) / Math.log(up.growth);
+        }
+      }
+      assert.ok(sum < 0.95, `${stream} : ${sum.toFixed(2)}`);
+    }
+    for (const up of UPGRADES) {
+      if (up.max !== null) continue;
+      const known = Object.values(STREAMS).some((keys) => Object.keys(up.effects).some((k) => keys.includes(k)));
+      assert.ok(known, `${up.id} est illimitée : la rattacher à une source de revenu dans ce test`);
+    }
+    assert.ok(state);
+  });
+
   test('formatMultiplier', () => {
     const { formatMultiplier } = Vide.util;
     assert.equal(formatMultiplier(1), '×1,00');

@@ -74,6 +74,9 @@
       pickRadius: 7,     // distance pour ramasser une particule
       separation: 14,    // les êtres s'écartent un peu les uns des autres
       rateMemory: 30,    // secondes de lissage du rendement mesuré (sert pendant l'absence)
+      feedWork: 1,       // travail apporté à un chantier par unité de lumière livrée par une lueur
+      danceRange: 45,    // deux êtres oisifs plus proches que ça peuvent danser ensemble
+      danceTime: 3,
     },
   };
 })(globalThis.Vide);
