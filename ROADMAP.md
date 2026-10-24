@@ -30,7 +30,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
    « pendant ton absence… » (durée plafonnée par Mémoire).
 5. Sauvegarde format 2 + migration.
 
-### [ ] 0.3 — Premières lueurs
+### [x] 0.3 — Premières lueurs
 1. Le jardin : le territoire fait naître sa propre lumière.
 2. Les lueurs : êtres autonomes qui cherchent la lumière du jardin, la portent et la déposent au foyer.
 3. Améliorations des êtres (Agilité, Charge, Ferveur), plafond de population.

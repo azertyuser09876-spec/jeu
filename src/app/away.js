@@ -22,7 +22,8 @@
     if (report.radiusAfter > report.radiusBefore) {
       lines.push(`Ton territoire s’est étendu : rayon ${Math.round(report.radiusBefore)} → ${Math.round(report.radiusAfter)}.`);
     }
-    if (report.light > 0) lines.push(`Il a rayonné ✦ ${util.formatNumber(report.light)} de lumière.`);
+    if (report.radiated > 0) lines.push(`Il a rayonné ✦ ${util.formatNumber(report.radiated)} de lumière.`);
+    if (report.brought > 0) lines.push(`Tes êtres ont rapporté ✦ ${util.formatNumber(report.brought)} au foyer.`);
     if (report.capped) {
       lines.push(`Le territoire ne se souvient que de ${formatDuration(report.applied)} (amélioration Mémoire).`);
     }
@@ -48,6 +49,12 @@
 
   const MESSAGES = {
     foyer: 'Le foyer s’allume. Ton territoire grandira, même sans toi.',
+    birth: (e) => (e.first ? FIRST_BIRTH[e.species] : null),
+  };
+
+  // Message à la naissance du premier être de chaque espèce.
+  const FIRST_BIRTH = {
+    lueur: 'Une lueur s’éveille. Elle récoltera le jardin pour toi.',
   };
 
   const toast = { queue: [], current: null, until: 0 };

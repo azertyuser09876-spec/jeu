@@ -5,12 +5,14 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 2;
+  const FORMAT = 3;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
     // 0.2 : apparition du territoire.
     1: (data) => ({ ...data, territory: { lit: false, area: 0 } }),
+    // 0.3 : les êtres de lumière.
+    2: (data) => ({ ...data, beings: {}, colonyRate: 0 }),
   };
 
   function serialize(state, now) {
@@ -91,6 +93,13 @@
       const start = Math.PI * Vide.CONFIG.territory.startRadius ** 2;
       state.territory.area = Math.max(positive(territory.area, start), start);
     }
+
+    const beings = isObject(raw.beings) ? raw.beings : {};
+    for (const sp of Vide.SPECIES) {
+      const n = beings[sp.id];
+      if (Number.isInteger(n) && n > 0) state.beings[sp.id] = n;
+    }
+    state.colonyRate = positive(raw.colonyRate, 0);
 
     const stats = isObject(raw.stats) ? raw.stats : {};
     state.stats.playTime = positive(stats.playTime, 0);

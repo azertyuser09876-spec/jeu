@@ -29,6 +29,9 @@
       lit: state.territory.lit, // pour détecter l'allumage du foyer
     };
     Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
+    game.garden = Vide.Garden.create(state.seed);
+    Vide.Garden.fill(game.garden, state, game.stats);
+    Vide.Colony.create(game);
     return game;
   }
 
@@ -75,6 +78,7 @@
     // L'onde suit la lumière et attrape tout ce qu'elle a déjà traversé.
     p.wave = Math.min(p.wave + CONFIG.pulse.waveSpeed * dt, game.stats.pulseRadius);
     Vide.Field.catchWithin(game.field, player.x, player.y, p.wave);
+    Vide.Field.catchList(game.garden.particles, player.x, player.y, p.wave);
     if (p.wave >= game.stats.pulseRadius) p.wave = -1;
   }
 
@@ -93,6 +97,9 @@
     updatePulse(game, dt);
 
     const harvest = Vide.Field.update(game.field, state.player, game.stats, dt);
+    const picked = Vide.Garden.update(game.garden, state, game.stats, dt);
+    harvest.value += picked.value;
+    harvest.count += picked.count;
     let gained = harvest.value * game.stats.value;
     if (harvest.count) {
       gainLight(game, gained);
@@ -108,6 +115,12 @@
     if (radiated > 0) {
       gainLight(game, radiated);
       gained += radiated;
+    }
+    Vide.Colony.sync(game);
+    const brought = Vide.Colony.update(game, dt);
+    if (brought > 0) {
+      gainLight(game, brought);
+      gained += brought;
     }
     game.glow *= 1 - util.damp(4, dt);
     game.rate += (gained / dt - game.rate) * util.damp(1 / 3, dt);

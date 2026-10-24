@@ -14,6 +14,12 @@
       territoryGrowth: CONFIG.territory.growth,
       territoryYield: CONFIG.territory.yield,
       offlineCap: CONFIG.territory.offlineCap,
+      gardenDensity: 1,     // multiplicateur de la lumière qui naît dans le territoire
+      beingCap: CONFIG.colony.cap,
+      beingSpeed: 1,        // multiplicateur de vitesse des êtres
+      beingCapacity: 3,     // particules portées par une lueur avant de rentrer
+      beingValue: 1,        // multiplicateur de la lumière rapportée par les êtres
+      beingSense: 320,      // distance à laquelle une lueur repère la lumière
     };
   }
 

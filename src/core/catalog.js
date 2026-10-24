@@ -16,12 +16,14 @@
   Vide.TABS = [
     { id: 'lumiere', name: 'lumière' },
     { id: 'territoire', name: 'territoire' },
+    { id: 'etres', name: 'êtres' },
   ];
 
   const items = [];
   const byId = new Map();
 
   const DEFAULTS = {
+    order: 0, // ordre d'affichage dans l'onglet (plus petit = plus haut), puis ordre d'inscription
     revealed: () => true,
     maxed: () => false,
     blocked: () => null,
@@ -31,8 +33,9 @@
 
   function register(item) {
     if (byId.has(item.id)) throw new Error(`Article déjà enregistré : ${item.id}`);
-    const full = { ...DEFAULTS, ...item };
+    const full = { ...DEFAULTS, ...item, index: items.length };
     items.push(full);
+    items.sort((a, b) => a.order - b.order || a.index - b.index);
     byId.set(full.id, full);
     return full;
   }

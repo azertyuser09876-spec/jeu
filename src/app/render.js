@@ -25,6 +25,7 @@
       width: 0,
       height: 0,
       dpr: 1,
+      makeGlow,
       camera: { x: 0, y: 0, scale: 1 },
       trail: [],   // positions récentes de la lumière (purement visuel)
       time: 0,
@@ -155,12 +156,12 @@
     return { left: cam.x - hw, right: cam.x + hw, top: cam.y - hh, bottom: cam.y + hh };
   }
 
-  function drawParticles(r, game) {
+  function drawParticles(r, game, list) {
     const { ctx } = r;
     const fadeIn = Vide.CONFIG.field.fadeIn;
     const b = viewBounds(r, 30);
     const t = game.time;
-    for (const p of game.field.particles) {
+    for (const p of list) {
       if (p.x < b.left || p.x > b.right || p.y < b.top || p.y > b.bottom) continue;
       const appear = Math.min(1, p.age / fadeIn);
       const twinkle = 0.75 + Math.sin(t * 2.3 + p.phase) * 0.25;
@@ -249,7 +250,9 @@
     Vide.Draw.territory(r, game);
     drawReach(r, game);
     drawPulse(r, game);
-    drawParticles(r, game);
+    drawParticles(r, game, game.garden.particles);
+    drawParticles(r, game, game.field.particles);
+    Vide.Draw.colony(r, game);
     drawTrail(r);
     drawPlayer(r, game);
 

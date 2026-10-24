@@ -1,5 +1,17 @@
 # Historique des versions
 
+## 0.3.0 — Premières lueurs
+
+- **Le jardin** : la lumière naît d'elle-même dans le territoire, d'autant plus qu'il est grand.
+- **Les lueurs**, premiers êtres autonomes : chacune repère la lumière libre la plus proche, la réserve
+  (deux lueurs ne visent jamais la même), la ramasse, et rapporte sa charge au foyer, qui s'illumine.
+  Sans travail, elles flânent dans le territoire. Le joueur peut aussi récolter le jardin.
+- **Améliorations** : Agilité, Charge, Ferveur (onglet êtres), Floraison (territoire).
+  Population limitée à 6 pour l'instant.
+- **Absence** : les êtres continuent au rythme mesuré avant ton départ.
+- Sauvegarde au format 3 (migration depuis la 0.2).
+- 93 tests de logique, 16 vérifications navigateur.
+
 ## 0.2.0 — Le territoire
 
 - **Le foyer** : en revenant à l'origine, on l'allume (✦ 150). Un territoire de lumière naît autour de lui.

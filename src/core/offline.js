@@ -14,15 +14,22 @@
       applied,
       capped: away > stats.offlineCap,
       light: 0,
+      radiated: 0,
+      brought: 0,
       radiusBefore: Territory.radius(state),
       radiusAfter: Territory.radius(state),
     };
     if (applied <= 0) return report;
 
-    const light = Territory.advance(state, stats, applied);
+    const radiated = Territory.advance(state, stats, applied);
+    // Les êtres continuent leur travail au rythme mesuré avant le départ.
+    const brought = Vide.Colony.population(state) > 0 ? state.colonyRate * applied : 0;
+    const light = radiated + brought;
     state.light += light;
     state.totalLight += light;
     report.light = light;
+    report.radiated = radiated;
+    report.brought = brought;
     report.radiusAfter = Territory.radius(state);
     return report;
   }

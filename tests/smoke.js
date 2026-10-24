@@ -88,6 +88,15 @@ const { chromium } = require('playwright');
   check(lit && toastText.includes('foyer'), 'le foyer s’allume depuis l’origine, avec un message');
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'foyer.png') });
 
+  // Lueurs : l'onglet êtres permet d'en éveiller une, qui apparaît dans le monde.
+  await page.evaluate(() => { const s = Vide.game.state; s.light += 1000; s.totalLight += 1000; });
+  await page.waitForTimeout(100);
+  await page.click('.tab:has-text("êtres")');
+  await page.click('#shop-list li:not([hidden]) .item:has-text("Lueur")');
+  await page.waitForTimeout(300);
+  const beings = await page.evaluate(() => Vide.game.colony.beings.length);
+  check(beings === 1, 'une lueur s’éveille depuis l’onglet êtres');
+
   // Absence : une sauvegarde vieille de 2 h fait grandir le territoire au rechargement.
   const radiusBefore = await page.evaluate(() => Vide.Territory.radius(Vide.game.state));
   await page.evaluate(() => {

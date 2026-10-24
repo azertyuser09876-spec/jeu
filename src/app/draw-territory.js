@@ -66,12 +66,13 @@
   }
 
   // Le foyer : faible et vacillant tant qu'il n'est pas allumé, rayonnant ensuite.
-  function drawFoyer(r, lit) {
+  function drawFoyer(r, lit, pulse) {
     const { ctx } = r;
     const breath = 0.5 + Math.sin(r.time * 0.7) * 0.5;
     if (lit) {
-      Render.drawGlow(ctx, r.glows.white, 0, 0, 150, 0.22 + breath * 0.06);
-      Render.drawGlow(ctx, r.glows.light, 0, 0, 40, 0.75);
+      // Chaque dépôt des êtres fait briller le foyer un instant.
+      Render.drawGlow(ctx, r.glows.white, 0, 0, 150 + pulse * 40, 0.22 + breath * 0.06 + pulse * 0.2);
+      Render.drawGlow(ctx, r.glows.light, 0, 0, 40 + pulse * 10, 0.75);
       ctx.globalAlpha = 0.25 + breath * 0.1;
     } else {
       Render.drawGlow(ctx, r.glows.white, 0, 0, 90, 0.07 + breath * 0.03);
@@ -91,6 +92,6 @@
       drawArea(r, radius);
       drawMotes(r, radius, state.seed);
     }
-    drawFoyer(r, state.territory.lit);
+    drawFoyer(r, state.territory.lit, game.colony.foyerGlow);
   };
 })(globalThis.Vide);

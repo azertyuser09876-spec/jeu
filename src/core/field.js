@@ -63,14 +63,15 @@
     list.pop();
   }
 
-  // Avance le champ d'un pas. Renvoie la lumière brute récoltée (avant multiplicateur) et le nombre de particules.
-  function update(field, player, stats, dt) {
-    const f = CONFIG.field;
+  // Fait vivre une liste de particules autour de la lumière du joueur : dérive, capture dans la portée,
+  // poursuite, récolte, et effacement au-delà de despawnRadius (Infinity : jamais).
+  // Une particule retirée de la liste est marquée `gone` (utile à qui la visait, comme une lueur).
+  // Renvoie la lumière brute récoltée (avant multiplicateur) et le nombre de particules.
+  function attract(list, player, stats, dt, despawnRadius) {
     const a = CONFIG.attraction;
     const reach2 = stats.reach * stats.reach;
     const collect2 = a.collectRadius * a.collectRadius;
-    const despawn2 = f.despawnRadius * f.despawnRadius;
-    const list = field.particles;
+    const despawn2 = despawnRadius * despawnRadius;
     let value = 0;
     let count = 0;
 
@@ -85,10 +86,12 @@
       if (d2 <= collect2) {
         value += p.value;
         count++;
+        p.gone = true;
         removeAt(list, i);
         continue;
       }
       if (p.caught < 0 && d2 > despawn2) {
+        p.gone = true;
         removeAt(list, i);
         continue;
       }
@@ -106,6 +109,14 @@
         p.y += p.vy * dt;
       }
     }
+    return { value, count };
+  }
+
+  // Avance le champ d'un pas. Renvoie la lumière brute récoltée (avant multiplicateur) et le nombre de particules.
+  function update(field, player, stats, dt) {
+    const f = CONFIG.field;
+    const list = field.particles;
+    const result = attract(list, player, stats, dt, f.despawnRadius);
 
     // Reremplissage progressif : le vide se recharge, mais pas instantanément.
     const target = targetCount(stats);
@@ -118,15 +129,14 @@
     } else {
       field.budget = 0;
     }
-
-    return { value, count };
+    return result;
   }
 
-  // Attrape d'un coup toutes les particules libres dans un rayon (utilisé par la pulsation).
-  function catchWithin(field, x, y, radius) {
+  // Attrape d'un coup toutes les particules libres d'une liste dans un rayon (utilisé par la pulsation).
+  function catchList(list, x, y, radius) {
     const r2 = radius * radius;
     let caught = 0;
-    for (const p of field.particles) {
+    for (const p of list) {
       if (p.caught >= 0) continue;
       const dx = p.x - x, dy = p.y - y;
       if (dx * dx + dy * dy <= r2) {
@@ -137,5 +147,9 @@
     return caught;
   }
 
-  Vide.Field = { create, targetCount, place, spawn, fill, update, catchWithin };
+  function catchWithin(field, x, y, radius) {
+    return catchList(field.particles, x, y, radius);
+  }
+
+  Vide.Field = { create, targetCount, place, spawn, fill, attract, update, catchList, catchWithin, removeAt };
 })(globalThis.Vide);

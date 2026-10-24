@@ -56,5 +56,24 @@
       insidePulseBoost: 2,   // la pulsation se recharge plus vite dans le territoire
       offlineCap: 4 * 3600,  // durée d'absence prise en compte (avant améliorations)
     },
+
+    // Le jardin : la lumière qui naît dans le territoire, récoltée par les lueurs.
+    garden: {
+      density: 0.00015,  // particules par unité² de territoire
+      max: 300,
+      refillTime: 8,
+      margin: 0.92,      // fraction du rayon où elles peuvent naître
+      foyerGap: 45,      // pas de particule collée au foyer
+      rareChance: 0.03,
+    },
+
+    // Êtres de lumière.
+    colony: {
+      cap: 6,            // population maximale de départ
+      depositRadius: 16, // distance au foyer pour déposer une charge
+      pickRadius: 7,     // distance pour ramasser une particule
+      separation: 14,    // les êtres s'écartent un peu les uns des autres
+      rateMemory: 30,    // secondes de lissage du rendement mesuré (sert pendant l'absence)
+    },
   };
 })(globalThis.Vide);
