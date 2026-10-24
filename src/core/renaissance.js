@@ -45,6 +45,7 @@
     game.stats = Vide.Stats.compute(state);
     game.shadows.list.length = 0;
     game.projectiles.length = 0;
+    game.trade.caravans.length = 0;
     game.webs.length = 0;
     game.garden.particles.length = 0;
     game.colony.beings.length = 0;

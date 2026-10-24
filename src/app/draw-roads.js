@@ -51,6 +51,37 @@
         }
       }
     }
+    drawCaravans(r, game);
     ctx.globalAlpha = 1;
   };
+
+  // Caravanes : un ballot de lumière qui glisse le long de la route, teinté par ce qu'il porte.
+  const tints = {};
+  function glowOf(r, kind) {
+    if (!tints[kind]) {
+      const res = Vide.RESOURCES.find((x) => x.id === kind);
+      const c = res ? res.color : Vide.Colony.species('gardien').color;
+      tints[kind] = r.makeGlow(c[0], c[1], c[2]);
+    }
+    return tints[kind];
+  }
+
+  function drawCaravans(r, game) {
+    const { ctx } = r;
+    for (const c of game.trade.caravans) {
+      const k = Math.min(1, c.t / c.duration);
+      const x = c.from.x + (c.to.x - c.from.x) * k, y = c.from.y + (c.to.y - c.from.y) * k;
+      const bob = Math.sin(r.time * 5 + c.duration) * 2;
+      Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 18, 0.55);
+      Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 6, 1);
+      if (c.kind === 'soldat') {
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = '#ffecaa';
+        ctx.lineWidth = 1.2 / r.camera.scale;
+        ctx.beginPath();
+        ctx.arc(x, y + bob, 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
 })(globalThis.Vide);

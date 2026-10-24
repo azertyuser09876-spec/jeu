@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 12;
+  const FORMAT = 13;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -45,6 +45,11 @@
     }),
     // 1.4 : les routes entre villages.
     11: (data) => ({ ...data, roads: [] }),
+    // 1.4 : les ressources de chaque village.
+    12: (data) => ({
+      ...data,
+      villages: (Array.isArray(data.villages) ? data.villages : []).map((v) => ({ ...v, stock: { matiere: 0, savoir: 0 } })),
+    }),
   };
 
   function serialize(state, now) {
@@ -189,7 +194,10 @@
       cells: [], beings: {}, buildings: [], rate: positive(raw.rate, 0),
       steward: Vide.Steward.SHARES.includes(raw.steward) ? raw.steward : 0,
       funds: positive(raw.funds, 0),
+      stock: { matiere: 0, savoir: 0 },
     };
+    const stock = isObject(raw.stock) ? raw.stock : {};
+    for (const res of Vide.RESOURCES) village.stock[res.id] = Math.min(Vide.CONFIG.trade.cap, positive(stock[res.id], 0));
     const beings = isObject(raw.beings) ? raw.beings : {};
     for (const sp of Vide.SPECIES) {
       const n = beings[sp.id];

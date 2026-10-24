@@ -86,6 +86,24 @@
       speedBonus: 1.6,   // …et de combien
     },
 
+    // Ressources et échanges entre villages reliés (voir trade.js).
+    trade: {
+      matterRate: 0.03,      // ◇ par seconde et par habitant d'un atelier
+      knowledgeRate: 0.015,  // ✎ par seconde et par habitant d'un observatoire
+      matterUse: 0.05,       // ◇ consommée par seconde et par bâtisseur
+      knowledgeUse: 0.03,    // ✎ consommé par seconde
+      matterBoost: 1.5,      // chantiers d'un village qui a de la matière
+      knowledgeBoost: 1.25,  // croissance d'un village qui a du savoir
+      cap: 200,              // stock maximal de chaque ressource
+      surplus: 20,           // un village garde ce stock pour lui…
+      want: 60,              // …et en reçoit tant qu'il en a moins que ça
+      load: 15,              // charge d'une caravane
+      every: 10,             // une caravane au plus toutes les 10 s, par route et par sens
+      caravanSpeed: 140,
+      trainEvery: 45,        // un bastion forme un gardien toutes les 45 s (s'il peut le payer)
+      soldierPrice: 0.6,     // part du prix d'un gardien payée par le village qui le reçoit
+    },
+
     // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
     renaissance: {
       threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître

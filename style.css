@@ -137,6 +137,10 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
   font-variant-numeric: tabular-nums;
 }
 
+/* Le village où l'on se trouve, et ses ressources. */
+#place:not(:empty)::before { content: ' · '; }
+#place .res { margin-left: 0.6em; }
+
 #echoes {
   margin-top: 6px;
   font-size: 1rem;

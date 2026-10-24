@@ -63,6 +63,7 @@
       hud: $('hud'),
       amount: $('light-amount'),
       rate: $('rate-amount'),
+      place: $('place'),
       echoes: $('echoes'),
       echoAmount: $('echo-amount'),
       memories: $('memories'),
@@ -191,6 +192,20 @@
     setClass(ui.shop, 'hidden', tabs.length === 0);
   }
 
+  // Sous le compteur : le village où l'on se trouve (et ses spécialisations), puis ses ressources.
+  function updatePlace(ui) {
+    const { state } = ui.game;
+    const v = Vide.Villages.current(state);
+    let text = '';
+    if (v) {
+      text = [v.type, ...(v.extra || [])].map((t) => Vide.Villages.type(t).name).join(' · ');
+      for (const res of Vide.RESOURCES) {
+        if (v.stock[res.id] >= 1) text += `  ${res.glyph} ${util.formatNumber(v.stock[res.id])}`;
+      }
+    }
+    setText(ui.place, text);
+  }
+
   function update(ui) {
     const { game } = ui;
     const { state } = game;
@@ -198,6 +213,7 @@
     setClass(ui.hud, 'hidden', state.totalLight <= 0);
     setText(ui.amount, util.formatNumber(state.light));
     setText(ui.rate, util.formatRate(game.rate));
+    updatePlace(ui);
     setClass(ui.echoes, 'hidden', state.echoes <= 0 && state.stats.shadows === 0);
     setText(ui.echoAmount, util.formatNumber(state.echoes));
     setClass(ui.memories, 'hidden', state.memories <= 0 && state.renaissances === 0);

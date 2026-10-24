@@ -27,6 +27,9 @@
     };
     if (applied <= 0) return report;
 
+    // Les ressources se produisent et circulent le long des routes.
+    Vide.Trade.offline(state, applied);
+
     for (const v of state.villages) {
       const local = Villages.local(state, v, stats);
       const funds = v.funds;

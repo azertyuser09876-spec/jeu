@@ -83,6 +83,15 @@
         : `planifié : ${Vide.Structures.def(e.id).name.toLowerCase()}`;
       return `L’intendant d’un village agit seul (${what}). Il dépense la part de lumière que tu lui confies.`;
     },
+    caravanOut: (e) => {
+      if (seen.caravan) return null;
+      seen.caravan = true;
+      const what = { matiere: 'de la matière ◇ (ses chantiers iront plus vite)',
+        savoir: 'du savoir ✎ (son territoire grandira plus vite)', soldat: 'un soldat, contre de la lumière' }[e.kind];
+      return `Une caravane part ${of(e.from)} vers ${to(e.to)} : ${what}.`;
+    },
+    trained: (e) => (seen.trained ? null : (seen.trained = true,
+      'Le bastion forme un soldat avec la réserve de son intendant. En trop, ses soldats iront aux villages reliés.')),
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       return e.first
@@ -113,6 +122,16 @@
   };
 
   const seen = {};
+
+  // « de l'atelier », « des jardins », « vers le bastion »…
+  const article = (t, de) => {
+    const name = Vide.Villages.type(t).name.toLowerCase();
+    if (name.endsWith('s')) return (de ? 'des ' : 'les ') + name;
+    if (/^[aeiouéèh]/.test(name)) return (de ? 'de l’' : 'l’') + name;
+    return (de ? 'du ' : 'le ') + name;
+  };
+  const of = (t) => article(t, true);
+  const to = (t) => article(t, false);
 
   // Message à la naissance du premier être de chaque espèce.
   const FIRST_BIRTH = {

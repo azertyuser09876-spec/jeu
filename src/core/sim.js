@@ -44,6 +44,7 @@
     Vide.Shadows.create(game);
     Vide.Combat.create(game);
     Vide.Colossus.create(game);
+    Vide.Trade.create(game);
     // Une partie déjà avancée (venue d'une version sans récit) remplit son journal d'un coup,
     // sans faire défiler chaque fragment.
     const known = Vide.Lore.check(state);
@@ -195,6 +196,7 @@
       gained += brought;
     }
     Vide.Steward.update(game, dt);
+    Vide.Trade.update(game, dt);
     for (const r of Vide.Roads.advance(state, (v) => Vide.Villages.statsOf(game, v), dt)) {
       const [a, b] = Vide.Roads.ends(state, r);
       emit(game, 'road', { a: a.type, b: b.type, first: state.roads.filter((x) => Vide.Roads.isDone(state, x)).length === 1 });
