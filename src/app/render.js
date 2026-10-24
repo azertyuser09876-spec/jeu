@@ -56,8 +56,35 @@
     ctx.drawImage(glow, x - radius, y - radius, radius * 2, radius * 2);
   }
 
-  function draw(r) {
+  function drawPlayer(r, game) {
+    const { ctx } = r;
+    const { x, y } = game.state.player;
+    // Légère respiration du halo pour que la lumière paraisse vivante même à l'arrêt.
+    const breath = 1 + Math.sin(game.time * 1.6) * 0.06;
+    drawGlow(ctx, r.glows.white, x, y, 46 * breath, 0.55);
+    drawGlow(ctx, r.glows.white, x, y, 14, 1);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x, y, Vide.CONFIG.player.radius * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function followCamera(r, game, dt) {
+    const k = Vide.util.damp(5, dt);
+    r.camera.x += (game.state.player.x - r.camera.x) * k;
+    r.camera.y += (game.state.player.y - r.camera.y) * k;
+  }
+
+  // À appeler une fois au démarrage pour ne pas voir la caméra glisser depuis l'origine.
+  function snapCamera(r, game) {
+    r.camera.x = game.state.player.x;
+    r.camera.y = game.state.player.y;
+  }
+
+  function draw(r, game, dt) {
     const { ctx, camera } = r;
+    followCamera(r, game, dt);
     ctx.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -70,11 +97,11 @@
     ctx.translate(-camera.x, -camera.y);
     ctx.globalCompositeOperation = 'lighter';
 
-    drawGlow(ctx, r.glows.white, 0, 0, 40, 1);
+    drawPlayer(r, game);
 
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  Vide.Render = { create, resize, screenToWorld, draw };
+  Vide.Render = { create, resize, screenToWorld, snapCamera, draw };
 })(globalThis.Vide);

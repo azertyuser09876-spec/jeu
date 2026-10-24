@@ -7,6 +7,14 @@
   const renderer = Vide.Render.create(canvas);
   window.addEventListener('resize', () => Vide.Render.resize(renderer));
 
+  const state = Vide.State.create((Math.random() * 2 ** 32) >>> 0);
+  const game = Vide.Sim.create(state);
+  const input = Vide.Input.create(canvas);
+  Vide.Render.snapCamera(renderer, game);
+
+  // Accès depuis la console du navigateur, pratique pour déboguer.
+  Vide.game = game;
+
   let last = performance.now();
   let accumulator = 0;
 
@@ -18,12 +26,14 @@
     accumulator += dt;
     let steps = 0;
     while (accumulator >= CONFIG.step && steps < CONFIG.maxStepsPerFrame) {
+      Vide.Input.update(input, game, renderer);
+      Vide.Sim.step(game, CONFIG.step, input);
       accumulator -= CONFIG.step;
       steps++;
     }
     if (steps === CONFIG.maxStepsPerFrame) accumulator = 0;
 
-    Vide.Render.draw(renderer);
+    Vide.Render.draw(renderer, game, dt);
     requestAnimationFrame(frame);
   }
 

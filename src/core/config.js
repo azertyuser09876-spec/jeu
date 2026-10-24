@@ -9,5 +9,11 @@
 
     // Le plus petit côté de l'écran montre toujours cette largeur du monde, quel que soit l'appareil.
     viewSize: 700,
+
+    player: {
+      radius: 6,
+      speed: 150,        // vitesse de base (unités / s)
+      acceleration: 6,   // réactivité du démarrage et du freinage
+    },
   };
 })(globalThis.Vide);
