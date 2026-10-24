@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Le Vide — tests</title>
+  <style>
+    body { background: #000; color: #ccc; font: 14px/1.6 ui-monospace, monospace; padding: 24px; }
+    h1 { font-weight: 300; }
+    .pass h1 { color: #9fe0b0; }
+    .fail h1 { color: #ff9f9f; }
+    ul { list-style: none; padding: 0; }
+    .ok { color: #7a8a80; }
+    .ko { color: #ff9f9f; }
+  </style>
+</head>
+<body>
+  <h1 id="summary">…</h1>
+  <ul id="results"></ul>
+
+  <!-- Code du jeu (logique pure uniquement) -->
+  <script src="../src/core/vide.js"></script>
+  <script src="../src/core/util.js"></script>
+  <script src="../src/core/config.js"></script>
+
+  <!-- Tests -->
+  <script src="harness.js"></script>
+  <script src="util.test.js"></script>
+
+  <script src="browser.js"></script>
+</body>
+</html>

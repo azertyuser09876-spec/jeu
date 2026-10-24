@@ -1,0 +1,34 @@
+:root {
+  --bg: #000;
+  --text: rgba(255, 255, 255, 0.82);
+  --dim: rgba(255, 255, 255, 0.45);
+  --faint: rgba(255, 255, 255, 0.12);
+  --light: #e8f4ff;
+  --rare: #ffd98a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
