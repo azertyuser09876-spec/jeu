@@ -18,6 +18,10 @@
   // Types de villages, au choix du joueur. Ajouter un type = ajouter une entrée.
   //   modify(local)  effet sur les caractéristiques du village (voir local())
   //   tint           teinte du territoire et du cœur
+  //   shape          silhouette du territoire (voir Territory.grow) :
+  //                    metric  'round' (disque), 'square' (carré), 'octagon' (octogone)
+  //                    lobes   nombre de lobes ou de rayons ; depth : leur ampleur ; sharp : leur finesse
+  //                    noise   part de l'irrégularité habituelle
   Vide.VILLAGE_TYPES = [
     {
       id: 'jardins',
@@ -25,6 +29,7 @@
       desc: 'Fonder ici des jardins : la lumière y naît plus dense, et les lueurs portent davantage.',
       effectText: 'jardin ×1,4 · lueurs +1',
       tint: [150, 255, 205],
+      shape: { metric: 'round', lobes: 5, depth: 0.22, sharp: 1, noise: 0.8 },
       modify: (l) => { l.gardenDensity *= 1.4; l.beingCapacity += 1; },
     },
     {
@@ -33,6 +38,7 @@
       desc: 'Fonder ici un bastion : remparts solides, territoire qui brûle les ombres deux fois plus, armée plus forte.',
       effectText: 'remparts · armée ×1,25',
       tint: [255, 222, 150],
+      shape: { metric: 'octagon', lobes: 0, depth: 0, sharp: 1, noise: 0.35 },
       modify: (l) => { l.structureArmor *= 1.6; l.burn *= 2; l.armyDamage *= 1.25; },
     },
     {
@@ -41,6 +47,7 @@
       desc: 'Fonder ici un atelier : on y bâtit bien plus vite, et un bâtisseur de plus peut y vivre.',
       effectText: 'chantiers ×1,6 · +1 bâtisseur',
       tint: [255, 186, 130],
+      shape: { metric: 'square', lobes: 0, depth: 0, sharp: 1, noise: 0.5 },
       modify: (l) => { l.buildRate *= 1.6; l.builderCap += 1; },
     },
     {
@@ -50,6 +57,7 @@
         + 'et ta pulsation s’y recharge encore plus vite.',
       effectText: 'croissance ×1,35',
       tint: [165, 195, 255],
+      shape: { metric: 'round', lobes: 4, depth: 0.32, sharp: 4, noise: 0.7 },
       modify: (l) => { l.territoryGrowth *= 1.35; l.pulseBoost *= 1.5; },
     },
     {
@@ -59,6 +67,7 @@
         + 'ses êtres sont plus résistants, et son cœur blanchit plus vite.',
       effectText: 'soins ×2 · êtres ×1,3',
       tint: [255, 205, 238],
+      shape: { metric: 'round', lobes: 0, depth: 0, sharp: 1, noise: 0.35 },
       modify: (l) => { l.regen *= 2; l.beingHp *= 1.3; l.whitening *= 1.6; },
     },
   ];

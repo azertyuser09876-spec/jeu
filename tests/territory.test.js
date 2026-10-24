@@ -281,4 +281,28 @@
     const small = Save.sanitize({ villages: [{ id: 1, x: 0, y: 0, cells: tooMany }] }).villages[0];
     assert.equal(small.cells.length / 3, Territory.targetCells(small));
   });
+
+  test('chaque type de village a sa silhouette', () => {
+    const silhouette = (type) => {
+      const state = State.create(1);
+      const v = village(state, { radius: 500, type });
+      const R = Territory.radius(v);
+      const cells = cellsOf(v);
+      // Coins : cellules loin des deux axes (un carré en a beaucoup, un disque peu).
+      const corners = cells.filter((c) => Math.min(Math.abs(c.i + 0.5), Math.abs(c.j + 0.5)) * 40 > 0.62 * R).length;
+      // Régularité du bord : écart des distances du contour au cœur, rapporté à leur moyenne.
+      const pts = Territory.outline(v).sort((a, b) => b.length - a.length)[0];
+      const d = pts.map(([x, y]) => Math.hypot(x, y));
+      const mean = d.reduce((a, b) => a + b, 0) / d.length;
+      const spread = Math.sqrt(d.reduce((a, b) => a + (b - mean) ** 2, 0) / d.length) / mean;
+      return { corners, spread };
+    };
+    const s = {};
+    for (const t of Vide.VILLAGE_TYPES) s[t.id] = silhouette(t.id);
+    assert.ok(s.atelier.corners > s.sanctuaire.corners * 1.5, `carré : ${s.atelier.corners} contre ${s.sanctuaire.corners}`);
+    assert.ok(s.bastion.spread < s.jardins.spread / 2, 'un bastion est compact');
+    for (const t of ['jardins', 'observatoire']) {
+      assert.ok(s[t].spread > s.sanctuaire.spread * 2, `${t} : ${s[t].spread} contre ${s.sanctuaire.spread}`);
+    }
+  });
 })();

@@ -119,18 +119,99 @@
 
   // Le cœur d'un village : rayonnant ; chaque dépôt des êtres le fait briller un instant.
   // Rongé par les ombres, il vacille.
+  function polygon(ctx, x, y, radius, sides, turn) {
+    ctx.beginPath();
+    for (let k = 0; k <= sides; k++) {
+      const a = turn + (k / sides) * Math.PI * 2;
+      if (k === 0) ctx.moveTo(x + Math.cos(a) * radius, y + Math.sin(a) * radius);
+      else ctx.lineTo(x + Math.cos(a) * radius, y + Math.sin(a) * radius);
+    }
+    ctx.stroke();
+  }
+
+  // Ornement du cœur, propre à chaque type de village : quelques traits de lumière fins, qui vivent lentement.
+  // (b : respiration de 0 à 1 ; t : temps.)
+  const HEARTS = {
+    // Une fleur : six pétales qui tournent et s'ouvrent doucement.
+    jardins(ctx, x, y, t, b) {
+      for (let k = 0; k < 6; k++) {
+        const a = t * 0.06 + (k * Math.PI) / 3;
+        const d = 17 + b * 3;
+        ctx.beginPath();
+        ctx.ellipse(x + Math.cos(a) * d, y + Math.sin(a) * d, 13 + b * 2, 5.5, a, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    },
+    // Des remparts : deux octogones, et une tourelle à chaque angle.
+    bastion(ctx, x, y, t, b) {
+      const turn = Math.PI / 8;
+      polygon(ctx, x, y, 34, 8, turn);
+      polygon(ctx, x, y, 22 + b * 2, 8, turn);
+      for (let k = 0; k < 8; k++) {
+        const a = turn + (k * Math.PI) / 4;
+        ctx.strokeRect(x + Math.cos(a) * 34 - 2.5, y + Math.sin(a) * 34 - 2.5, 5, 5);
+      }
+    },
+    // Un engrenage qui tourne, autour d'un carré.
+    atelier(ctx, x, y, t) {
+      const teeth = 12;
+      const turn = t * 0.25;
+      ctx.beginPath();
+      for (let k = 0; k < teeth * 2; k++) {
+        const a0 = turn + (k / (teeth * 2)) * Math.PI * 2;
+        const a1 = turn + ((k + 1) / (teeth * 2)) * Math.PI * 2;
+        const rad = k % 2 ? 26 : 31;
+        ctx.lineTo(x + Math.cos(a0) * rad, y + Math.sin(a0) * rad);
+        ctx.lineTo(x + Math.cos(a1) * rad, y + Math.sin(a1) * rad);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      polygon(ctx, x, y, 14, 4, -turn * 0.5 + Math.PI / 4);
+    },
+    // Des arcs qui tournent à des vitesses différentes, et deux astres en orbite.
+    observatoire(ctx, x, y, t) {
+      for (let k = 0; k < 3; k++) {
+        const rad = 18 + k * 11;
+        const a = t * (0.3 - k * 0.12) + k * 2;
+        ctx.beginPath();
+        ctx.arc(x, y, rad, a, a + Math.PI * (1.1 - k * 0.2));
+        ctx.stroke();
+      }
+      for (let k = 0; k < 2; k++) {
+        const a = t * (0.5 + k * 0.3) + k * Math.PI;
+        const rad = 29 + k * 11;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(a) * rad, y + Math.sin(a) * rad, 2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    },
+    // Des ondes qui s'éloignent du cœur, sans fin.
+    sanctuaire(ctx, x, y, t) {
+      ctx.beginPath();
+      ctx.arc(x, y, 18, 0, Math.PI * 2);
+      ctx.stroke();
+      const alpha = ctx.globalAlpha;
+      for (let k = 0; k < 3; k++) {
+        const p = (t * 0.25 + k / 3) % 1;
+        ctx.globalAlpha = alpha * (1 - p);
+        ctx.beginPath();
+        ctx.arc(x, y, 20 + p * 34, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = alpha;
+    },
+  };
+
   function drawHeart(r, v, pulse, hurt) {
     const { ctx } = r;
     const breath = 0.5 + Math.sin(r.time * 0.7 + v.id) * 0.5;
     const flicker = hurt > 0 ? 0.6 + 0.4 * Math.abs(Math.sin(r.time * 25)) : 1;
     Render.drawGlow(ctx, r.glows.white, v.x, v.y, 150 + pulse * 40, (0.22 + breath * 0.06 + pulse * 0.2) * flicker);
     Render.drawGlow(ctx, r.glows.light, v.x, v.y, 40 + pulse * 10, 0.75 * flicker);
-    ctx.globalAlpha = 0.25 + breath * 0.1;
-    ctx.strokeStyle = `rgb(${mix(Villages.type(v.type).tint, 0.5)})`;
+    ctx.globalAlpha = (0.32 + breath * 0.1 + pulse * 0.3) * flicker;
+    ctx.strokeStyle = `rgb(${mix(Villages.type(v.type).tint, 0.6)})`;
     ctx.lineWidth = 1 / r.camera.scale;
-    ctx.beginPath();
-    ctx.arc(v.x, v.y, 26 + breath * 4, 0, Math.PI * 2);
-    ctx.stroke();
+    HEARTS[v.type](ctx, v.x, v.y, r.time + v.id * 7, breath);
   }
 
   // L'origine, où naît la lumière : un simple anneau qui respire faiblement.

@@ -100,11 +100,33 @@
 
   const seedOf = (v, salt) => Math.imul(v.id, 0x9e3779b1) ^ salt;
 
+  const ROUND = { metric: 'round', lobes: 0, depth: 0, sharp: 1, noise: 1 };
+
+  function shapeOf(v) {
+    const type = Vide.VILLAGE_TYPES && Vide.VILLAGE_TYPES.find((t) => t.id === v.type);
+    return (type && type.shape) || ROUND;
+  }
+
+  // Éloignement d'une cellule au cœur, selon la silhouette du village : le territoire pousse d'abord là où
+  // cette mesure est la plus petite (un carré pour l'atelier, des pétales pour les jardins…).
+  function reachOf(v, shape, i, j) {
+    const dx = Math.abs(center(i) - v.x), dy = Math.abs(center(j) - v.y);
+    let d = Math.hypot(dx, dy);
+    if (shape.metric === 'square') d = Math.max(dx, dy) * 1.13;
+    else if (shape.metric === 'octagon') d = Math.max(dx, dy, (dx + dy) * Math.SQRT1_2) * 1.05;
+    if (shape.lobes) {
+      const a = Math.atan2(center(j) - v.y, center(i) - v.x) + v.id; // orientation propre à chaque village
+      d *= 1 - shape.depth * Math.pow(Math.max(0, Math.cos(shape.lobes * a)), shape.sharp);
+    }
+    return d;
+  }
+
   // Attrait propre d'une cellule du bord : irrégularité (surtout de grandes ondulations), bâtiments
   // (chantiers compris).
   function appeal(v, i, j) {
     const t = CONFIG.territory;
-    let score = t.noise * (0.8 * smoothNoise(i, j, seedOf(v, 0)) + 0.2 * util.hash2(i, j, seedOf(v, 1)));
+    const noise = t.noise * shapeOf(v).noise;
+    let score = noise * (0.8 * smoothNoise(i, j, seedOf(v, 0)) + 0.2 * util.hash2(i, j, seedOf(v, 1)));
     const x = center(i), y = center(j);
     for (const b of v.buildings) score += t.pull * Math.exp(-Math.hypot(b.x - x, b.y - y) / t.pullRange);
     return score;
@@ -113,7 +135,7 @@
   function addFrontier(v, idx, i, j) {
     const k = key(i, j);
     if (idx.map.has(k) || idx.frontier.has(k)) return;
-    idx.frontier.set(k, { i, j, appeal: appeal(v, i, j) });
+    idx.frontier.set(k, { i, j, appeal: appeal(v, i, j), reach: reachOf(v, shapeOf(v), i, j) });
   }
 
   function addCell(v, idx, i, j) {
@@ -148,7 +170,7 @@
       let best = null;
       let bestScore = -Infinity;
       for (const c of idx.frontier.values()) {
-        const score = c.appeal - Math.hypot(center(c.i) - v.x, center(c.j) - v.y) / R;
+        const score = c.appeal - c.reach / R;
         if (score > bestScore) {
           bestScore = score;
           best = c;

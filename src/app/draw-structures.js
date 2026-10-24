@@ -108,11 +108,17 @@
     if (!r.prismGlows) {
       r.prismGlows = [r.makeGlow(255, 150, 170), r.makeGlow(150, 255, 190), r.makeGlow(150, 180, 255)];
     }
+    if (!r.villageGlows) {
+      r.villageGlows = {};
+      for (const vt of Vide.VILLAGE_TYPES) r.villageGlows[vt.id] = r.makeGlow(vt.tint[0], vt.tint[1], vt.tint[2]);
+    }
     const view = Render.viewBounds(r, 300);
     const t = r.time;
-    for (const b of Structures.all(game.state)) {
+    for (const v of game.state.villages) for (const b of v.buildings) {
       if (b.x < view.left || b.x > view.right || b.y < view.top || b.y > view.bottom) continue;
       const d = Structures.def(b.type);
+      // Un halo aux couleurs du village, sous chaque bâtiment : on sait d'un coup d'œil à qui il appartient.
+      if (Structures.isDone(b) && !b.broken) Render.drawGlow(r.ctx, r.villageGlows[v.type], b.x, b.y, d.size * 2.6, 0.22);
       if (b.broken) {
         // Éteint par les ombres : presque gris, avec un cerne violet, jusqu'à sa réparation.
         Render.setGlowScale(0.2);
