@@ -213,6 +213,10 @@
     tamed() {
       [0, 4, 7, 12, 16].forEach((n, i) => tone({ freq: note(n), dur: 4, gain: 0.04, attack: 0.8, delay: i * 0.15 }));
     },
+    web() {
+      noise({ dur: 0.9, gain: 0.05, from: 2400, to: 600, q: 6 });
+      tone({ freq: 880, glideTo: 660, dur: 0.6, gain: 0.02 });
+    },
     lore() {
       tone({ freq: note(24), dur: 1.2, gain: 0.02 });
       tone({ freq: note(31), dur: 1.4, gain: 0.015, delay: 0.25 });
@@ -285,6 +289,7 @@
         }
         case 'quake': play('quake'); break;
         case 'colossusAttack': play('colossusAttack'); break;
+        case 'web': play('web'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;
         case 'colossusTamed': play('tamed'); break;
         case 'lore': case 'zoneDiscovered': play('lore'); break;

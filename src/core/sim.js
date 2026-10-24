@@ -81,7 +81,8 @@
   function movePlayer(game, dt, move) {
     const { player } = game.state;
     const v = game.velocity;
-    const speed = game.stats.speed;
+    // Une toile de colosse ralentit fortement la lumière.
+    const speed = game.stats.speed * (game.webs ? Vide.Colossus.slowAt(game, player.x, player.y) : 1);
     const k = util.damp(CONFIG.player.acceleration, dt);
     v.x += (move.x * speed - v.x) * k;
     v.y += (move.y * speed - v.y) * k;

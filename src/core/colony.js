@@ -341,7 +341,8 @@
     colony.activeNow.clear();
     for (const b of colony.beings) {
       const sp = species(b.species);
-      const speed = sp.speed * stats.beingSpeed;
+      const slow = game.webs ? Vide.Colossus.slowAt(game, b.x, b.y) : 1;
+      const speed = sp.speed * stats.beingSpeed * slow;
       const max = maxHp(game, b);
       if (b.hp === null) b.hp = max;
       if (b.down > 0) {

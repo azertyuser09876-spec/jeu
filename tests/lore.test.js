@@ -41,7 +41,7 @@
     state.buildings.push({ type: 'nid', x: 0, y: 100, work: 999 });
     state.stats.shadows = 20;
     state.zones.discovered = Vide.ZONES.map((z) => z.id);
-    state.colossi.veilleur = 'tamed';
+    for (const d of Vide.COLOSSI) state.colossi[d.id] = 'tamed';
     Lore.check(state);
     assert.equal(state.lore.length, LORE.length);
   });

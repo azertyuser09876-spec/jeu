@@ -142,7 +142,7 @@
       Math.hypot(k.x - player.x, k.y - player.y) < 1600);
     setClass(ui.boss, 'hidden', !c);
     if (!c) return;
-    setText(ui.bossName, c.mode === 'kneel' ? `${c.def.name} · à genou` : c.def.name);
+    setText(ui.bossName, c.mode === 'kneel' ? `${c.def.name} · vulnérable` : c.def.name);
     const seals = c.seals.map((s, i) => (s.broken ? '<span class="broken">·</span>'
       : i === c.active ? '<span class="active">●</span>' : '○')).join('');
     if (ui.bossSeals.innerHTML !== seals) ui.bossSeals.innerHTML = seals;

@@ -69,7 +69,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 2. Récit discret : fragments qui se révèlent selon la progression, journal dans le menu.
 3. Sauvegarde format 8.
 
-### [ ] 0.9 — D'autres colosses
+### [x] 0.9 — D'autres colosses
 1. La Tisseuse (huit pattes, toiles qui ralentissent) et le Léviathan (serpent du Gouffre).
 2. Colosses décrits par des données : corps, attaques, sceaux, bienfaits.
 

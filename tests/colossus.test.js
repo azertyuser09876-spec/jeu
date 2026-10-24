@@ -250,6 +250,125 @@
     assert.equal(c.seals[0].hp, c.seals[0].max);
   });
 
+  // --- La Tisseuse et le Léviathan ---
+
+  // Partie où un colosse donné est déjà entendu, la lumière à `dist` de lui.
+  function near(id, dist, tamedBefore) {
+    const state = ready();
+    for (const t of tamedBefore) state.colossi[t] = 'tamed';
+    const game = newGame(state);
+    run(game, dt);
+    const c = game.colossi.find((k) => k.id === id);
+    state.player.x = c.x + dist;
+    state.player.y = c.y;
+    return { state, game, c };
+  }
+
+  test('les colosses se méritent dans l’ordre : Veilleur, Tisseuse, Léviathan', () => {
+    const state = ready();
+    const game = newGame(state);
+    run(game, dt);
+    assert.deepEqual(game.colossi.map((c) => c.id), ['veilleur']);
+    state.colossi.veilleur = 'tamed';
+    run(game, dt);
+    assert.equal(Colossus.status(state, 'tisseuse'), 'heard');
+    assert.equal(Colossus.status(state, 'leviathan'), 'unknown');
+    state.colossi.tisseuse = 'tamed';
+    run(game, dt);
+    assert.equal(Colossus.status(state, 'leviathan'), 'heard');
+    assert.ok(game.events.some((e) => e.type === 'heartbeat' && e.id === 'leviathan'));
+  });
+
+  test('chaque colosse vit plus loin que le précédent', () => {
+    const state = State.create(8);
+    const dist = Vide.COLOSSI.map((d) => Math.hypot(Colossus.lair(state, d).x, Colossus.lair(state, d).y));
+    for (let i = 1; i < dist.length; i++) assert.ok(dist[i] > dist[i - 1]);
+  });
+
+  test('la Tisseuse marche à huit pattes, par tétrapodes alternés', () => {
+    const { game, c } = near('tisseuse', 950, ['veilleur']);
+    assert.equal(c.legs.length, 8);
+    let moved = false;
+    for (let i = 0; i < 60 * 15; i++) {
+      Sim.step(game, dt, Sim.emptyInput());
+      const lifted = c.legs.map((l) => l.t >= 0);
+      const groupA = [0, 3, 4, 7].some((k) => lifted[k]), groupB = [1, 2, 5, 6].some((k) => lifted[k]);
+      assert.ok(!(groupA && groupB), 'les deux tétrapodes ne se lèvent jamais ensemble');
+      moved = moved || groupA || groupB;
+    }
+    assert.ok(moved);
+  });
+
+  test('une toile, annoncée, ralentit la lumière puis disparaît', () => {
+    const { state, game, c } = near('tisseuse', 500, ['veilleur']);
+    run(game, 0.1);
+    c.attackCd = 99;
+    c.attack = { kind: 'web', t: 0, phase: 'telegraph', at: { x: state.player.x, y: state.player.y }, radius: 150 };
+    run(game, Colossus.ATTACKS.web.telegraph + 0.05);
+    assert.equal(game.webs.length, 1);
+    assert.equal(Colossus.slowAt(game, state.player.x, state.player.y), Colossus.ATTACKS.web.slow);
+    assert.equal(Colossus.slowAt(game, state.player.x + 500, state.player.y), 1);
+    game.webs[0].life = 0.01;
+    run(game, 0.05);
+    assert.equal(game.webs.length, 0);
+  });
+
+  test('pris dans une toile, on avance bien moins vite', () => {
+    const free = Sim.create(State.create(1));
+    const stuck = Sim.create(State.create(1));
+    stuck.webs.push({ x: 0, y: 0, radius: 5000, life: 99, max: 99 });
+    const input = Sim.emptyInput();
+    input.move.x = 1;
+    for (let i = 0; i < 120; i++) {
+      Sim.step(free, dt, input);
+      Sim.step(stuck, dt, input);
+    }
+    assert.ok(stuck.state.player.x < free.state.player.x * 0.5);
+  });
+
+  test('le Léviathan est une chaîne de vertèbres qui suit la tête', () => {
+    const { game, c } = near('leviathan', 1050, ['veilleur', 'tisseuse']);
+    run(game, 6);
+    const spacing = c.body.spacing * c.def.size;
+    for (let k = 1; k < c.segments.length; k++) {
+      const d = Math.hypot(c.segments[k].x - c.segments[k - 1].x, c.segments[k].y - c.segments[k - 1].y);
+      assert.ok(d <= spacing + 1e-6, `vertèbre ${k} trop loin : ${d}`);
+    }
+    assert.deepEqual(Colossus.pointOf(c, 'seg:9'), c.segments[9]);
+    assert.equal(c.mode, 'hunt');
+  });
+
+  test('la charge, annoncée, frappe ce qui reste sur sa ligne', () => {
+    const { state, game, c } = near('leviathan', 500, ['veilleur', 'tisseuse']);
+    run(game, 0.1);
+    c.attackCd = 99;
+    game.vitality.invulnerable = 0;
+    const origin = { x: c.x, y: c.y };
+    const dir = Math.atan2(state.player.y - c.y, state.player.x - c.x);
+    c.attack = { kind: 'charge', t: 0, phase: 'telegraph', origin, dir, length: 900, width: 55, travelled: 0, hit: false };
+    const hp = game.vitality.hp;
+    const spot = { x: state.player.x, y: state.player.y };
+    for (let i = 0; i < Math.round(3 / dt); i++) {
+      state.player.x = spot.x;
+      state.player.y = spot.y;
+      Sim.step(game, dt, Sim.emptyInput());
+    }
+    assert.ok(game.vitality.hp <= hp - Colossus.ATTACKS.charge.damage + 1e-9, 'touché par la charge');
+    assert.ok(Math.hypot(c.x - origin.x, c.y - origin.y) > 600, 'il a foncé');
+  });
+
+  test('les bienfaits de la Tisseuse et du Léviathan', () => {
+    const state = State.create(1);
+    const before = Stats.compute(state);
+    state.colossi.tisseuse = 'tamed';
+    state.colossi.leviathan = 'tamed';
+    const after = Stats.compute(state);
+    assert.equal(after.beingCap, before.beingCap + 10);
+    assert.near(after.beingSpeed, before.beingSpeed * 1.3, 1e-9);
+    assert.near(after.echoGain, before.echoGain * 2, 1e-9);
+    assert.equal(after.offlineCap, before.offlineCap + 12 * 3600);
+  });
+
   test('une sauvegarde de la 0.6 (format 6) se charge, colosses inconnus', () => {
     const result = Save.deserialize(JSON.stringify({ format: 6, state: { light: 1 } }));
     assert.ok(result.ok);

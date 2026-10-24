@@ -1,13 +1,16 @@
 // Les colosses vivants : marche procédurale, chasse, attaques annoncées, sceaux, apaisement.
 // État persistant : state.colossi[id] = 'heard' (battement entendu) | 'found' (rencontré) | 'tamed' (apaisé).
-// Tout le reste (position, sceaux entamés…) est recréé au chargement : un combat abandonné repart de zéro.
+// Tout le reste (position, sceaux entamés, toiles…) est recréé au chargement : un combat abandonné repart de zéro.
 (function (Vide) {
   'use strict';
   const { util, Territory, Colony } = Vide;
 
   // Corps : coordonnées locales (le colosse regarde vers +x), multipliées par la taille du colosse.
+  //   kind 'legged' : corps rigide porté par des pattes (marche procédurale) ;
+  //   kind 'serpent' : chaîne de vertèbres qui suivent la tête.
   const BODIES = {
     quadruped: {
+      kind: 'legged',
       spine: [[160, 0], [115, 0], [65, 0], [10, 0], [-45, 0], [-100, 0]],
       tail: { length: 150, segments: 7 },
       legs: [
@@ -16,16 +19,49 @@
         { hip: [-45, -40], rest: [-15, -105], side: -1 },
         { hip: [-45, 40], rest: [-15, 105], side: 1 },
       ],
-      // Les pattes avancent par paires diagonales, jamais les deux paires à la fois.
+      // Les pattes avancent par groupes (ici en diagonale), jamais deux groupes à la fois.
       pairs: [[0, 3], [1, 2]],
       thigh: 80,
       shin: 80,
       stride: 75,
       stepTime: 0.6,
       points: { head: [160, 0], back: [10, 0], tail: 'tail' },
+      eyes: [[170, -14], [170, 14]],
       radius: 110,
-      // Silhouette (demi-contour, de la tête à la base de la queue ; symétrisée au dessin).
+      // Silhouette (demi-contour, de la tête à l'arrière ; symétrisée au dessin).
       outline: [[185, 0], [168, 18], [140, 24], [112, 22], [80, 50], [30, 64], [-20, 60], [-60, 50], [-95, 26], [-112, 0]],
+    },
+    arachnid: {
+      kind: 'legged',
+      spine: [[120, 0], [70, 0], [20, 0], [-40, 0], [-110, 0], [-170, 0]],
+      tail: null,
+      legs: [
+        { hip: [60, -28], rest: [200, -150], side: -1 },
+        { hip: [60, 28], rest: [200, 150], side: 1 },
+        { hip: [35, -34], rest: [80, -210], side: -1 },
+        { hip: [35, 34], rest: [80, 210], side: 1 },
+        { hip: [10, -34], rest: [-40, -205], side: -1 },
+        { hip: [10, 34], rest: [-40, 205], side: 1 },
+        { hip: [-15, -28], rest: [-140, -170], side: -1 },
+        { hip: [-15, 28], rest: [-140, 170], side: 1 },
+      ],
+      // Marche des araignées : deux « tétrapodes » alternés (G1, D2, G3, D4) puis (D1, G2, D3, G4).
+      pairs: [[0, 3, 4, 7], [1, 2, 5, 6]],
+      thigh: 120,
+      shin: 120,
+      stride: 70,
+      stepTime: 0.45,
+      points: { head: [120, 0], back: [20, 0], abdomen: [-110, 0], spinneret: [-175, 0] },
+      eyes: [[128, -8], [128, 8], [118, -15], [118, 15]],
+      radius: 120,
+      outline: [[135, 0], [120, 20], [90, 30], [50, 36], [20, 30], [0, 26], [-30, 52], [-80, 70], [-130, 64], [-170, 40], [-190, 0]],
+    },
+    serpent: {
+      kind: 'serpent',
+      segments: 30,
+      spacing: 26,
+      eyes: [[22, -11], [22, 11]],
+      radius: 90,
     },
   };
 
@@ -33,6 +69,8 @@
   const ATTACKS = {
     stomp: { name: 'Piétinement', telegraph: 1.4, radius: 75, damage: 30, beings: 25 },
     breath: { name: 'Souffle', telegraph: 1.6, active: 0.5, length: 650, spread: 0.3, damage: 45, beings: 30 },
+    web: { name: 'Toile', telegraph: 1.2, radius: 150, duration: 7, slow: 0.35 },
+    charge: { name: 'Charge', telegraph: 1.5, length: 900, width: 55, speed: 700, damage: 50, beings: 35 },
   };
 
   const FOOT = { damage: 15, radius: 30, shadowRadius: 80, shadowDamage: 60 };
@@ -67,9 +105,10 @@
     return { x: c.x + (lx * cos - ly * sin) * s, y: c.y + (lx * sin + ly * cos) * s };
   }
 
-  // Queue : une chaîne qui ondule doucement derrière les hanches.
+  // Queue (corps à pattes) : une chaîne qui ondule doucement derrière les hanches.
   function tailPoints(c) {
     const { tail, spine } = c.body;
+    if (!tail) return [];
     const base = spine[spine.length - 1];
     const pts = [];
     for (let k = 1; k <= tail.segments; k++) {
@@ -80,7 +119,10 @@
     return pts;
   }
 
+  // Point nommé du corps : 'head', 'back'… ; 'tail' (queue) ; 'seg:K' (vertèbre K d'un serpent).
   function pointOf(c, at) {
+    if (at.startsWith('seg:')) return c.segments[Number(at.slice(4))];
+    if (c.body.kind === 'serpent') return c.segments[0];
     const p = c.body.points[at];
     if (p === 'tail') {
       const tail = tailPoints(c);
@@ -89,7 +131,6 @@
     return toWorld(c, p[0], p[1]);
   }
 
-  // Sceau actif (celui qu'on peut briser), ou null s'ils sont tous brisés.
   function activeSeal(c) {
     return c.seals[c.active] || null;
   }
@@ -118,10 +159,11 @@
     const tamed = status(state, d.id) === 'tamed';
     const orbit = util.hash2(d.lair.angleSeed, 11, state.seed) * Math.PI * 2;
     const at = tamed ? residentSpot(state, orbit) : lair(state, d);
+    const body = BODIES[d.body];
     const c = {
       id: d.id,
       def: d,
-      body: BODIES[d.body],
+      body,
       x: at.x,
       y: at.y,
       angle: 0,
@@ -143,13 +185,18 @@
       lastWave: -1,
       hitFlash: 0,
       rng: util.rng(state.seed ^ Math.imul(d.lair.angleSeed + 3, 0x632be5ab)),
-      core: { x: at.x, y: at.y, hp: 1, colossus: null, radius: BODIES[d.body].radius * d.size },
+      core: { x: at.x, y: at.y, hp: 1, colossus: null, radius: body.radius * d.size },
     };
     c.core.colossus = c;
-    c.legs = c.body.legs.map((l) => {
-      const foot = toWorld(c, l.rest[0], l.rest[1]);
-      return { foot, from: foot, to: foot, t: -1, lift: 0 };
-    });
+    if (body.kind === 'legged') {
+      c.legs = body.legs.map((l) => {
+        const foot = toWorld(c, l.rest[0], l.rest[1]);
+        return { foot, from: foot, to: foot, t: -1, lift: 0 };
+      });
+    } else {
+      c.segments = [];
+      for (let k = 0; k < body.segments; k++) c.segments.push({ x: at.x - k * body.spacing * d.size, y: at.y });
+    }
     game.colossi.push(c);
     return c;
   }
@@ -163,10 +210,11 @@
 
   function create(game) {
     game.colossi = [];
+    game.webs = [];
     sync(game);
   }
 
-  // --- Marche ---
+  // --- Déplacements ---
 
   function walkTo(c, tx, ty, speed, dt) {
     const dx = tx - c.x, dy = ty - c.y;
@@ -189,7 +237,7 @@
     let diff = angle - c.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    const max = 0.7 * dt;
+    const max = (c.body.kind === 'serpent' ? 1.6 : 0.7) * dt;
     c.angle += util.clamp(diff, -max, max);
   }
 
@@ -220,9 +268,9 @@
       const p = toWorld(c, l.rest[0], l.rest[1]);
       return { x: p.x + c.vx * 0.35, y: p.y + c.vy * 0.35 };
     });
-    const stepping = (pair) => pair.some((i) => c.legs[i].t >= 0);
+    const stepping = (group) => group.some((i) => c.legs[i].t >= 0);
 
-    c.legs.forEach((leg, i) => {
+    c.legs.forEach((leg) => {
       if (leg.t < 0) return;
       leg.t += dt / c.body.stepTime;
       const p = Math.min(1, leg.t);
@@ -238,12 +286,12 @@
     });
 
     if (c.mode === 'kneel') return; // à genou, il ne bouge plus les pattes
-    for (const pair of c.body.pairs) {
-      const other = c.body.pairs.find((p) => p !== pair);
-      if (stepping(pair) || stepping(other)) continue;
-      const far = pair.some((i) => Math.hypot(c.legs[i].foot.x - ideal[i].x, c.legs[i].foot.y - ideal[i].y) > stride);
+    const groups = c.body.pairs;
+    if (groups.some(stepping)) return;
+    for (const group of groups) {
+      const far = group.some((i) => Math.hypot(c.legs[i].foot.x - ideal[i].x, c.legs[i].foot.y - ideal[i].y) > stride);
       if (!far) continue;
-      for (const i of pair) {
+      for (const i of group) {
         const leg = c.legs[i];
         leg.from = leg.foot;
         leg.to = { x: ideal[i].x + c.vx * 0.25, y: ideal[i].y + c.vy * 0.25 };
@@ -253,12 +301,36 @@
     }
   }
 
+  // Serpent : la tête ondule en avançant, chaque vertèbre suit la précédente à distance fixe.
+  function updateSegments(c) {
+    const spacing = c.body.spacing * c.def.size;
+    const seg = c.segments;
+    seg[0] = { x: c.x, y: c.y };
+    for (let k = 1; k < seg.length; k++) {
+      const dx = seg[k].x - seg[k - 1].x, dy = seg[k].y - seg[k - 1].y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d > spacing) seg[k] = { x: seg[k - 1].x + (dx / d) * spacing, y: seg[k - 1].y + (dy / d) * spacing };
+    }
+  }
+
+  // --- Toiles (ralentissent tout ce qui s'y prend) ---
+
+  function slowAt(game, x, y) {
+    let factor = 1;
+    for (const w of game.webs || []) {
+      if (Math.hypot(x - w.x, y - w.y) <= w.radius) factor = Math.min(factor, ATTACKS.web.slow);
+    }
+    return factor;
+  }
+
   // --- Attaques ---
 
   function startAttack(game, c) {
     const { player } = game.state;
     const kind = c.def.attacks[Math.floor(c.rng() * c.def.attacks.length)];
     const a = ATTACKS[kind];
+    const head = pointOf(c, 'head');
+    const dir = Math.atan2(player.y - head.y, player.x - head.x);
     if (kind === 'stomp') {
       const v = game.velocity;
       const angle = c.rng() * Math.PI * 2;
@@ -272,15 +344,12 @@
         ],
         radius: a.radius,
       };
+    } else if (kind === 'web') {
+      c.attack = { kind, t: 0, phase: 'telegraph', at: { x: player.x, y: player.y }, radius: a.radius };
+    } else if (kind === 'charge') {
+      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir, length: a.length, width: a.width, travelled: 0, hit: false };
     } else {
-      const head = pointOf(c, 'head');
-      c.attack = {
-        kind, t: 0, phase: 'telegraph',
-        origin: head,
-        dir: Math.atan2(player.y - head.y, player.x - head.x),
-        length: a.length,
-        spread: a.spread,
-      };
+      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir, length: a.length, spread: a.spread };
     }
     Vide.Sim.emit(game, 'colossusAttack', { id: c.id, kind });
   }
@@ -299,6 +368,12 @@
     const atk = c.attack;
     const a = ATTACKS[atk.kind];
     const { player } = game.state;
+    if (atk.kind === 'web') {
+      game.webs.push({ x: atk.at.x, y: atk.at.y, radius: atk.radius, life: a.duration, max: a.duration });
+      Vide.Sim.emit(game, 'web', { x: atk.at.x, y: atk.at.y });
+      return;
+    }
+    if (atk.kind === 'charge') return; // la charge frappe pendant sa course (voir charging)
     const hits = (x, y) => (atk.kind === 'stomp'
       ? atk.points.some((p) => Math.hypot(x - p.x, y - p.y) <= atk.radius)
       : inCone(atk, x, y));
@@ -309,20 +384,50 @@
     if (atk.kind === 'stomp') Vide.Sim.emit(game, 'quake', { points: atk.points, radius: atk.radius });
   }
 
+  // Charge : le colosse fonce le long de la ligne annoncée et frappe ce qu'il traverse.
+  function charging(game, c, dt) {
+    const atk = c.attack;
+    const a = ATTACKS.charge;
+    const step = Math.min(a.speed * dt, atk.length - atk.travelled);
+    c.vx = Math.cos(atk.dir) * a.speed;
+    c.vy = Math.sin(atk.dir) * a.speed;
+    c.x += Math.cos(atk.dir) * step;
+    c.y += Math.sin(atk.dir) * step;
+    atk.travelled += step;
+    const { player } = game.state;
+    const reach = atk.width * c.def.size;
+    if (!atk.hit && Math.hypot(player.x - c.x, player.y - c.y) <= reach) {
+      atk.hit = true;
+      Vide.Combat.hurtPlayer(game, a.damage, c.x, c.y);
+    }
+    for (const b of game.colony.beings) {
+      if (Colony.isActive(b) && Math.hypot(b.x - c.x, b.y - c.y) <= reach) Vide.Combat.hurtBeing(game, b, a.beings * dt * 4);
+    }
+    if (atk.travelled >= atk.length) {
+      c.attack = null;
+      c.attackCd = 3 + c.rng() * 2;
+      c.vx *= 0.2;
+      c.vy *= 0.2;
+    }
+  }
+
   function updateAttack(game, c, dt) {
     const atk = c.attack;
     const a = ATTACKS[atk.kind];
     atk.t += dt;
     if (atk.phase === 'telegraph' && atk.t >= a.telegraph) {
       strike(game, c);
-      if (a.active) {
+      if (atk.kind === 'charge') {
+        atk.phase = 'active';
+        atk.t = 0;
+      } else if (a.active) {
         atk.phase = 'active';
         atk.t = 0;
       } else {
         c.attack = null;
         c.attackCd = 3.5 + c.rng() * 2;
       }
-    } else if (atk.phase === 'active' && atk.t >= a.active) {
+    } else if (atk.phase === 'active' && atk.kind !== 'charge' && atk.t >= a.active) {
       c.attack = null;
       c.attackCd = 3.5 + c.rng() * 2;
     }
@@ -399,7 +504,7 @@
   // Colosse hostile que l'armée peut frapper dans une zone, sous forme de cible (c.core).
   function target(game, ax, ay, radius) {
     for (const c of game.colossi) {
-      if ((c.mode === 'hunt' || c.mode === 'kneel') && Math.hypot(c.x - ax, c.y - ay) <= radius + c.core.radius) {
+      if ((c.mode === 'hunt' || c.mode === 'kneel') && Math.hypot(c.core.x - ax, c.core.y - ay) <= radius + c.core.radius) {
         return c.core;
       }
     }
@@ -426,7 +531,7 @@
     c.time += dt;
     c.hitFlash = Math.max(0, c.hitFlash - dt * 2);
     c.attackCd -= dt;
-    let speed = d.speed;
+    let moved = false; // la charge déplace le colosse elle-même
 
     switch (c.mode) {
       case 'roam': {
@@ -443,7 +548,7 @@
             c.pause = 0;
           }
           stop(c, dt);
-        } else if (walkTo(c, c.wander.x, c.wander.y, speed * 0.6, dt) < 40) {
+        } else if (walkTo(c, c.wander.x, c.wander.y, d.speed * 0.6, dt) < 40) {
           c.wander = null;
           c.pause = 3 + c.rng() * 4;
         }
@@ -451,14 +556,20 @@
         break;
       }
       case 'hunt': {
-        if (dist > d.leash || game.vitality.invulnerable > 0 && dist > d.awareness) {
+        if (dist > d.leash || (game.vitality.invulnerable > 0 && dist > d.awareness)) {
           c.mode = 'roam';
           c.attack = null;
           c.wander = null;
           Vide.Sim.emit(game, 'colossusLost', { id: c.id });
           break;
         }
-        if (dist > 380) walkTo(c, player.x, player.y, speed, dt);
+        if (c.attack && c.attack.kind === 'charge' && c.attack.phase === 'active') {
+          charging(game, c, dt);
+          moved = true;
+          break;
+        }
+        if (c.attack && c.attack.kind === 'charge') stop(c, dt); // il se ramasse avant de foncer
+        else if (dist > 380) walkTo(c, player.x, player.y, d.speed, dt);
         else stop(c, dt);
         turnTowards(c, Math.atan2(player.y - c.y, player.x - c.x), dt);
         if (c.attack) updateAttack(game, c, dt);
@@ -496,16 +607,37 @@
     }
 
     if (c.mode !== 'hunt' && Math.hypot(c.vx, c.vy) > 3) turnTowards(c, Math.atan2(c.vy, c.vx), dt);
-    c.x += c.vx * dt;
-    c.y += c.vy * dt;
-    c.core.x = c.x;
-    c.core.y = c.y;
-    updateLegs(game, c, dt);
+    if (!moved) {
+      let vx = c.vx, vy = c.vy;
+      if (c.body.kind === 'serpent') {
+        // Ondulation : une poussée latérale qui fait serpenter tout le corps.
+        const speed = Math.hypot(vx, vy);
+        const sway = Math.sin(c.time * 2.2) * speed * 0.6;
+        vx += -Math.sin(c.angle) * sway;
+        vy += Math.cos(c.angle) * sway;
+      }
+      c.x += vx * dt;
+      c.y += vy * dt;
+    }
+    if (c.body.kind === 'legged') {
+      c.core.x = c.x;
+      c.core.y = c.y;
+      updateLegs(game, c, dt);
+    } else {
+      updateSegments(c);
+      const mid = c.segments[Math.floor(c.segments.length / 2)];
+      c.core.x = mid.x;
+      c.core.y = mid.y;
+    }
   }
 
   function update(game, dt) {
     unlock(game);
     for (const c of game.colossi) updateOne(game, c, dt);
+    for (let i = game.webs.length - 1; i >= 0; i--) {
+      game.webs[i].life -= dt;
+      if (game.webs[i].life <= 0) game.webs.splice(i, 1);
+    }
   }
 
   // Bienfaits des colosses apaisés (appelé par Stats.compute).
@@ -515,6 +647,6 @@
 
   Vide.Colossus = {
     BODIES, ATTACKS, FOOT, def, status, lair, residentSpot, toWorld, tailPoints, pointOf, activeSeal, sealPos, knee,
-    create, sync, update, hit, sealHit, pulseHit, target, hostile, modify, inCone,
+    create, sync, update, hit, sealHit, pulseHit, target, hostile, modify, inCone, slowAt,
   };
 })(globalThis.Vide);

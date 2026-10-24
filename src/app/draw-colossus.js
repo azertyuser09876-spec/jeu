@@ -24,6 +24,8 @@
   function line(ctx, pts, width, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = width;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.beginPath();
     pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
     ctx.stroke();
@@ -103,9 +105,84 @@
     // Tête et yeux.
     const head = Colossus.pointOf(c, 'head');
     Render.drawGlow(ctx, glow, head.x, head.y, 46 * s, 0.6);
-    for (const side of [-1, 1]) {
-      const eye = Colossus.toWorld(c, 170, side * 14);
-      Render.drawGlow(ctx, r.glows.white, eye.x, eye.y, 9 * s, c.calm > 0.5 ? 0.6 : 0.95);
+    drawEyes(r, c, (x, y) => Colossus.toWorld(c, x, y));
+  }
+
+  function drawEyes(r, c, place) {
+    for (const [ex, ey] of c.body.eyes) {
+      const eye = place(ex, ey);
+      Render.drawGlow(r.ctx, r.glows.white, eye.x, eye.y, 9 * c.def.size, c.calm > 0.5 ? 0.6 : 0.95);
+    }
+  }
+
+  // Serpent : une chaîne de vertèbres lumineuses, des nageoires qui ondulent, une tête aux yeux pâles.
+  function drawSerpent(r, c) {
+    const { ctx } = r;
+    const s = c.def.size;
+    const px = 1 / r.camera.scale;
+    let tint = mix(c.def.tint, GOLD, c.calm);
+    tint = mix(tint, [255, 255, 255], c.hitFlash * 0.6);
+    const glow = glowOf(r, tint);
+    const seg = c.segments;
+    const n = seg.length;
+
+    Render.drawGlow(ctx, glow, c.core.x, c.core.y, 420 * s, c.mode === 'kneel' ? 0.2 : 0.11);
+    ctx.globalAlpha = 0.1;
+    line(ctx, seg, 34 * s, rgb(tint, 1));
+    ctx.globalAlpha = 0.55;
+    line(ctx, seg, 2.5 * px, rgb(tint, 1));
+    for (let k = 0; k < n; k++) {
+      const p = seg[k];
+      const taper = 1 - k / n;
+      Render.drawGlow(ctx, glow, p.x, p.y, (10 + 16 * taper) * s, 0.75);
+      // Nageoires : une paire toutes les trois vertèbres, qui battent avec la nage.
+      if (k % 3 === 1 && k < n - 2) {
+        const q = seg[k + 1];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const nx = -dy / d, ny = dx / d;
+        const flap = 1 + 0.35 * Math.sin(c.time * 4 - k * 0.5);
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = rgb(tint, 1);
+        ctx.lineWidth = 1.2 * px;
+        for (const side of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x + (nx * side * 34 * taper * flap - dx / d * 18) * s, p.y + (ny * side * 34 * taper * flap - dy / d * 18) * s);
+          ctx.stroke();
+        }
+      }
+    }
+    const head = seg[0];
+    Render.drawGlow(ctx, glow, head.x, head.y, 52 * s, 0.7);
+    // Les yeux suivent l'orientation de la tête (vers la vertèbre suivante, à l'opposé).
+    const next = seg[1];
+    const angle = Math.atan2(head.y - next.y, head.x - next.x);
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    drawEyes(r, c, (x, y) => ({ x: head.x + (x * cos - y * sin) * s, y: head.y + (x * sin + y * cos) * s }));
+  }
+
+  // Toiles posées : rayons et cercles concentriques, qui pâlissent avant de disparaître.
+  function drawWebs(r, game) {
+    const { ctx } = r;
+    const px = 1 / r.camera.scale;
+    for (const w of game.webs) {
+      const fade = Math.min(1, w.life / 1.5) * 0.45;
+      ctx.globalAlpha = fade;
+      ctx.strokeStyle = '#e8fff4';
+      ctx.lineWidth = px;
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(w.x, w.y);
+        ctx.lineTo(w.x + Math.cos(a) * w.radius, w.y + Math.sin(a) * w.radius);
+        ctx.stroke();
+      }
+      for (let ring = 1; ring <= 4; ring++) {
+        ctx.beginPath();
+        ctx.arc(w.x, w.y, (w.radius * ring) / 4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
   }
 
@@ -180,6 +257,34 @@
         ctx.arc(p.x, p.y, atk.radius, 0, Math.PI * 2);
         ctx.stroke();
       }
+    } else if (atk.kind === 'web') {
+      // La toile se dessine avant de tomber.
+      ctx.globalAlpha = 0.15 + 0.35 * k;
+      ctx.strokeStyle = '#cfffe8';
+      ctx.lineWidth = 1.2 / r.camera.scale;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(atk.at.x, atk.at.y);
+        ctx.lineTo(atk.at.x + Math.cos(a) * atk.radius * k, atk.at.y + Math.sin(a) * atk.radius * k);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(atk.at.x, atk.at.y, atk.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (atk.kind === 'charge') {
+      // Le couloir de la charge, tracé avant qu'il ne fonce.
+      const w = atk.width * c.def.size;
+      const ex = atk.origin.x + Math.cos(atk.dir) * atk.length, ey = atk.origin.y + Math.sin(atk.dir) * atk.length;
+      ctx.globalAlpha = atk.phase === 'active' ? 0.12 : 0.08 + 0.25 * k;
+      ctx.strokeStyle = '#6b3fd1';
+      ctx.lineCap = 'round';
+      ctx.lineWidth = w * 2;
+      ctx.beginPath();
+      ctx.moveTo(atk.origin.x, atk.origin.y);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      ctx.lineCap = 'round';
     } else {
       const active = atk.phase === 'active';
       ctx.globalAlpha = active ? 0.45 : 0.08 + 0.22 * k;
@@ -231,10 +336,12 @@
   Vide.Draw.colossi = function (r, game, dt) {
     collect(r, game);
     const view = Render.viewBounds(r, 600);
+    drawWebs(r, game);
     for (const c of game.colossi) {
-      if (c.x < view.left || c.x > view.right || c.y < view.top || c.y > view.bottom) continue;
+      if (c.core.x < view.left || c.core.x > view.right || c.core.y < view.top || c.core.y > view.bottom) continue;
       drawAttack(r, c);
-      drawBody(r, c);
+      if (c.body.kind === 'serpent') drawSerpent(r, c);
+      else drawBody(r, c);
       if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c);
     }
     drawQuakes(r, dt);

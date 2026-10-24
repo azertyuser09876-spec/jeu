@@ -1,5 +1,19 @@
 # Historique des versions
 
+## 0.9.0 — D'autres colosses
+
+- **La Tisseuse**, fileuse des courants (après le Veilleur) : araignée colossale à **huit pattes** qui marche
+  par tétrapodes alternés. Elle lance des **toiles** annoncées qui ralentissent fortement ta lumière et tes
+  êtres. Quatre sceaux. Apaisée : +10 places de population, êtres 30 % plus rapides.
+- **Le Léviathan**, nageur des profondeurs (après la Tisseuse) : serpent immense de 30 vertèbres qui
+  **ondule** réellement, nageoires qui battent. Sa **charge** est annoncée par un couloir, puis il fonce
+  et frappe tout ce qui reste sur sa ligne. Quatre sceaux le long du dos. Apaisé : échos ×2, mémoire +12 h.
+- **Colosses décrits par des données** : corps à pattes (quadrupède, arachnide) ou serpent, attaques
+  (piétinement, souffle, toile, charge), sceaux, bienfaits, textes. Chacun se fait entendre une fois
+  le précédent apaisé, et vit plus loin que lui.
+- 3 nouveaux fragments du récit (21 au total).
+- 182 tests de logique, 23 vérifications navigateur.
+
 ## 0.8.0 — Échos du vide
 
 - **Son génératif** (WebAudio, aucun fichier) : chaque particule récoltée tinte sur une gamme pentatonique,

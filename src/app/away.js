@@ -63,10 +63,14 @@
     foyerAttacked: 'Des ombres rongent le foyer !',
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
-    heartbeat: () => 'Au loin, un battement immense… Quelque chose veille aux confins. Suis la flèche dorée.',
+    heartbeat: (e) => Vide.Colossus.def(e.id).heartbeat,
     colossusFound: (e) => `Brise ses sceaux avec ta pulsation. Ton armée peut le faire plier.`,
     sealBroken: (e) => (e.left ? `Un sceau se brise. Encore ${e.left}.` : null),
-    kneel: (e) => `${Vide.Colossus.def(e.id).name} pose un genou à terre ! Ses sceaux sont vulnérables.`,
+    kneel: (e) => {
+      const d = Vide.Colossus.def(e.id);
+      return `${d.name} ${d.kneelText} ! Ses sceaux sont vulnérables.`;
+    },
+    web: () => (seen.web ? null : (seen.web = true, 'Une toile ! Elle ralentit tout ce qui s’y prend. Sors-en vite.')),
     colossusTamed: (e) => {
       const d = Vide.Colossus.def(e.id);
       return `${d.name} s’apaise. Il rejoint ton territoire. ${d.reward.text}`;
