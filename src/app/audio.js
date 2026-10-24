@@ -291,7 +291,8 @@
         case 'built': case 'repaired': case 'wallDone': case 'wallRepaired': play('built'); break;
         case 'breach': play('footfall', 0.5); break;
         case 'tide': case 'raid': case 'war': play('tide'); break;
-        case 'shadowDown': case 'workDown': play('shadowDown'); break;
+        case 'shadowDown': case 'workDown': case 'creatureDown': play('shadowDown'); break;
+        case 'converted': play('built'); break;
         case 'darkBreach': play('footfall', 0.4); break;
         case 'dispersed': play('dispersed'); break;
         case 'footfall': {

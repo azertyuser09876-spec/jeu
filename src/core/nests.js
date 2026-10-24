@@ -74,7 +74,7 @@
       id: state.nests.reduce((m, n) => Math.max(m, n.id), 0) + 1,
       x, y, hp: 0, age: age || 0, region: regionKey || null,
       area: 0, cells: [], buildings: [], walls: [], build: CONFIG.nests.buildEvery,
-      parent: null, swarm: CONFIG.nests.outpostEvery, faction: null,
+      parent: null, swarm: CONFIG.nests.outpostEvery, faction: null, creatures: {},
     });
     nest.faction = Vide.Factions.inherit(state, null, Vide.DARK_FACTIONS, nest.id);
     nest.hp = maxHp(nest);
@@ -113,7 +113,9 @@
       return work;
     }
     if (nest.walls.length < wallsAllowed(nest) && !Vide.Walls.site(nest)) return Vide.Walls.plan(nest);
-    return null;
+    // Sa garnison de bêtes.
+    const beast = Vide.Creatures.reinforce(nest);
+    return beast ? { type: beast } : null;
   }
 
   // Ce que rapportent ses fosses : ombres de plus par raid, défenseurs de plus.
@@ -222,8 +224,11 @@
       budget -= k.cost;
       const s = Vide.Shadows.spawn(game, k.id, nest.x + (rng() - 0.5) * 80, nest.y + (rng() - 0.5) * 80, 'tide');
       s.home = target;
+      s.faction = nest.faction;
       count++;
     }
+    // Une base mûre lâche aussi ses bêtes.
+    count += Vide.Creatures.raid(game, nest, target);
     Vide.Sim.emit(game, 'raid', { x: nest.x, y: nest.y, village: target.type, count });
     return count;
   }

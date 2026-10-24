@@ -78,6 +78,17 @@
       lotArea: 40000,    // un emplacement à bâtir de plus par tant de surface (un carré de 200 de côté)
     },
 
+    // Créatures intermédiaires (voir creatures.js).
+    creatures: {
+      convertAt: 0.25,    // à ce reste de vie, une créature est retournée (si la sous-faction de qui la frappe le peut)…
+      convertHp: 0.6,     // …et repart avec cette part de sa vie
+      sense: 650,         // une bête des ombres lâchée dans un raid repère ses proies à cette distance
+      garrisonFrom: 4,    // une base entretient des loups dès ce niveau…
+      scolopendreFrom: 7, // …et une scolopendre dès celui-ci
+      raidFrom: 4,        // ses raids lâchent une meute dès ce niveau…
+      raidChance: 0.5,    // …une fois sur deux
+    },
+
     // Sous-factions (voir factions.js).
     factions: {
       inherit: 0.85,     // chance qu'un village fondé depuis un autre (un avant-poste depuis sa base) en hérite

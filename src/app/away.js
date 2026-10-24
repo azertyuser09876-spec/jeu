@@ -153,6 +153,20 @@
     nestBuilt: (e) => (e.kind === 'rempart' ? 'Une base d’ombre se ceint d’un rempart : il arrête la lumière. Ton armée devra l’abattre.' : null),
     workDown: (e) => `${Vide.darkWork(e.kind).name} d’ombre abattue. ◆ ${util.formatNumber(e.echoes)}.`,
     darkBreach: () => 'Une brèche dans le rempart d’ombre.',
+    converted: (e) => {
+      const k = Vide.Creatures.kind(e.kind);
+      const [un, ee] = k.fem ? ['Une', 'e'] : ['Un', ''];
+      const f = Vide.Factions.def(e.faction);
+      const what = e.faction === 'illumines' ? 'purifié' : e.faction === 'corrupteurs' ? 'corrompu' : 'apprivoisé';
+      return e.to === 'light'
+        ? `${un} ${k.name.toLowerCase()} ${what}${ee} par les ${f.name} rejoint ${to(e.owner)}.`
+        : `${un} ${k.name.toLowerCase()} de lumière, ${what}${ee} par les ${f.name}, passe à l’ombre.`;
+    },
+    creatureDown: (e) => {
+      if (e.side !== 'shadow' || !e.echoes) return null;
+      const k = Vide.Creatures.kind(e.kind);
+      return `${k.fem ? 'Une' : 'Un'} ${k.name.toLowerCase()} d’ombre abattu${k.fem ? 'e' : ''}. ◆ ${util.formatNumber(e.echoes)}.`;
+    },
     road: (e) => {
       const [a, b] = [e.a, e.b].map((t) => Vide.Villages.type(t).name);
       if (e.woven) return `La Tisseuse achève la route ${a} — ${b}.`;

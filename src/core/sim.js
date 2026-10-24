@@ -52,6 +52,7 @@
     Vide.Abilities.create(game);
     Vide.Nests.create(game);
     Vide.Engines.create(game);
+    Vide.Creatures.create(game);
     // Une partie déjà avancée (venue d'une version sans récit) remplit son journal d'un coup,
     // sans faire défiler chaque fragment.
     const known = Vide.Lore.check(state);
@@ -228,6 +229,7 @@
       emit(game, 'road', { a: a.type, b: b.type, first: state.roads.filter((x) => Vide.Roads.isDone(state, x)).length === 1 });
     }
     Vide.Shadows.update(game, dt);
+    Vide.Creatures.update(game, dt);
     Vide.Engines.update(game, dt);
     Vide.Colossus.update(game, dt);
     Vide.Combat.update(game, dt);

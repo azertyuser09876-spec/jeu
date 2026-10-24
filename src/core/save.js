@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 24;
+  const FORMAT = 25;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -118,6 +118,8 @@
     // 2.4 : les sous-factions. Une partie en cours n'a pas encore choisi : la boutique le proposera, et ses
     // villages prendront ce choix ; ses bases tirent la leur au chargement.
     23: (data) => ({ ...data, faction: null }),
+    // 2.4 : les créatures attachées aux villages et aux bases (aucune encore).
+    24: (data) => data,
   };
 
   function serialize(state, now) {
@@ -252,6 +254,7 @@
         parent: Number.isInteger(n.parent) && n.parent > 0 && n.parent !== n.id ? n.parent : null,
         swarm: Number.isFinite(n.swarm) ? Math.max(0, Math.min(n.swarm, Vide.CONFIG.nests.outpostEvery)) : Vide.CONFIG.nests.outpostEvery,
         faction: Vide.Factions.isDark(n.faction) ? n.faction : Vide.Factions.inherit(state, null, Vide.DARK_FACTIONS, n.id),
+        creatures: readCreatures(n.creatures),
       });
       nest.hp = Math.min(positive(n.hp, Vide.Nests.maxHp(nest)), Vide.Nests.maxHp(nest)) || 1;
       const R = Vide.Nests.radius(nest);
@@ -355,6 +358,7 @@
       districts: [],
       walls: [],
       faction: Vide.Factions.isLight(raw.faction) ? raw.faction : null,
+      creatures: readCreatures(raw.creatures),
     };
     const known = (t) => Vide.VILLAGE_TYPES.some((x) => x.id === t);
     for (const t of Array.isArray(raw.extra) ? raw.extra : []) {
@@ -385,6 +389,17 @@
     readCells(raw.cells, village);
     Vide.Territory.grow(village);
     return village;
+  }
+
+  // Créatures attachées : { espèce connue: nombre entier, au plus 20 }.
+  function readCreatures(raw) {
+    const out = {};
+    if (!isObject(raw)) return out;
+    for (const k of Vide.CREATURES) {
+      const n = raw[k.id];
+      if (Number.isInteger(n) && n > 0) out[k.id] = Math.min(n, 20);
+    }
+    return out;
   }
 
   // Forme d'un territoire (village ou base) : cellules entières, sans doublon, blanc (ou noir) de 0 à 100 ; jamais

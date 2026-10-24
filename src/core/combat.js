@@ -88,6 +88,9 @@
         }
         break;
       }
+      case 'creature':
+        Vide.Creatures.hit(game, target.ref, amount, { side: 'shadow', faction: shadow.faction || null, owner: null, creature: shadow.creature ? shadow : null });
+        break;
       case 'expedition':
         if (Vide.Expeditions.hurt(game.state, target.ref, amount)) {
           Vide.Sim.emit(game, 'expeditionLost', { kind: target.ref.kind });
@@ -134,6 +137,12 @@
       s.lastWave = id;
       Shadows.damage(s, game.stats.pulseDamage);
     }
+    // Les bêtes des ombres (ta sous-faction peut les retourner), une fois par onde.
+    for (const c of game.creatures.list.slice()) {
+      if (c.lastWave === id || c.side !== 'shadow' || (c.x - x) ** 2 + (c.y - y) ** 2 > (radius + c.radius) ** 2) continue;
+      c.lastWave = id;
+      Vide.Creatures.hit(game, c, game.stats.pulseDamage, { side: 'light', faction: game.state.faction, owner: null, creature: null });
+    }
     // Les sceaux des colosses aussi ; et le cœur des nids (deux fois plus), une fois par onde.
     if (Vide.Colossus) Vide.Colossus.pulseHit(game, x, y, radius);
     for (const nest of game.state.nests.slice()) {
@@ -168,13 +177,13 @@
 
   // `siege` : multiplicateur déjà compris dans `damage` (harpon lancé sur un colosse ou un nid) ; une ombre
   // prise en chemin n'en subit pas l'effet.
-  function fire(game, x, y, target, damage, source, siege) {
+  function fire(game, x, y, target, damage, source, siege, by) {
     const dx = target.x - x, dy = target.y - y;
     const d = Math.hypot(dx, dy) || 1;
     const speed = CONFIG.combat.projectileSpeed;
     game.projectiles.push({
       x, y, vx: (dx / d) * speed, vy: (dy / d) * speed,
-      target, damage, source, siege: siege || 1, life: CONFIG.combat.projectileLife,
+      target, damage, source, siege: siege || 1, life: CONFIG.combat.projectileLife, by: by || null,
     });
   }
 
@@ -194,6 +203,14 @@
       p.y += p.vy * dt;
       p.life -= dt;
       // Un trait lancé sur un colosse le frappe dès qu'il atteint son corps.
+      // Un trait lancé sur une bête la frappe en l'atteignant.
+      if (p.target && p.target.creature) {
+        if (Math.hypot(p.target.x - p.x, p.target.y - p.y) <= p.target.radius + CONFIG.combat.projectileHit) {
+          Vide.Creatures.hit(game, p.target, p.damage, p.by);
+          list.splice(i, 1);
+          continue;
+        }
+      }
       // Un trait lancé sur le cœur d'une base, ou sur un de ses ouvrages, le frappe en l'atteignant.
       if (p.target && p.target.nest) {
         if (Math.hypot(p.target.x - p.x, p.target.y - p.y) <= p.target.radius) {
@@ -225,11 +242,11 @@
   function updateTowers(game, dt) {
     for (const v of game.state.villages) {
       const stats = Villages.statsOf(game, v);
-      for (const b of v.buildings) updateTower(game, b, stats, dt);
+      for (const b of v.buildings) updateTower(game, b, stats, dt, v);
     }
   }
 
-  function updateTower(game, b, stats, dt) {
+  function updateTower(game, b, stats, dt, v) {
     const d = Structures.def(b.type);
     if (!d.tower || !Structures.isWorking(b)) return;
     const cd = (game.towerCd.get(b) || 0) - dt;
@@ -237,9 +254,10 @@
       game.towerCd.set(b, cd);
       return;
     }
-    const target = Shadows.nearest(game, b.x, b.y, d.tower.range);
+    // Une ombre, ou une bête des ombres.
+    const target = Shadows.nearest(game, b.x, b.y, d.tower.range) || Vide.Creatures.nearestEnemy(game, b.x, b.y, 'light', d.tower.range);
     if (target) {
-      fire(game, b.x, b.y, target, d.tower.damage * stats.armyDamage, 'tower');
+      fire(game, b.x, b.y, target, d.tower.damage * stats.armyDamage, 'tower', 1, byBeing({ village: v }));
       game.towerCd.set(b, d.tower.cooldown);
     } else {
       game.towerCd.set(b, 0);
@@ -279,7 +297,10 @@
   // Ennemi à combattre : l'ombre la plus proche dans la zone défendue, sinon un colosse hostile.
   function enemyFor(game, b, a) {
     const shadow = Shadows.nearest(game, b.x, b.y, Infinity, (s) => Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
-    if (shadow) return shadow;
+    // Les bêtes des ombres aussi, la plus proche des deux.
+    const beast = Vide.Creatures.nearestEnemy(game, b.x, b.y, 'light', Infinity, (c) => Math.hypot(c.x - a.x, c.y - a.y) <= a.radius);
+    if (shadow && beast) return Math.hypot(shadow.x - b.x, shadow.y - b.y) <= Math.hypot(beast.x - b.x, beast.y - b.y) ? shadow : beast;
+    if (shadow || beast) return shadow || beast;
     // En siège, une fois ses défenseurs dispersés : ses ouvrages (les flèches d'abord), puis le cœur de la base.
     if (a.nest) {
       const work = Vide.Nests.nearestWork(a.nest, b.x, b.y);
@@ -292,8 +313,9 @@
   // avec des centaines d'êtres, chercher à chaque pas coûterait trop.
   const RETARGET = 0.25;
 
-  function stillValid(e, a) {
+  function stillValid(game, e, a) {
     if (!e) return false;
+    if (e.creature) return e.hp > 0 && e.side === 'shadow' && game.creatures.list.includes(e) && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius;
     if (e.work) return a.nest === e.nest && e.nest.buildings.includes(e.work);
     if (e.nest) return a.nest === e.nest && e.nest.hp > 0;
     if (e.colossus) return Vide.Colossus.engaged(e.colossus) && Math.hypot(e.x - a.x, e.y - a.y) <= a.radius + e.radius;
@@ -302,18 +324,22 @@
 
   function currentEnemy(game, b, a, dt) {
     b.enemyCheck = (b.enemyCheck || 0) - dt;
-    if (b.enemyCheck > 0 && stillValid(b.enemy, a)) return b.enemy;
+    if (b.enemyCheck > 0 && stillValid(game, b.enemy, a)) return b.enemy;
     b.enemyCheck = RETARGET;
     b.enemy = enemyFor(game, b, a);
     return b.enemy;
   }
 
   function enemyRadius(enemy) {
-    return enemy.colossus || enemy.nest ? enemy.radius : Shadows.kind(enemy.kind).radius;
+    return enemy.colossus || enemy.nest || enemy.creature ? enemy.radius : Shadows.kind(enemy.kind).radius;
   }
 
-  function damageEnemy(game, enemy, amount, melee) {
-    if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount, melee);
+  // Ce qu'un être de l'armée inflige : sa sous-faction (celle de son village), pour les créatures.
+  const byBeing = (b) => ({ side: 'light', faction: b.village.faction, owner: b.village, creature: null });
+
+  function damageEnemy(game, enemy, amount, melee, b) {
+    if (enemy.creature) Vide.Creatures.hit(game, enemy, amount, b ? byBeing(b) : null);
+    else if (enemy.colossus) Vide.Colossus.hit(game, enemy.colossus, amount, melee);
     else if (enemy.work) Vide.Nests.hitWork(game, enemy.nest, enemy.work, amount);
     else if (enemy.nest) Vide.Nests.hit(game, enemy.nest, amount);
     else Shadows.damage(enemy, amount);
@@ -347,7 +373,7 @@
         b.cd = sp.cooldown;
         b.flash = 1;
         const breaker = enemy.work || (enemy.nest && !enemy.colossus) ? sp.breaker || 1 : 1;
-        damageEnemy(game, enemy, sp.damage * breaker * Colony.statsOf(game, b).armyDamage, true);
+        damageEnemy(game, enemy, sp.damage * breaker * Colony.statsOf(game, b).armyDamage, true, b);
       }
     },
 
@@ -368,7 +394,7 @@
         b.cd = sp.cooldown;
         b.flash = 1;
         const siege = enemy.colossus || enemy.nest ? sp.siege || 1 : 1;
-        fire(game, b.x, b.y, enemy, sp.damage * siege * Colony.statsOf(game, b).armyDamage, sp.siege ? 'harpoon' : 'ally', siege);
+        fire(game, b.x, b.y, enemy, sp.damage * siege * Colony.statsOf(game, b).armyDamage, sp.siege ? 'harpoon' : 'ally', siege, byBeing(b));
       }
     },
 

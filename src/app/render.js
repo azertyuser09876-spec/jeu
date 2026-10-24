@@ -409,6 +409,7 @@
     Vide.Draw.engines(r, game, dt);
     Vide.Draw.colossi(r, game, dt);
     Vide.Draw.colony(r, game);
+    Vide.Draw.creatures(r, game);
     Vide.Draw.combat(r, game, dt);
     Vide.Draw.abilities(r, game);
     drawTrail(r);

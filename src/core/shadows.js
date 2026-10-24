@@ -133,6 +133,7 @@
     if (t.type === 'building') return Structures.isWorking(t.ref) && game.state.villages.includes(t.village);
     if (t.type === 'heart') return game.state.villages.includes(t.ref);
     if (t.type === 'expedition') return game.state.expeditions.includes(t.ref);
+    if (t.type === 'creature') return t.ref.hp > 0 && t.ref.side === 'light' && game.creatures.list.includes(t.ref);
     return false;
   }
 
@@ -161,6 +162,7 @@
       consider('heart', v, v.x, v.y, pref('structures'));
     }
     for (const e of game.state.expeditions) consider('expedition', e, e.x, e.y, pref('beings'));
+    for (const c of game.creatures.list) if (c.side === 'light' && c.hp > 0) consider('creature', c, c.x, c.y, pref('beings'));
 
     candidates.sort((a, b) => a.score - b.score);
     return candidates[0] || null;
@@ -168,6 +170,7 @@
 
   function reachOf(t) {
     if (t.type === 'building') return Structures.def(t.ref.type).size;
+    if (t.type === 'creature') return t.ref.radius;
     if (t.type === 'heart') return 24;
     return 8;
   }
