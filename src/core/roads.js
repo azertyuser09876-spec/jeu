@@ -1,10 +1,62 @@
 // Routes de lumière entre villages. On en planifie une depuis un village, vers le plus proche qui ne lui est pas
 // encore relié ; les bâtisseurs des deux bouts la construisent, chacun depuis son cœur.
-// État persistant : state.roads = [{ a, b, work }] (numéros des villages, a < b ; work : longueur déjà bâtie).
-// Sur une route achevée, la lumière du joueur file plus vite ; les caravanes y passent (voir trade.js).
+// État persistant : state.roads = [{ a, b, work }] (numéros des villages, a < b ; work : longueur déjà bâtie,
+// comptée sur la distance entre les deux cœurs).
+// Son tracé (route) : de chaque cœur, l'avenue la mieux tournée vers l'autre village jusqu'à sa sortie (passé son
+// enceinte, au bord du territoire) ; entre les deux sorties, une grande route droite (l'autoroute).
+// Sur une route achevée, la lumière du joueur file plus vite ; les caravanes la suivent (voir trade.js).
 (function (Vide) {
   'use strict';
-  const { CONFIG, Catalog, Villages } = Vide;
+  const { CONFIG, Catalog, Villages, Plan, Territory } = Vide;
+
+  // Sortie d'un village vers un autre : au bout de l'avenue la mieux tournée, passé son enceinte.
+  function exit(v, toward) {
+    const a = Plan.nearestAvenue(v, Math.atan2(toward.y - v.y, toward.x - v.x));
+    const walls = v.walls || [];
+    const outer = walls.length ? Vide.Walls.radius(walls[walls.length - 1]) + 50 : 0;
+    const r = Math.max(outer, Territory.radius(v) * 0.9);
+    return { x: v.x + Math.cos(a) * r, y: v.y + Math.sin(a) * r };
+  }
+
+  // Tracé de `from` à `to` : [cœur, sortie, sortie, cœur].
+  function route(from, to) {
+    return [{ x: from.x, y: from.y }, exit(from, to), exit(to, from), { x: to.x, y: to.y }];
+  }
+
+  function pathLength(points) {
+    let len = 0;
+    for (let i = 1; i < points.length; i++) len += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    return len;
+  }
+
+  // Point d'un tracé, à la fraction f (0 à 1) de sa longueur.
+  function along(points, f) {
+    let left = Math.max(0, Math.min(1, f)) * pathLength(points);
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (left <= len || i === points.length - 1) {
+        const k = len > 0 ? Math.min(1, left / len) : 0;
+        return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      }
+      left -= len;
+    }
+    return { x: points[0].x, y: points[0].y };
+  }
+
+  // Le morceau d'un tracé entre les fractions f0 et f1 de sa longueur.
+  function slice(points, f0, f1) {
+    const total = pathLength(points);
+    const s0 = Math.max(0, f0) * total, s1 = Math.min(1, f1) * total;
+    const out = [along(points, f0)];
+    let at = 0;
+    for (let i = 1; i < points.length; i++) {
+      at += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      if (at > s0 && at < s1) out.push({ x: points[i].x, y: points[i].y });
+    }
+    out.push(along(points, f1));
+    return out;
+  }
 
   function ends(state, road) {
     return [Villages.byId(state, road.a), Villages.byId(state, road.b)];
@@ -89,7 +141,9 @@
   function onRoad(state, x, y) {
     for (const r of state.roads) {
       const [a, b] = ends(state, r);
-      if (a && b && r.work >= Math.hypot(a.x - b.x, a.y - b.y) && toSegment(x, y, a, b) <= CONFIG.roads.near) return true;
+      if (!a || !b || r.work < Math.hypot(a.x - b.x, a.y - b.y)) continue;
+      const path = route(a, b);
+      for (let i = 1; i < path.length; i++) if (toSegment(x, y, path[i - 1], path[i]) <= CONFIG.roads.near) return true;
     }
     return false;
   }
@@ -130,5 +184,8 @@
     },
   });
 
-  Vide.Roads = { ends, length, isDone, between, neighbors, candidate, cost, plan, advance, toSegment, onRoad };
+  Vide.Roads = {
+    ends, length, isDone, between, neighbors, candidate, cost, plan, advance, toSegment, onRoad,
+    exit, route, pathLength, along, slice,
+  };
 })(globalThis.Vide);

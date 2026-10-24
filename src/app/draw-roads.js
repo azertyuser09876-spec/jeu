@@ -1,14 +1,30 @@
 // Dessin des routes de lumière entre villages : le tracé prévu en pointillés, la partie bâtie qui avance
-// depuis chaque cœur, et, sur une route achevée, de petites lueurs qui la parcourent.
+// depuis chaque cœur (le long des avenues, puis la grande route entre les portes), et, sur une route achevée, de
+// petites lueurs qui la parcourent ; les caravanes en suivent le tracé.
 (function (Vide) {
   'use strict';
   const { Render, Roads } = Vide;
 
-  function segment(ctx, a, b, from, to) {
-    const dx = b.x - a.x, dy = b.y - a.y;
+  function polyline(ctx, points) {
     ctx.beginPath();
-    ctx.moveTo(a.x + dx * from, a.y + dy * from);
-    ctx.lineTo(a.x + dx * to, a.y + dy * to);
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.stroke();
+  }
+
+  // Les deux bords d'un tracé, à `w` de part et d'autre (segment par segment).
+  function edges(ctx, points, w) {
+    ctx.beginPath();
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < 1e-6) continue;
+      const nx = (-(b.y - a.y) / len) * w, ny = ((b.x - a.x) / len) * w;
+      for (const k of [-1, 1]) {
+        ctx.moveTo(a.x + nx * k, a.y + ny * k);
+        ctx.lineTo(b.x + nx * k, b.y + ny * k);
+      }
+    }
     ctx.stroke();
   }
 
@@ -16,11 +32,13 @@
     const { ctx } = r;
     const { state } = game;
     const s = r.camera.scale;
+    ctx.lineJoin = 'round';
     for (const road of state.roads) {
       const [a, b] = Roads.ends(state, road);
       if (!a || !b) continue;
-      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-      const half = Math.min(0.5, road.work / len / 2); // chaque bout bâtit sa moitié
+      const path = Roads.route(a, b);
+      const len = Roads.pathLength(path) || 1;
+      const half = Math.min(0.5, road.work / (Roads.length(state, road) || 1) / 2); // chaque bout bâtit sa moitié
       const done = half >= 0.5;
 
       if (!done) {
@@ -28,26 +46,37 @@
         ctx.strokeStyle = '#ffeacc';
         ctx.lineWidth = 1 / s;
         ctx.setLineDash([6 / s, 10 / s]);
-        segment(ctx, a, b, half, 1 - half);
+        polyline(ctx, Roads.slice(path, half, 1 - half));
         ctx.setLineDash([]);
       }
       for (const [from, to] of [[0, half], [1 - half, 1]]) {
         if (to <= from) continue;
-        ctx.globalAlpha = 0.07;
+        const part = Roads.slice(path, from, to);
+        // Une grande route : un large voile, ses deux bords, et des marques au milieu.
+        ctx.globalAlpha = 0.06;
         ctx.strokeStyle = '#fff1d8';
-        ctx.lineWidth = 12 / s;
-        segment(ctx, a, b, from, to);
-        ctx.globalAlpha = done ? 0.38 : 0.3;
-        ctx.lineWidth = 1.4 / s;
-        segment(ctx, a, b, from, to);
+        ctx.lineWidth = 26;
+        polyline(ctx, part);
+        ctx.globalAlpha = done ? 0.05 : 0.03;
+        ctx.lineWidth = 12;
+        polyline(ctx, part);
+        ctx.globalAlpha = done ? 0.34 : 0.24;
+        ctx.lineWidth = 1.2 / s;
+        edges(ctx, part, 6.5);
+        ctx.globalAlpha = done ? 0.22 : 0.15;
+        ctx.lineWidth = 1 / s;
+        ctx.setLineDash([10, 14]);
+        polyline(ctx, part);
+        ctx.setLineDash([]);
       }
       if (done) {
-        // Des lueurs qui vont et viennent, régulièrement espacées.
+        // Des lueurs qui vont et viennent, chacune sur sa voie, régulièrement espacées.
         const n = Math.max(2, Math.floor(len / 260));
         for (let k = 0; k < n; k++) {
           const p = (r.time * 60 / len + k / n) % 1;
           const q = k % 2 ? p : 1 - p;
-          Render.drawGlow(ctx, r.glows.light, a.x + (b.x - a.x) * q, a.y + (b.y - a.y) * q, 7, 0.35);
+          const at = Roads.along(path, q);
+          Render.drawGlow(ctx, r.glows.light, at.x, at.y, 7, 0.35);
         }
       }
     }
@@ -122,8 +151,7 @@
   function drawCaravans(r, game) {
     const { ctx } = r;
     for (const c of game.trade.caravans) {
-      const k = Math.min(1, c.t / c.duration);
-      const x = c.from.x + (c.to.x - c.from.x) * k, y = c.from.y + (c.to.y - c.from.y) * k;
+      const { x, y } = Roads.along(Roads.route(c.from, c.to), c.t / c.duration);
       const bob = Math.sin(r.time * 5 + c.duration) * 2;
       Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 18, 0.55);
       Render.drawGlow(ctx, glowOf(r, c.kind), x, y + bob, 6, 1);

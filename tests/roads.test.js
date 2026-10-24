@@ -73,6 +73,37 @@
     assert.ok(travel(true) > travel(false) * 1.4);
   });
 
+  test('une route part de chaque cœur par l’avenue la mieux tournée, passe la porte, puis file droit vers l’autre', () => {
+    const state = State.create(4);
+    const a = village(state, { radius: 520 });
+    const b = village(state, { x: 2600, y: 900, radius: 400 });
+    const w = Vide.Walls.plan(a);
+    w.work = Vide.Walls.workOf(w);
+    const path = Roads.route(a, b);
+    assert.equal(path.length, 4);
+    assert.deepEqual([path[0].x, path[0].y, path[3].x, path[3].y], [a.x, a.y, b.x, b.y]);
+    // La sortie : sur une avenue (donc par une porte), passé l'enceinte ; l'avenue la mieux tournée vers l'autre.
+    const out = path[1];
+    const angle = Math.atan2(out.y - a.y, out.x - a.x);
+    assert.near(Vide.Plan.offAvenue(a, angle), 0, 1e-9);
+    assert.ok(Math.hypot(out.x - a.x, out.y - a.y) > Vide.Walls.radius(w));
+    const toward = Math.atan2(b.y - a.y, b.x - a.x);
+    assert.ok(Math.abs(Math.atan2(Math.sin(angle - toward), Math.cos(angle - toward))) <= Math.PI / Vide.Plan.AVENUES + 1e-9);
+    assert.near(Vide.Plan.offAvenue(b, Math.atan2(path[2].y - b.y, path[2].x - b.x)), 0, 1e-9);
+    // Le long du tracé, une route achevée fait filer la lumière ; à côté, non.
+    const road = { a: a.id, b: b.id, work: 0 };
+    road.work = Roads.length(state, road);
+    state.roads.push(road);
+    for (const f of [0.1, 0.5, 0.9]) {
+      const p = Roads.along(path, f);
+      assert.ok(Roads.onRoad(state, p.x, p.y), `${f}`);
+    }
+    const mid = Roads.along(path, 0.5);
+    assert.ok(!Roads.onRoad(state, mid.x + 300, mid.y - 900));
+    // Morceaux et points d'un tracé.
+    assert.near(Roads.pathLength(Roads.slice(path, 0.2, 0.7)), Roads.pathLength(path) * 0.5, 1e-6);
+  });
+
   test('pendant l’absence, les routes avancent', () => {
     const { state, a, b } = three();
     const road = Roads.plan(state, a, b);
