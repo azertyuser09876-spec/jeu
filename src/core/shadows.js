@@ -195,9 +195,14 @@
       const k = kind(s.kind);
       s.age += dt;
       // Dans un territoire, la lumière ronge lentement les ombres : une marée finit toujours par s'éteindre.
+      // Dans le blanc, bien plus vite.
       const over = Villages.at(state, s.x, s.y);
       s.burning = Boolean(over);
-      if (over) s.hp -= c.territoryBurn * Villages.statsOf(game, over).burn * dt;
+      if (over) {
+        const white = Territory.whiteOf(over, Territory.cellOf(s.x), Territory.cellOf(s.y));
+        const burn = 1 + (CONFIG.territory.whiteBurn - 1) * Math.max(0, white);
+        s.hp -= c.territoryBurn * Villages.statsOf(game, over).burn * burn * dt;
+      }
       s.cd = Math.max(0, s.cd - dt);
       s.hitFlash = Math.max(0, s.hitFlash - dt * 4);
       s.retarget -= dt;

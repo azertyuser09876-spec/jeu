@@ -32,7 +32,7 @@
       const villages = [];
       if (territory && territory.lit === true) {
         villages.push({
-          id: 1, type: 'jardins', x: 0, y: 0, area: territory.area,
+          id: 1, type: 'jardins', x: 0, y: 0, area: territory.area, cells: [],
           beings: beings || {}, buildings: buildings || [], rate: colonyRate || 0,
         });
       }
@@ -168,7 +168,7 @@
     const village = {
       id: raw.id, type, x: raw.x, y: raw.y,
       area: Math.max(positive(raw.area, start), start),
-      beings: {}, buildings: [], rate: positive(raw.rate, 0),
+      cells: [], beings: {}, buildings: [], rate: positive(raw.rate, 0),
     };
     const beings = isObject(raw.beings) ? raw.beings : {};
     for (const sp of Vide.SPECIES) {
@@ -184,6 +184,19 @@
       if (b.broken === true && building.work >= def.work) building.broken = true;
       village.buildings.push(building);
     }
+    // Forme : cellules entières, sans doublon, blanc de 0 à 100 ; jamais plus que la surface n'en permet.
+    // Ce qui manque (sauvegarde ancienne ou abîmée) repousse aussitôt à partir du cœur.
+    const cells = Array.isArray(raw.cells) ? raw.cells : [];
+    const max = Vide.Territory.targetCells(village);
+    const seen = new Set();
+    for (let k = 0; k + 2 < cells.length && village.cells.length / 3 < max; k += 3) {
+      const [i, j, w] = [cells[k], cells[k + 1], cells[k + 2]];
+      if (!Number.isInteger(i) || !Number.isInteger(j) || Math.abs(j) >= 1048576) continue;
+      if (seen.has(`${i},${j}`)) continue;
+      seen.add(`${i},${j}`);
+      village.cells.push(i, j, Number.isFinite(w) ? Math.round(Math.min(100, Math.max(0, w))) : 0);
+    }
+    Vide.Territory.grow(village);
     return village;
   }
 

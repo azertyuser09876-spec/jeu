@@ -169,13 +169,17 @@
       game.glow = Math.min(1, game.glow + 0.25 * harvest.count);
     }
 
-    if (state.villages.length > game.villageCount) {
-      const v = state.villages[state.villages.length - 1];
-      emit(game, 'village', { village: v.type, x: v.x, y: v.y, first: game.villageCount === 0 });
+    for (let k = game.villageCount; k < state.villages.length; k++) {
+      const v = state.villages[k];
+      emit(game, 'village', { village: v.type, x: v.x, y: v.y, first: k === 0 });
     }
     game.villageCount = state.villages.length;
     let radiated = 0;
-    for (const v of state.villages) radiated += Vide.Territory.advance(v, Vide.Villages.statsOf(game, v), dt) * mult;
+    for (const v of state.villages) {
+      const local = Vide.Villages.statsOf(game, v);
+      radiated += Vide.Territory.advance(v, local, dt) * mult;
+      Vide.Territory.whiten(v, local, dt);
+    }
     if (radiated > 0) {
       gainLight(game, radiated);
       gained += radiated;

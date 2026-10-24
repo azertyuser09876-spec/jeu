@@ -139,4 +139,146 @@
     assert.equal(report.radiusAfter, 0);
     assert.equal(Offline.worthShowing(report), false);
   });
+
+  // --- Forme (grille de cellules) ---
+
+  function cellsOf(v) {
+    const list = [];
+    for (let k = 0; k < v.cells.length; k += 3) list.push({ i: v.cells[k], j: v.cells[k + 1], w: v.cells[k + 2] });
+    return list;
+  }
+
+  test('la forme suit la surface : une cellule par 40×40, en partant du cœur, d’un seul tenant', () => {
+    const state = State.create(1);
+    const v = village(state, { x: 1000, y: 333 });
+    assert.equal(v.cells[0], Territory.cellOf(1000));
+    assert.equal(v.cells[1], Territory.cellOf(333));
+    Territory.advance(v, Villages.local(state, v), 3000);
+    assert.equal(v.cells.length / 3, Territory.targetCells(v));
+    // Toutes les cellules sont reliées au cœur.
+    const cells = cellsOf(v);
+    const seen = new Set([`${cells[0].i},${cells[0].j}`]);
+    const queue = [cells[0]];
+    while (queue.length) {
+      const c = queue.pop();
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k = `${c.i + di},${c.j + dj}`;
+        if (!seen.has(k) && Territory.has(v, c.i + di, c.j + dj)) {
+          seen.add(k);
+          queue.push({ i: c.i + di, j: c.j + dj });
+        }
+      }
+    }
+    assert.equal(seen.size, cells.length);
+  });
+
+  test('la forme est organique mais déterministe', () => {
+    const make = () => {
+      const state = State.create(1);
+      const v = village(state, { radius: 400 });
+      return v.cells.join(',');
+    };
+    assert.equal(make(), make());
+    // Ni un disque parfait : certaines cellules dépassent le rayon équivalent, d'autres manquent en deçà.
+    const state = State.create(1);
+    const v = village(state, { radius: 400 });
+    const R = Territory.radius(v);
+    const out = cellsOf(v).filter((c) => Math.hypot((c.i + 0.5) * 40, (c.j + 0.5) * 40) > R + 20).length;
+    assert.ok(out > 0, 'un bord irrégulier');
+  });
+
+  test('le territoire pousse vers ses bâtiments', () => {
+    const state = State.create(1);
+    const v = village(state, { radius: 200 });
+    v.buildings.push({ type: 'phare', x: 450, y: 0, work: 0 });
+    v.area = Math.PI * 400 * 400;
+    Territory.grow(v);
+    const east = cellsOf(v).filter((c) => c.i > 0).length;
+    const west = cellsOf(v).filter((c) => c.i < -1).length;
+    assert.ok(east > west * 1.15, `${east} à l’est, ${west} à l’ouest`);
+    assert.ok(Territory.contains(v, 430, 0), 'le phare finit dans le territoire');
+  });
+
+  test('le cœur blanchit d’abord, puis le blanc se répand lentement, sans jamais toucher le bord', () => {
+    const state = State.create(1);
+    const v = village(state, { radius: 500 });
+    const stats = Villages.local(state, v);
+    const white = (x, y) => Territory.whiteOf(v, Territory.cellOf(x), Territory.cellOf(y));
+    Territory.whiten(v, stats, CONFIG.territory.whiteTime / 2);
+    assert.near(white(0, 0), 0.5, 0.011);
+    assert.equal(white(40, 0), 0, 'les voisines attendent que le cœur soit tout blanc');
+    Territory.whiten(v, stats, CONFIG.territory.whiteTime / 2);
+    assert.equal(white(0, 0), 1);
+    Territory.whiten(v, stats, CONFIG.territory.whiteTime * 30);
+    const R = Territory.radius(v);
+    for (const c of cellsOf(v)) {
+      const d = Math.hypot((c.i + 0.5) * 40, (c.j + 0.5) * 40);
+      if (c.w > 0) assert.ok(d <= R * CONFIG.territory.whiteReach * 1.2 + 1, `blanc trop loin : ${d}`);
+    }
+    assert.ok(Territory.whiteness(v) > 0.15 && Territory.whiteness(v) < CONFIG.territory.whiteReach ** 2 + 0.05);
+  });
+
+  test('pendant l’absence, le blanc avance comme en jeu', () => {
+    const make = () => {
+      const state = State.create(1);
+      const v = village(state, { radius: 450 });
+      return { v, stats: Villages.local(state, v) };
+    };
+    const a = make(), b = make();
+    Territory.whiten(a.v, a.stats, 3600);
+    for (let i = 0; i < 3600; i++) Territory.whiten(b.v, b.stats, 1);
+    assert.near(Territory.whiteness(a.v), Territory.whiteness(b.v), 0.02);
+  });
+
+  test('dans le blanc, les ombres brûlent plus vite', () => {
+    const burn = (whiteTime) => {
+      const state = State.create(9);
+      const v = village(state, { radius: 400 });
+      Territory.whiten(v, Villages.local(state, v), whiteTime);
+      state.player.x = 50000;
+      const game = Sim.create(state);
+      const s = Vide.Shadows.spawn(game, 'massive', 5, 5, 'roam');
+      const hp = s.hp;
+      Vide.Shadows.update(game, 0.1);
+      return hp - s.hp;
+    };
+    assert.near(burn(CONFIG.territory.whiteTime * 2), CONFIG.territory.whiteBurn * burn(0), 1e-9);
+  });
+
+  test('le contour des cellules forme des boucles fermées', () => {
+    const v = { id: 1, x: 0, y: 0, area: 0, cells: [], buildings: [] };
+    v.cells.push(0, 0, 0);
+    assert.deepEqual(Territory.outline(v).map((l) => l.length), [4]);
+    v.cells.push(1, 0, 0, 1, 1, 100); // un L
+    assert.deepEqual(Territory.outline(v).map((l) => l.length), [6]);
+    assert.deepEqual(Territory.outline(v, 50).map((l) => l.length), [4], 'contour du blanc seulement');
+    // Un anneau : un bord extérieur et un trou.
+    const ring = { id: 2, x: 0, y: 0, area: 0, cells: [], buildings: [] };
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (i !== 1 || j !== 1) ring.cells.push(i, j, 0);
+    assert.equal(Territory.outline(ring).length, 2);
+  });
+
+  test('un grand territoire se dessine vite (taille de fin de partie)', () => {
+    const state = State.create(1);
+    const t0 = Date.now();
+    const v = village(state, { radius: 2000 });
+    const stats = Villages.local(state, v);
+    Territory.whiten(v, stats, 4 * 3600);
+    Territory.outline(v);
+    assert.equal(v.cells.length / 3, Territory.targetCells(v));
+    assert.ok(Date.now() - t0 < 3000, `${Date.now() - t0} ms`);
+  });
+
+  test('les cellules sauvegardées sont relues et nettoyées ; ce qui manque repousse', () => {
+    const { Save } = Vide;
+    const area = Math.PI * 200 * 200;
+    const raw = { id: 1, x: 0, y: 0, area, cells: [0, 0, 150, 0, 0, 3, 1, 0, -5, 2.5, 1, 0, 'a', 2, 0, 1, 1] };
+    const v = Save.sanitize({ villages: [raw] }).villages[0];
+    assert.deepEqual(v.cells.slice(0, 6), [0, 0, 100, 1, 0, 0]);
+    assert.equal(v.cells.length / 3, Territory.targetCells(v));
+    const tooMany = [];
+    for (let i = 0; i < 100; i++) tooMany.push(i, 0, 0);
+    const small = Save.sanitize({ villages: [{ id: 1, x: 0, y: 0, cells: tooMany }] }).villages[0];
+    assert.equal(small.cells.length / 3, Territory.targetCells(small));
+  });
 })();

@@ -150,10 +150,28 @@
       const tint = Vide.Villages.type(v.type).tint;
       ctx.fillStyle = rgba(tint, 0.16);
       ctx.strokeStyle = rgba(tint, 0.5);
+      // La forme réelle du territoire (contour de ses cellules) ; un simple point s'il est minuscule à l'échelle.
       ctx.beginPath();
-      ctx.arc(X(v.x), Y(v.y), Math.max(3, Territory.radius(v) * scale), 0, Math.PI * 2);
-      ctx.fill();
+      if (Territory.radius(v) * scale < 3) {
+        ctx.arc(X(v.x), Y(v.y), 3, 0, Math.PI * 2);
+      } else {
+        for (const loop of Territory.outline(v)) {
+          ctx.moveTo(X(loop[0][0]), Y(loop[0][1]));
+          for (const [x, y] of loop) ctx.lineTo(X(x), Y(y));
+          ctx.closePath();
+        }
+      }
+      ctx.fill('evenodd');
       ctx.stroke();
+      // Le blanc du cœur.
+      ctx.fillStyle = 'rgba(240, 245, 255, 0.35)';
+      ctx.beginPath();
+      for (const loop of Territory.outline(v, 60)) {
+        ctx.moveTo(X(loop[0][0]), Y(loop[0][1]));
+        for (const [x, y] of loop) ctx.lineTo(X(x), Y(y));
+        ctx.closePath();
+      }
+      ctx.fill('evenodd');
       ctx.fillStyle = 'rgba(255, 220, 170, 0.8)';
       for (const b of v.buildings) ctx.fillRect(X(b.x) - 1, Y(b.y) - 1, 2, 2);
       ctx.fillStyle = '#fff';

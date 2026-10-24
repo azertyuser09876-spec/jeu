@@ -12,7 +12,11 @@
     const village = root.Vide.Villages.found(state, o.type || 'jardins');
     state.player.x = px;
     state.player.y = py;
-    if (o.radius) village.area = Math.PI * o.radius * o.radius;
+    if (o.radius) {
+      village.area = Math.PI * o.radius * o.radius;
+      village.cells = [];
+      root.Vide.Territory.grow(village);
+    }
     Object.assign(village.beings, o.beings || {});
     return village;
   };

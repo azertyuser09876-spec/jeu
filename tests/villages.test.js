@@ -141,7 +141,7 @@
     game.field.particles.length = 0;
     for (const p of game.garden.particles) {
       const home = p.village === a.id ? a : b;
-      assert.ok(Math.hypot(p.x - home.x, p.y - home.y) <= 250, 'chaque particule naît dans son village');
+      assert.ok(Territory.contains(home, p.x, p.y), 'chaque particule naît dans son village');
     }
     assert.ok(game.garden.particles.some((p) => p.village === b.id));
     run(game, 20);

@@ -170,15 +170,12 @@
     return d;
   }
 
+  // Flânerie : vers un point au hasard du territoire de son village.
   function wander(game, b, speed, dt) {
-    const v = b.village;
-    const radius = Territory.radius(v) * 0.7;
     b.wanderTime -= dt;
     if (!b.wander || b.wanderTime <= 0 || Math.hypot(b.wander.x - b.x, b.wander.y - b.y) < 10) {
       const r = game.colony.rng;
-      const angle = r() * Math.PI * 2;
-      const dist = Math.max(30, radius) * Math.sqrt(r());
-      b.wander = { x: v.x + Math.cos(angle) * dist, y: v.y + Math.sin(angle) * dist };
+      b.wander = Territory.randomPoint(b.village, r);
       b.wanderTime = 3 + r() * 4;
     }
     steer(b, b.wander.x, b.wander.y, speed * 0.4, dt);

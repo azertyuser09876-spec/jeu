@@ -31,7 +31,7 @@
     assert.ok(g.length > 10);
     for (const p of g) {
       const d = Math.hypot(p.x, p.y);
-      assert.ok(d <= 300 && d >= CONFIG.garden.foyerGap, `distance ${d}`);
+      assert.ok(Territory.contains(v, p.x, p.y) && d >= CONFIG.garden.foyerGap, `distance ${d}`);
     }
   });
 

@@ -28,6 +28,7 @@
     for (const v of state.villages) {
       const local = Villages.local(state, v, stats);
       report.radiated += Territory.advance(v, local, applied) * stats.lightMult;
+      Territory.whiten(v, local, applied);
       report.built.push(...Vide.Structures.advanceOffline(v, local, applied));
       // Les êtres continuent leur travail au rythme mesuré avant le départ.
       if (Object.keys(v.beings).length) report.brought += v.rate * applied * stats.lightMult;

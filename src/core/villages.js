@@ -7,6 +7,7 @@
 //   type       identifiant de VILLAGE_TYPES (stocké dans les sauvegardes : ne jamais le renommer)
 //   x, y       position du cœur
 //   area       surface du territoire (unités²)
+//   cells      forme du territoire : [i, j, blanc, …] (voir territory.js)
 //   beings     nombre d'êtres par espèce
 //   buildings  bâtiments : { type, x, y, work, broken? }
 //   rate       lumière/s rapportée par ses êtres (mesurée, sert pendant l'absence)
@@ -55,10 +56,10 @@
       id: 'sanctuaire',
       name: 'Sanctuaire',
       desc: 'Fonder ici un sanctuaire : ta lumière et les êtres s’y soignent deux fois plus vite, '
-        + 'et ses êtres sont plus résistants.',
+        + 'ses êtres sont plus résistants, et son cœur blanchit plus vite.',
       effectText: 'soins ×2 · êtres ×1,3',
       tint: [255, 205, 238],
-      modify: (l) => { l.regen *= 2; l.beingHp *= 1.3; },
+      modify: (l) => { l.regen *= 2; l.beingHp *= 1.3; l.whitening *= 1.6; },
     },
   ];
 
@@ -124,9 +125,10 @@
 
   // Celles du joueur (améliorations, souvenirs, colosses), puis les bâtiments du village, puis son type.
   // Clés propres aux villages : structureArmor (les coups sur ses bâtiments sont divisés d'autant),
-  // burn (brûlure des ombres dans son territoire), pulseBoost (recharge de la pulsation), regen (soins).
+  // burn (brûlure des ombres dans son territoire), pulseBoost (recharge de la pulsation), regen (soins),
+  // whitening (vitesse du blanc).
   function local(state, village, stats) {
-    const l = { ...(stats || Vide.Stats.compute(state)), structureArmor: 1, burn: 1, pulseBoost: 1, regen: 1 };
+    const l = { ...(stats || Vide.Stats.compute(state)), structureArmor: 1, burn: 1, pulseBoost: 1, regen: 1, whitening: 1 };
     Vide.Structures.modify(village, l);
     type(village.type).modify(l);
     return l;
@@ -173,10 +175,12 @@
       x: state.player.x,
       y: state.player.y,
       area: Math.PI * stats.startRadius ** 2,
+      cells: [],
       beings: {},
       buildings: [],
       rate: 0,
     };
+    Territory.grow(village);
     if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;
     state.villages.push(village);
     return village;

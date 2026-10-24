@@ -16,17 +16,17 @@
     return Math.min(g.max, Math.round(g.density * village.area * stats.gardenDensity));
   }
 
+  // Une particule naît en un point du territoire, jamais collée au cœur. La lumière dorée est plus fréquente
+  // là où le territoire a blanchi.
   function spawn(garden, village, visible) {
     const g = CONFIG.garden;
     const r = garden.rng;
-    const radius = Territory.radius(village) * g.margin;
-    if (radius <= g.foyerGap) return null;
+    if (Territory.radius(village) <= g.foyerGap) return null;
     for (let tries = 0; tries < 10; tries++) {
-      const angle = r() * Math.PI * 2;
-      const dist = radius * Math.sqrt(r());
-      if (dist < g.foyerGap) continue;
-      const x = village.x + Math.cos(angle) * dist, y = village.y + Math.sin(angle) * dist;
-      const p = Field.place(garden, x, y, r() < g.rareChance, visible);
+      const at = Territory.randomPoint(village, r);
+      if (Math.hypot(at.x - village.x, at.y - village.y) < g.foyerGap) continue;
+      const rare = r() < g.rareChance * (1 + (CONFIG.territory.whiteRare - 1) * at.white);
+      const p = Field.place(garden, at.x, at.y, rare, visible);
       p.vx *= 0.3; // le jardin est calme : presque aucune dérive
       p.vy *= 0.3;
       p.claimedBy = 0; // identifiant de la lueur qui la vise (0 : personne)

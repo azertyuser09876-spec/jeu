@@ -53,6 +53,17 @@
       yield: 4e-5,           // lumière par seconde et par unité² de territoire
       insidePulseBoost: 2,   // la pulsation se recharge plus vite dans le territoire
       offlineCap: 4 * 3600,  // durée d'absence prise en compte (avant améliorations)
+      // Forme : une grille de cellules, ajoutées une à une là où le village attire sa lumière.
+      cell: 40,              // côté d'une cellule (unités)
+      noise: 0.35,           // irrégularité du bord
+      pull: 0.6,             // attrait des bâtiments (le territoire pousse vers eux)
+      pullRange: 160,
+      // Blanc : les cellules pleines blanchissent lentement depuis le cœur, et le blanc se répand plus lentement
+      // encore, sans dépasser une part du rayon.
+      whiteTime: 300,        // secondes pour qu'une cellule blanchisse entièrement
+      whiteReach: 0.6,       // le blanc reste dans cette fraction du rayon
+      whiteBurn: 3,          // dans le blanc, les ombres brûlent d'autant plus
+      whiteRare: 2,          // … et la lumière dorée naît d'autant plus souvent
     },
 
     // Villages : le joueur les fonde où il veut. Le premier est bon marché, les suivants de plus en plus chers.
@@ -76,7 +87,6 @@
       density: 0.00015,  // particules par unité² de territoire
       max: 300,
       refillTime: 8,
-      margin: 0.92,      // fraction du rayon où elles peuvent naître
       foyerGap: 45,      // pas de particule collée au cœur du village
       rareChance: 0.03,
     },

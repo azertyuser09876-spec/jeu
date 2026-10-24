@@ -3,13 +3,7 @@
   'use strict';
   const { Render, Territory, Villages, util } = Vide;
 
-  const EDGE_POINTS = 140;
   const MOTE_CELL = 80;
-
-  // Rayon du bord à l'angle a : légère ondulation lente pour un contour organique.
-  function edge(radius, a, t) {
-    return radius * (1 + 0.016 * Math.sin(5 * a + t * 0.15) + 0.007 * Math.sin(11 * a - t * 0.1));
-  }
 
   // Teinte du territoire : le bleu pâle de la lumière, nuancé par le type du village.
   function mix(tint, k) {
@@ -17,42 +11,91 @@
     return base.map((c, i) => Math.round(c + (tint[i] - c) * k)).join(',');
   }
 
+  // Lissage de Chaikin : coupe chaque coin, trois fois, pour un bord organique au lieu des marches de la grille.
+  function smooth(loop, passes) {
+    let pts = loop;
+    for (let p = 0; p < passes; p++) {
+      const out = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        out.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+        out.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+      }
+      pts = out;
+    }
+    return pts;
+  }
+
+  function toPath(loops) {
+    const path = new Path2D();
+    for (const loop of loops) {
+      const pts = smooth(loop, 3);
+      path.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) path.lineTo(pts[i][0], pts[i][1]);
+      path.closePath();
+    }
+    return path;
+  }
+
+  // Formes d'un village (contour, blanc), recalculées quand ses cellules changent (au plus 4 fois par seconde).
+  const shapes = new WeakMap();
+
+  function shapeOf(r, v) {
+    let sum = 0;
+    for (let k = 2; k < v.cells.length; k += 3) sum += v.cells[k];
+    const sig = v.cells.length * 1e7 + sum;
+    const known = shapes.get(v);
+    if (known && (known.sig === sig || r.time - known.at < 0.25)) return known;
+    const loops = Territory.outline(v);
+    let extent = 0;
+    for (const loop of loops) for (const [x, y] of loop) extent = Math.max(extent, Math.hypot(x - v.x, y - v.y));
+    const shape = {
+      sig,
+      at: r.time,
+      extent,
+      area: toPath(loops),
+      white: toPath(Territory.outline(v, 40)),
+      core: toPath(Territory.outline(v, 90)),
+    };
+    shapes.set(v, shape);
+    return shape;
+  }
+
   function drawArea(r, v) {
     const { ctx } = r;
-    const t = r.time;
-    const radius = Territory.radius(v);
     const tint = Villages.type(v.type).tint;
-    ctx.beginPath();
-    for (let i = 0; i <= EDGE_POINTS; i++) {
-      const a = (i / EDGE_POINTS) * Math.PI * 2;
-      const d = edge(radius, a, t + v.id * 10);
-      if (i === 0) ctx.moveTo(v.x + Math.cos(a) * d, v.y + Math.sin(a) * d);
-      else ctx.lineTo(v.x + Math.cos(a) * d, v.y + Math.sin(a) * d);
-    }
-    ctx.closePath();
+    const shape = shapeOf(r, v);
+    const extent = Math.max(60, shape.extent);
 
-    const grad = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, radius * 1.04);
+    const grad = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, extent);
     grad.addColorStop(0, `rgba(${mix(tint, 0.4)}, 0.11)`);
     grad.addColorStop(0.6, `rgba(${mix(tint, 0.3)}, 0.05)`);
     grad.addColorStop(1, `rgba(${mix(tint, 0.4)}, 0.10)`);
     ctx.globalAlpha = 1;
     ctx.fillStyle = grad;
-    ctx.fill();
+    ctx.fill(shape.area, 'evenodd');
 
-    ctx.strokeStyle = 'rgba(200, 225, 255, 0.05)';
+    // Le blanc : là où le territoire a mûri, la lumière perd sa teinte et devient pâle, presque pure.
+    ctx.fillStyle = 'rgba(235, 242, 255, 0.045)';
+    ctx.fill(shape.white, 'evenodd');
+    ctx.fill(shape.core, 'evenodd');
+    ctx.strokeStyle = 'rgba(240, 245, 255, 0.05)';
+    ctx.lineWidth = 8 / r.camera.scale;
+    ctx.stroke(shape.white);
+
+    ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.05)`;
     ctx.lineWidth = 12 / r.camera.scale;
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(210, 230, 255, 0.24)';
+    ctx.stroke(shape.area);
+    ctx.strokeStyle = `rgba(${mix(tint, 0.25)}, 0.24)`;
     ctx.lineWidth = 1.2 / r.camera.scale;
-    ctx.stroke();
+    ctx.stroke(shape.area);
   }
 
   // Petites lueurs qui dérivent dans le territoire, générées par cellules (stables, sans état).
   function drawMotes(r, v, seed) {
     const { ctx } = r;
     const b = Render.viewBounds(r, 20);
-    const radius = Territory.radius(v);
-    const r2 = radius * radius;
+    const radius = Math.max(60, shapeOf(r, v).extent);
     const x0 = Math.floor(Math.max(b.left, v.x - radius) / MOTE_CELL);
     const x1 = Math.floor(Math.min(b.right, v.x + radius) / MOTE_CELL);
     const y0 = Math.floor(Math.max(b.top, v.y - radius) / MOTE_CELL);
@@ -67,7 +110,7 @@
         const by = (cy + util.hash2(cx, cy, seed + 103)) * MOTE_CELL;
         const x = bx + Math.cos(t * 0.3 + phase) * 12;
         const y = by + Math.sin(t * 0.23 + phase) * 12;
-        if ((x - v.x) ** 2 + (y - v.y) ** 2 > r2) continue;
+        if (!Territory.contains(v, x, y)) continue;
         const twinkle = 0.5 + 0.5 * Math.sin(t * 1.3 + phase);
         Render.drawGlow(ctx, r.glows.light, x, y, 7, 0.12 + twinkle * 0.18);
       }
@@ -108,7 +151,7 @@
     const view = Render.viewBounds(r, 200);
     drawOrigin(r);
     for (const v of state.villages) {
-      const radius = Territory.radius(v);
+      const radius = Math.max(60, shapeOf(r, v).extent);
       if (v.x + radius < view.left || v.x - radius > view.right || v.y + radius < view.top || v.y - radius > view.bottom) continue;
       drawArea(r, v);
       drawMotes(r, v, state.seed + v.id * 31);
