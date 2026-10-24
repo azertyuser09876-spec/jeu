@@ -1,5 +1,24 @@
 # Historique des versions
 
+## 1.4.0 — Routes, échanges, cités
+
+- **Routes de lumière** : depuis un village, en planifier une vers le plus proche qui ne lui est pas encore
+  relié. Les bâtisseurs des deux bouts la construisent, chacun depuis son cœur. Sur une route achevée, ta
+  lumière file 60 % plus vite.
+- **Ressources et échanges** :
+  - L'**atelier** produit de la matière ◇ : un village qui en a bâtit 50 % plus vite.
+  - L'**observatoire** produit du savoir ✎ : un village qui en a grandit 25 % plus vite.
+  - Le **bastion** forme des soldats avec la réserve de son intendant, et les envoie aux villages reliés mal
+    défendus, contre de la lumière de leur réserve.
+  - Des **caravanes** visibles portent les surplus le long des routes. Sous le compteur : le village où l'on
+    est et ses ressources.
+- **Cités** : quand deux territoires se touchent, les villages fusionnent. La cité réunit tout (surface,
+  forme, êtres, bâtiments, routes), cumule leurs spécialités, et ses anciens cœurs deviennent des quartiers
+  reliés par des avenues de lumière. Chaque quartier garde sa croissance, ses places et son jardin. Un village
+  immense peut aussi ajouter une spécialité. Une cité a des contours plus nets, un bord dense comme un rempart.
+- Sauvegarde au format 14 (routes, ressources, cités).
+- 260 tests de logique, 32 vérifications navigateur.
+
 ## 1.3.0 — Autonomie et bâtiments
 
 - **L'intendant** : chaque village peut lui confier 10, 25 ou 50 % de la lumière qu'il produit. Il la dépense

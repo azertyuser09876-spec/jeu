@@ -33,6 +33,9 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Les êtres** : dans chaque village, des lueurs récoltent le jardin, des bâtisseurs choisissent où construire
   nids, prismes, phares, tours et bien d'autres ; ils se croisent, dansent, ravitaillent les chantiers.
   Confie une part de lumière à l'**intendant** d'un village : il le fait grandir seul.
+- **Routes, échanges, cités** : relie tes villages par des routes de lumière ; des caravanes y portent la
+  matière ◇ des ateliers, le savoir ✎ des observatoires, les soldats des bastions. Quand deux territoires se
+  touchent, ils fusionnent en une cité qui garde toutes leurs spécialités.
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
   (gardiens, étincelles, veilleuses) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
 - **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.

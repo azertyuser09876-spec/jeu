@@ -111,7 +111,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 2. Nouveaux bâtiments par familles (économie, vie, savoir, défense) et bâtiments propres à chaque type.
 3. Performances : grille spatiale pour des centaines d'êtres.
 
-### [ ] 1.4 — Routes, échanges, cités
+### [x] 1.4 — Routes, échanges, cités
 1. Relier des villages par des routes de lumière ; caravanes visibles.
 2. Ressources de village (matière ◇, savoir ✎, soldats) et échanges automatiques entre villages reliés.
 3. Cités : villages dont les territoires se touchent, ou village devenu énorme — plusieurs spécialisations.
