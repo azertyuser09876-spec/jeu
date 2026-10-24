@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const { test, assert, village } = VideTest;
-  const { CONFIG, State, Sim, Colossus, Engines } = Vide;
+  const { CONFIG, State, Sim, Colossus, Engines, Structures } = Vide;
   const dt = CONFIG.step;
 
   function run(game, seconds) {
@@ -142,5 +142,94 @@
     run(game, 30);
     assert.ok(Math.hypot(c.x - state.player.x, c.y - state.player.y) < 800, 'près de la lumière');
     assert.ok(state.zones.visited.length > visited + 3);
+  });
+
+  // --- La Méduse ---
+
+  test('la Méduse se fait entendre une fois l’Oiseau d’aube et la Tisseuse apaisés', () => {
+    const state = State.create(1);
+    const d = Colossus.def('meduse');
+    state.colossi.oiseau = 'tamed';
+    assert.equal(d.requires(state), false);
+    state.colossi.tisseuse = 'tamed';
+    assert.ok(d.requires(state));
+  });
+
+  test('ses sceaux ne s’ouvrent qu’au sommet de chaque pulsation', () => {
+    const { game, c } = facing('meduse', 700);
+    c.beat = 0.2;
+    assert.equal(Colossus.sealHit(game, c, 50), false);
+    assert.equal(c.seals[0].hp, c.seals[0].max);
+    assert.ok(game.events.some((e) => e.type === 'closed'));
+    c.beat = 0.85;
+    Colossus.sealHit(game, c, 50);
+    assert.equal(c.seals[0].hp, c.seals[0].max - 50);
+    // Pliée, elle reste ouverte.
+    c.beat = 0.1;
+    Colossus.hit(game, c, c.def.stagger + 1);
+    Colossus.sealHit(game, c, 10);
+    assert.equal(c.seals[0].hp, c.seals[0].max - 70);
+  });
+
+  test('elle pulse à intervalles réguliers, et avance par à-coups', () => {
+    const { state, game, c } = facing('meduse', 1300);
+    c.attackCd = 1e9;
+    c.beat = 0.95;
+    const spot = { x: state.player.x, y: state.player.y };
+    const d0 = Math.hypot(spot.x - c.x, spot.y - c.y);
+    let pulses = 0, fast = 0, slow = Infinity;
+    for (let i = 0; i < 60 * 10; i++) {
+      state.player.x = spot.x;
+      state.player.y = spot.y;
+      Sim.step(game, dt, Sim.emptyInput());
+      if (c.pulsed) pulses++;
+      const v = Math.hypot(c.vx, c.vy);
+      if (i > 30) {
+        fast = Math.max(fast, v);
+        slow = Math.min(slow, v);
+      }
+    }
+    const period = Vide.Beasts.medusa.period(c);
+    assert.ok(Math.abs(pulses - Math.round(10 / period)) <= 1, `${pulses} pulsations`);
+    assert.ok(fast > slow * 3, 'des à-coups');
+    assert.ok(Math.hypot(spot.x - c.x, spot.y - c.y) < d0 - 100, 'elle s’approche');
+  });
+
+  test('son fouet frappe le long de ses trois lignes', () => {
+    const { state, game, c } = facing('meduse', 500);
+    c.attackCd = 1e9;
+    game.vitality.invulnerable = 0;
+    Colossus.startAttack(game, c, 'lash');
+    const line = c.attack.lines[1];
+    const spot = { x: (line.a.x + line.b.x) / 2, y: (line.a.y + line.b.y) / 2 };
+    const hp = game.vitality.hp;
+    for (let i = 0; i < Math.round((c.attack.telegraph + 0.1) / dt); i++) {
+      state.player.x = spot.x;
+      state.player.y = spot.y;
+      Sim.step(game, dt, Sim.emptyInput());
+    }
+    assert.ok(game.vitality.hp <= hp - Colossus.ATTACKS.lash.damage + 1e-9);
+  });
+
+  test('apaisée, elle flotte jusqu’au village abîmé et le répare à chaque pulsation', () => {
+    const { state, game, c } = facing('meduse', 700);
+    const v = state.villages[0];
+    const b = Structures.plan(state, v, 'nid');
+    b.work = Structures.def('nid').work;
+    Structures.damage(game, b, Structures.def('nid').hp * 0.9);
+    const hurt = Structures.hp(game, b);
+    state.colossi.meduse = 'tamed';
+    c.mode = 'resident';
+    c.calm = 1;
+    c.x = v.x + 300;
+    c.y = v.y;
+    state.player.x = -30000;
+    let mended = false;
+    for (let i = 0; i < 60 * 12; i++) {
+      Sim.step(game, dt, Sim.emptyInput());
+      mended = mended || game.events.some((e) => e.type === 'mended');
+    }
+    assert.ok(mended);
+    assert.ok(Structures.hp(game, b) > hurt, 'réparé');
   });
 })();

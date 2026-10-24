@@ -5,6 +5,8 @@
 //   Léviathan  porte : il rejoint une expédition en route et l'emporte, trois fois plus vite, hors d'atteinte des
 //              ombres.
 //   Oiseau     accompagne : il tourne au-dessus de ta lumière et révèle les régions autour de lui.
+//   Méduse     soigne : elle flotte jusqu'au village le plus abîmé ; chaque pulsation y répare les bâtiments et
+//              soigne les êtres alentour.
 // Rien n'est sauvegardé : le rôle se recalcule à chaque pas (les recherches, deux fois par seconde).
 (function (Vide) {
   'use strict';
@@ -180,7 +182,53 @@
     return { x: player.x + Math.cos(c.circle) * 320, y: player.y + Math.sin(c.circle) * 320, speed: far ? 1400 : 450 };
   }
 
-  const ROLES = { veilleur: guard, tisseuse: weave, leviathan: carry, oiseau: escort };
+  // --- Méduse ---
+
+  const MEND = { radius: 520, buildings: 60, beings: 25 };
+
+  // Le village qui a le plus besoin de soins (bâtiments abîmés, êtres blessés), ou null.
+  function neediest(game) {
+    let best = null;
+    let worst = 0;
+    for (const v of game.state.villages) {
+      let need = 0;
+      for (const b of v.buildings) {
+        if (Vide.Structures.isDone(b)) need += Vide.Structures.def(b.type).hp - Vide.Structures.hp(game, b);
+      }
+      for (const b of game.colony.beings) {
+        if (b.village === v && Vide.Colony.isActive(b) && b.hp !== null) need += Math.max(0, Vide.Colony.maxHp(game, b) - b.hp);
+      }
+      if (need > worst) {
+        worst = need;
+        best = v;
+      }
+    }
+    return best;
+  }
+
+  function mend(game, c, dt) {
+    c.roleCheck = (c.roleCheck || 0) - dt;
+    if (c.roleCheck <= 0) {
+      c.roleCheck = 2;
+      c.patient = neediest(game);
+    }
+    const v = c.patient;
+    if (!v || !game.state.villages.includes(v)) return null;
+    if (c.pulsed && Math.hypot(v.x - c.x, v.y - c.y) <= Territory.radius(v) + MEND.radius) {
+      for (const b of v.buildings) {
+        if (Math.hypot(b.x - c.x, b.y - c.y) > MEND.radius || !Vide.Structures.isDone(b)) continue;
+        if (Vide.Structures.repair(game, b, MEND.buildings)) Vide.Sim.emit(game, 'repaired', { building: b.type });
+      }
+      for (const b of game.colony.beings) {
+        if (!Vide.Colony.isActive(b) || b.hp === null || Math.hypot(b.x - c.x, b.y - c.y) > MEND.radius) continue;
+        b.hp = Math.min(Vide.Colony.maxHp(game, b), b.hp + MEND.beings);
+      }
+      Vide.Sim.emit(game, 'mended', { x: c.x, y: c.y, radius: MEND.radius });
+    }
+    return { x: v.x, y: v.y, speed: 120 };
+  }
+
+  const ROLES = { veilleur: guard, tisseuse: weave, leviathan: carry, oiseau: escort, meduse: mend };
 
   // Où va un colosse apaisé, et à quelle vitesse : { x, y, speed }, ou null (il fait sa ronde).
   function spot(game, c, dt) {
@@ -193,5 +241,5 @@
     return game.carried === exp;
   }
 
-  Vide.Allies = { ROLES, threat, unfinished, front, walking, spot, carried };
+  Vide.Allies = { ROLES, MEND, threat, unfinished, front, walking, neediest, spot, carried };
 })(globalThis.Vide);

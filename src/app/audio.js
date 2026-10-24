@@ -207,6 +207,11 @@
     tamed() {
       [0, 4, 7, 12, 16].forEach((n, i) => tone({ freq: note(n), dur: 4, gain: 0.04, attack: 0.8, delay: i * 0.15 }));
     },
+    // Une pulsation de la Méduse : un battement grave, feutré, comme sous l'eau.
+    medusa(gain) {
+      tone({ freq: 62, glideTo: 48, dur: 1.2, gain: 0.18 * gain, attack: 0.25 });
+      noise({ dur: 0.9, gain: 0.03 * gain, from: 260, type: 'lowpass' });
+    },
     // Un trait de baliste : un claquement sec, puis le sifflement du trait.
     bolt() {
       if (!throttle('bolt', 0.15)) return;
@@ -299,6 +304,11 @@
         case 'colossusAttack': play('colossusAttack'); break;
         case 'web': play('web'); break;
         case 'bolt': play('bolt'); break;
+        case 'medusaPulse': {
+          const d = Math.hypot(e.x - player.x, e.y - player.y);
+          if (d < 2000) play('medusa', 1 - d / 2000);
+          break;
+        }
         case 'chained': play('chained'); break;
         case 'engineBuilt': play('built'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;

@@ -189,7 +189,11 @@
 
   // Sceaux : rune dorée qui pulse pour l'actif, cercle pâle pour les suivants, trace pour les brisés.
   // Un sceau voilé (pas encore étudié) ne se voit pas : seule l'onde qui le frôle fait frémir un voile gris.
-  function drawSeals(r, c, state) {
+  function drawSeals(r, c, game) {
+    const { state } = game;
+    // Un sceau protégé (cloche refermée…) brille moins : ce n'est pas le moment.
+    const guard = Colossus.beast(c).guard;
+    const shut = guard && guard(game, c) === 'closed' ? 0.3 : 1;
     const { ctx } = r;
     const px = 1 / r.camera.scale;
     const k = Colossus.reach(c);
@@ -239,8 +243,8 @@
         return;
       }
       const beat = 0.6 + 0.4 * Math.sin(c.time * 4);
-      Render.drawGlow(ctx, r.glows.rare, p.x, p.y, 60 * k * beat, 0.8);
-      ctx.globalAlpha = 0.9;
+      Render.drawGlow(ctx, r.glows.rare, p.x, p.y, 60 * k * beat, 0.8 * shut);
+      ctx.globalAlpha = 0.9 * shut;
       ctx.strokeStyle = '#ffe6a8';
       ctx.lineWidth = 1.5 * px;
       ctx.beginPath();
@@ -399,6 +403,9 @@
     const { player } = game.state;
     for (const e of game.events) {
       if (e.type === 'veiled') r.veils.set(e.id, r.time);
+      // Une pulsation de la Méduse (ou ses soins) : un anneau qui s'élargit.
+      if (e.type === 'medusaPulse') r.quakes.push({ x: e.x, y: e.y, t: 0, size: 220 });
+      if (e.type === 'mended') r.quakes.push({ x: e.x, y: e.y, t: 0, size: e.radius * 0.7 });
       if (e.type === 'phase') r.shake = Math.max(r.shake || 0, 12);
       if (e.type === 'footfall') {
         r.quakes.push({ x: e.x, y: e.y, t: 0, size: 40 });
@@ -463,7 +470,7 @@
       if (custom) custom(r, c, game);
       else if (c.body.kind === 'serpent') drawSerpent(r, c);
       else drawBody(r, c);
-      if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c, game.state);
+      if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c, game);
       else if (c.id === 'tisseuse') drawWeaving(r, game, c);
     }
     drawQuakes(r, dt);

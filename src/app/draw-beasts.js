@@ -98,6 +98,65 @@
     drawEyes(r, c, (x, y) => local(x, y));
   }
 
+  // --- La Méduse ---
+
+  // Vue d'en haut : une cloche ronde aux côtes rayonnantes, au bord festonné, qui se contracte et s'ouvre ;
+  // ouverte, elle s'illumine. Ses tentacules traînent derrière elle.
+  function drawMedusa(r, c, game) {
+    const { ctx } = r;
+    const s = c.def.size;
+    const px = 1 / r.camera.scale;
+    const tint = tintOf(c);
+    const glow = glowOf(r, tint);
+    const B = c.body;
+    const M = Vide.Beasts.medusa;
+    const open = M.isOpen(c);
+    const e = c.beat * c.beat * (3 - 2 * c.beat);
+    const R = B.bell * s * (0.74 + 0.26 * e);
+
+    // Tentacules : des fils perlés.
+    for (const chain of c.tentacles) {
+      ctx.globalAlpha = 0.45;
+      line(ctx, chain, 1.6 * px, rgb(tint, 1));
+      ctx.globalAlpha = 0.08;
+      line(ctx, chain, 8 * s, rgb(tint, 1));
+      chain.forEach((p, k) => { if (k % 3 === 2) Render.drawGlow(ctx, glow, p.x, p.y, 8 * s, 0.5); });
+    }
+
+    Render.drawGlow(ctx, glow, c.x, c.y, 280 * s, open ? 0.2 : 0.1);
+    // La cloche.
+    ctx.globalAlpha = open ? 0.2 : 0.1;
+    ctx.fillStyle = rgb(tint, 1);
+    ctx.beginPath();
+    for (let a = 0; a <= 48; a++) {
+      const ang = (a / 48) * Math.PI * 2;
+      const scallop = 1 + 0.05 * Math.cos(ang * 12);
+      const x = c.x + Math.cos(ang) * R * scallop, y = c.y + Math.sin(ang) * R * scallop;
+      if (a === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = open ? 0.75 : 0.4;
+    ctx.strokeStyle = rgb(tint, 1);
+    ctx.lineWidth = 1.5 * px;
+    ctx.stroke();
+    // Côtes rayonnantes et cœur.
+    ctx.globalAlpha = open ? 0.5 : 0.25;
+    ctx.lineWidth = 1.2 * px;
+    for (let k = 0; k < 12; k++) {
+      const ang = c.angle + (k / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(c.x + Math.cos(ang) * R * 0.18, c.y + Math.sin(ang) * R * 0.18);
+      ctx.lineTo(c.x + Math.cos(ang) * R * 0.95, c.y + Math.sin(ang) * R * 0.95);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, R * 0.45, 0, Math.PI * 2);
+    ctx.stroke();
+    Render.drawGlow(ctx, glow, c.x, c.y, R * (open ? 0.9 : 0.5), open ? 0.85 : 0.45);
+  }
+
   // --- Attaques ---
 
   function band(ctx, from, dir, length, width, alpha, color) {
@@ -138,7 +197,7 @@
     }
   }
 
-  Vide.Draw.beasts = { bird: drawBird };
+  Vide.Draw.beasts = { bird: drawBird, medusa: drawMedusa };
 
   Vide.Draw.beastAttacks = {
     // Piqué : le couloir qu'il va raser.
@@ -167,5 +226,15 @@
       }
     },
     feathers: (r, c, atk, k) => circles(r, atk, k),
+    // Fouet : trois lignes qui s'épaississent, puis claquent.
+    lash(r, c, atk, k) {
+      const w = Colossus.ATTACKS.lash.width * 2;
+      for (const l of atk.lines) {
+        const dir = Math.atan2(l.b.y - l.a.y, l.b.x - l.a.x);
+        const len = Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y);
+        band(r.ctx, l.a, dir, len, atk.phase === 'active' ? w : w * (0.2 + 0.8 * k),
+          atk.phase === 'active' ? 0.45 : 0.08 + 0.25 * k, atk.phase === 'active' ? '#ffd9f0' : '#6b3fd1');
+      }
+    },
   };
 })(globalThis.Vide);

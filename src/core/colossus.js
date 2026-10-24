@@ -191,6 +191,7 @@
     if (at.startsWith('core:')) return c.nuclei[Number(at.slice(5))];
     if (c.body.kind === 'serpent') return c.segments[0];
     const p = c.body.points[at];
+    if (!p) return { x: c.x, y: c.y }; // (un corps sans tête : ses attaques partent de son centre)
     if (p === 'tail') {
       const tail = tailPoints(c);
       return tail[Math.floor(tail.length * 0.6)];

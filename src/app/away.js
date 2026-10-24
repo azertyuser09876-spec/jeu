@@ -175,6 +175,8 @@
     aloft: (e) => (seen.aloft ? null : (seen.aloft = true,
       'Il vole trop haut : ta pulsation ne l’atteint pas. Cloue-le au sol (chaînes, balistes, harpons, étincelles), '
       + 'ou guette ses posés.')),
+    closed: (e) => (seen.closed ? null : (seen.closed = true,
+      'Sa cloche est refermée : ses sceaux ne s’ouvrent qu’au sommet de chaque pulsation. Frappe au bon moment.')),
     landed: () => 'L’Oiseau d’aube se pose… vite, ses sceaux sont à portée !',
     gale: () => (seen.gale ? null : (seen.gale = true, 'Une rafale ! Elle repousse tout ce qui se tient devant lui.')),
     sighted: (e) => `L’Oiseau d’aube a aperçu au loin : ${e.zones.map((z) => Vide.Zones.get(z).name).join(', ')}.`,
