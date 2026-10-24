@@ -89,8 +89,8 @@ const { chromium } = require('playwright');
   await page.click('#shop-list li:not([hidden]) .item:has-text("Allumer le foyer")');
   await page.waitForTimeout(400);
   const lit = await page.evaluate(() => Vide.game.state.territory.lit);
-  const toastText = await page.textContent('#toast');
-  check(lit && toastText.includes('foyer'), 'le foyer s’allume depuis l’origine, avec un message');
+  const announced = await page.evaluate(() => Vide.Away.history.some((t) => t.includes('Le foyer s’allume')));
+  check(lit && announced, 'le foyer s’allume depuis l’origine, avec un message');
   if (shotDir) await page.screenshot({ path: path.join(shotDir, 'foyer.png') });
 
   // Lueurs : l'onglet êtres permet d'en éveiller une, qui apparaît dans le monde.

@@ -30,6 +30,7 @@
       lit: state.territory.lit, // pour détecter l'allumage du foyer
       region: null,             // région du vide où se trouve la lumière (voir zones.js)
       zoneShown: null,          // dernière zone annoncée à l'écran
+      loreCheck: 0,             // délai avant de vérifier les fragments du récit
     };
     updateRegion(game, true);
     Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
@@ -40,6 +41,11 @@
     Vide.Shadows.create(game);
     Vide.Combat.create(game);
     Vide.Colossus.create(game);
+    // Une partie déjà avancée (venue d'une version sans récit) remplit son journal d'un coup,
+    // sans faire défiler chaque fragment.
+    const known = Vide.Lore.check(state);
+    if (known.length > 2) emit(game, 'loreBatch', { count: known.length });
+    else for (const id of known) emit(game, 'lore', { id });
     return game;
   }
 
@@ -168,6 +174,13 @@
     Vide.Shadows.update(game, dt);
     Vide.Colossus.update(game, dt);
     Vide.Combat.update(game, dt);
+
+    // Récit : vérifié une fois par seconde, c'est bien assez.
+    game.loreCheck -= dt;
+    if (game.loreCheck <= 0) {
+      game.loreCheck = 1;
+      for (const id of Vide.Lore.check(state)) emit(game, 'lore', { id });
+    }
     game.glow *= 1 - util.damp(4, dt);
     game.rate += (gained / dt - game.rate) * util.damp(1 / 3, dt);
   }

@@ -64,7 +64,7 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 3. Apaisé, il rejoint le territoire et le protège.
 4. Sauvegarde format 7.
 
-### [ ] 0.8 — Échos du vide
+### [x] 0.8 — Échos du vide
 1. Son génératif (WebAudio) : récolte, pulsation, êtres, ombres, nappe d'ambiance par zone ; réglage dans le menu.
 2. Récit discret : fragments qui se révèlent selon la progression, journal dans le menu.
 3. Sauvegarde format 8.

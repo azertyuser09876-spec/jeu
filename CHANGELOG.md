@@ -1,5 +1,18 @@
 # Historique des versions
 
+## 0.8.0 — Échos du vide
+
+- **Son génératif** (WebAudio, aucun fichier) : chaque particule récoltée tinte sur une gamme pentatonique,
+  la pulsation souffle, les dépôts au foyer carillonnent, les naissances montent en arpège, les marées
+  grondent, les ombres s'éteignent en un souffle sourd ; le Veilleur fait trembler le sol à chaque pas,
+  et son **battement de cœur** s'entend de plus en plus fort à mesure qu'on approche.
+- **Nappe d'ambiance** propre à chaque zone, qui glisse doucement d'une note à l'autre (étouffée par le brouillard).
+- **Réglages du son** dans le menu (activer / couper, volume), gardés à part de la sauvegarde.
+- **Récit discret** : 18 fragments qui se révèlent au fil de la progression (premier foyer, première ombre,
+  chaque zone, le Veilleur…), affichés comme des citations, et un **journal** dans le menu.
+- Sauvegarde au format 8.
+- 174 tests de logique, 23 vérifications navigateur.
+
 ## 0.7.0 — Le premier colosse
 
 - **Le Veilleur**, gardien des confins : une créature immense à quatre pattes (près de la moitié de l'écran),

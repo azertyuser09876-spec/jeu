@@ -100,6 +100,16 @@
         <dt>menu</dt><dd>Échap</dd>
       </dl>
 
+      <div class="sound-row">
+        <button id="sound-toggle" type="button">son : activé</button>
+        <input id="sound-volume" type="range" min="0" max="1" step="0.05" aria-label="Volume">
+      </div>
+
+      <details class="journal">
+        <summary id="journal-title">journal</summary>
+        <ol id="journal-list"></ol>
+      </details>
+
       <p id="menu-stats" class="menu-stats"></p>
       <p id="save-status" class="save-status"></p>
 
@@ -132,6 +142,7 @@
   <script src="src/core/combat.js"></script>
   <script src="src/core/colossi.js"></script>
   <script src="src/core/colossus.js"></script>
+  <script src="src/core/lore.js"></script>
   <script src="src/core/sim.js"></script>
   <script src="src/core/offline.js"></script>
   <script src="src/core/save.js"></script>
@@ -149,6 +160,7 @@
   <script src="src/app/menu.js"></script>
   <script src="src/app/away.js"></script>
   <script src="src/app/map.js"></script>
+  <script src="src/app/audio.js"></script>
   <script src="src/app/main.js"></script>
 </body>
 </html>

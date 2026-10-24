@@ -1,0 +1,64 @@
+// Récit discret : de courts fragments qui se révèlent au fil de la progression, et restent dans le journal.
+// Ajouter un fragment = ajouter une entrée (id stable : il est stocké dans les sauvegardes).
+(function (Vide) {
+  'use strict';
+
+  const zone = (id) => (state) => state.zones.discovered.includes(id);
+  const builtAny = (state) => state.buildings.some((b) => Vide.Structures.isDone(b));
+
+  Vide.LORE = [
+    { id: 'eveil', when: (s) => s.totalLight >= 1,
+      text: 'Au commencement, il n’y avait que le vide. Puis une lueur. Toi.' },
+    { id: 'souvenirs', when: (s) => s.totalLight >= 200,
+      text: 'Ces particules ne sont pas de la poussière. Ce sont des souvenirs de lumière, éparpillés.' },
+    { id: 'foyer', when: (s) => s.territory.lit,
+      text: 'Le foyer se souvient d’un temps où le vide était plein.' },
+    { id: 'lueur', when: (s) => (s.beings.lueur || 0) > 0,
+      text: 'Ce que tu éveilles n’est pas toi. Mais cela vient de toi.' },
+    { id: 'danse', when: (s) => Vide.Colony.population(s) >= 8,
+      text: 'Ils ne parlent pas. Ils dansent. C’est peut-être la même chose.' },
+    { id: 'batir', when: builtAny,
+      text: 'Bâtir dans le vide, c’est refuser qu’il reste vide.' },
+    { id: 'ombre', when: (s) => s.stats.shadows >= 1,
+      text: 'Les ombres ne haïssent pas la lumière. Elles ont froid.' },
+    { id: 'echo', when: (s) => s.stats.shadows >= 10,
+      text: 'Chaque ombre dissipée laisse un écho : ce qu’elle était, avant d’oublier.' },
+    { id: 'brume', when: zone('brume'),
+      text: 'Dans la brume, on n’avance pas. On écoute.' },
+    { id: 'courants', when: zone('courants'),
+      text: 'Les courants vont quelque part. Personne n’est jamais revenu dire où.' },
+    { id: 'murmure', when: zone('murmure'),
+      text: 'Le murmure prononce ton nom. Tu n’en avais pas, avant.' },
+    { id: 'eclat', when: zone('eclat'),
+      text: 'L’Éclat est ce qui reste d’une lumière immense, brisée il y a très longtemps.' },
+    { id: 'gouffre', when: zone('gouffre'),
+      text: 'Au fond du Gouffre, le vide se regarde lui-même.' },
+    { id: 'battement', when: (s) => Boolean(s.colossi.veilleur),
+      text: 'Ce battement était là avant toi. Il attendait.' },
+    { id: 'veilleur', when: (s) => s.colossi.veilleur === 'tamed',
+      text: 'Le Veilleur ne gardait pas les confins contre toi. Il les gardait pour toi.' },
+    { id: 'recul', when: (s) => Vide.Territory.radius(s) >= 600,
+      text: 'Le vide recule. Ou peut-être apprend-il à briller.' },
+    { id: 'armee', when: (s) => Vide.Combat.armySize(s) >= 6,
+      text: 'Tu n’as jamais voulu d’armée. Seulement que personne ne s’éteigne.' },
+    { id: 'confins', when: (s) => s.zones.discovered.length >= Vide.ZONES.length,
+      text: 'Le vide n’a pas de bord. Seulement des endroits où l’on n’est pas encore allé.' },
+  ];
+
+  function get(id) {
+    return Vide.LORE.find((f) => f.id === id) || null;
+  }
+
+  // Révèle les fragments dont la condition est remplie. Renvoie les nouveaux identifiants.
+  function check(state) {
+    const found = [];
+    for (const f of Vide.LORE) {
+      if (state.lore.includes(f.id) || !f.when(state)) continue;
+      state.lore.push(f.id);
+      found.push(f.id);
+    }
+    return found;
+  }
+
+  Vide.Lore = { get, check };
+})(globalThis.Vide);

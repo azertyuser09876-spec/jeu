@@ -670,6 +670,55 @@ button { font: inherit; letter-spacing: inherit; }
 .controls dt { color: var(--dim); }
 .controls dd { margin: 0; }
 
+.sound-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 14px;
+}
+
+.sound-row button {
+  padding: 4px 12px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.sound-row input { flex: 1; accent-color: #d6eaff; }
+
+.journal {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+}
+
+.journal summary {
+  cursor: pointer;
+  color: var(--dim);
+}
+
+.journal ol {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 10px 0 0;
+  padding: 0 0 0 4px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-style: italic;
+  color: #ffe9c2;
+}
+
+/* Fragments du récit : en italique, dorés, plus longtemps à l'écran. */
+#toast.lore {
+  font-style: italic;
+  color: #ffe9c2;
+  font-size: 0.95rem;
+}
+
 .menu-stats,
 .save-status {
   margin: 0 0 6px;

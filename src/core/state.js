@@ -20,6 +20,7 @@
       echoes: 0,         // échos laissés par les ombres vaincues
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
       army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse
+      lore: [],          // fragments du récit déjà révélés, dans l'ordre
       colossi: {},       // colosses : 'heard' (entendu), 'found' (rencontré), 'tamed' (apaisé)
       zones: {
         visited: [],     // régions visitées (clés "i,j"), pour la carte

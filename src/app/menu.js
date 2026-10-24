@@ -23,6 +23,18 @@
       saveStatus: $('save-status'),
     };
     $('version').textContent = Vide.VERSION;
+    const soundBtn = $('sound-toggle');
+    const volume = $('sound-volume');
+    const showSound = () => {
+      soundBtn.textContent = Vide.Audio.enabled ? 'son : activé' : 'son : coupé';
+      volume.value = String(Vide.Audio.volume);
+    };
+    soundBtn.addEventListener('click', () => {
+      Vide.Audio.setEnabled(!Vide.Audio.enabled);
+      showSound();
+    });
+    volume.addEventListener('input', () => Vide.Audio.setVolume(Number(volume.value)));
+    menu.showSound = showSound;
     menu.button.addEventListener('click', () => toggle(menu));
     $('menu-close').addEventListener('click', () => toggle(menu, false));
     $('menu-reset').addEventListener('click', () => {
@@ -58,6 +70,18 @@
       `${util.formatNumber(state.totalLight)} de lumière récoltée · ` +
       `${util.formatNumber(state.stats.collected)} particules`;
     menu.saveStatus.textContent = saveText();
+    menu.showSound();
+    // Journal : les fragments du récit déjà révélés.
+    const list = $('journal-list');
+    $('journal-title').textContent = `journal · ${state.lore.length}/${Vide.LORE.length}`;
+    if (list.childElementCount !== state.lore.length) {
+      list.textContent = '';
+      for (const id of state.lore) {
+        const li = document.createElement('li');
+        li.textContent = Vide.Lore.get(id).text;
+        list.appendChild(li);
+      }
+    }
   }
 
   Vide.Menu = { create, toggle, refresh };

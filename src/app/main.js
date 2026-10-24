@@ -26,7 +26,9 @@
 
   const ui = Vide.UI.create(game, {
     onPulse: () => { input.pulse = true; },
+    onBuy: () => Vide.Audio.play('buy'),
   });
+  Vide.Audio.init();
   const menu = Vide.Menu.create(game, {
     onReset: () => {
       resetting = true;
@@ -128,6 +130,8 @@
     }
 
     Vide.Render.draw(renderer, game, paused() ? 0 : dt);
+    Vide.Audio.update(game, dt);
+    Vide.Audio.readEvents(game);
     Vide.Away.readEvents(game);
     Vide.Away.updateToast(now);
     Vide.UI.update(ui);

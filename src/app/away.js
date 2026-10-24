@@ -71,6 +71,7 @@
       const d = Vide.Colossus.def(e.id);
       return `${d.name} s’apaise. Il rejoint ton territoire. ${d.reward.text}`;
     },
+    loreBatch: (e) => `Ton journal s’est rempli de ${e.count} fragments du récit (menu ≡).`,
     colossusLost: (e) => `${Vide.Colossus.def(e.id).name} se détourne et retourne à son repaire.`,
     beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au foyer.')),
     // Les danses sont fréquentes : on n'en parle qu'une fois par session.
@@ -90,8 +91,19 @@
 
   const toast = { queue: [], current: null, until: 0 };
 
-  function notify(text) {
-    if (text) toast.queue.push(text);
+  // Historique des derniers messages (utile aux tests et au débogage).
+  const history = [];
+
+  function notify(text, kind) {
+    if (!text) return;
+    toast.queue.push({ text, kind: kind || '' });
+    // La file ne doit jamais déborder : les plus anciens messages ordinaires cèdent la place.
+    if (toast.queue.length > 8) {
+      const i = toast.queue.findIndex((m) => m.kind !== 'lore');
+      toast.queue.splice(i >= 0 ? i : 0, 1);
+    }
+    history.push(text);
+    if (history.length > 30) history.shift();
   }
 
   // Traduit les événements de la simulation en messages.
@@ -116,6 +128,7 @@
     const discovered = new Set(game.events.filter((e) => e.type === 'zoneDiscovered').map((e) => e.zone));
     for (const e of game.events) {
       if (e.type === 'zoneEnter') showZone(e.zone, discovered.has(e.zone));
+      if (e.type === 'lore') notify(`« ${Vide.Lore.get(e.id).text} »`, 'lore');
       if (e.type === 'colossusFound') {
         const d = Vide.Colossus.def(e.id);
         showTitle(d.name, d.epithet, [255, 226, 160]);
@@ -137,9 +150,10 @@
     }
     if (now < toast.until || !toast.queue.length) return;
     toast.current = toast.queue.shift();
-    el.textContent = toast.current;
+    el.textContent = toast.current.text;
+    el.className = toast.current.kind;
     el.classList.add('shown');
-    toast.until = now + 3500 + toast.current.length * 40;
+    toast.until = now + 3500 + toast.current.text.length * (toast.current.kind === 'lore' ? 60 : 40);
   }
 
   function init() {
@@ -153,5 +167,6 @@
   away.readEvents = readEvents;
   away.updateToast = updateToast;
   away.formatDuration = formatDuration;
+  away.history = history;
   Vide.Away = away;
 })(globalThis.Vide);
