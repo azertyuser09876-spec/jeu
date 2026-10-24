@@ -264,7 +264,8 @@
     const game = newGame(state);
     const c = game.colossi[0];
     assert.equal(c.mode, 'resident');
-    assert.near(Math.hypot(c.x, c.y), Territory.radius(state.villages[0]) + 250, 1);
+    const ring = Territory.radius(state.villages[0]) + 250 + Colossus.extent(c) * 0.6;
+    assert.near(Math.hypot(c.x, c.y), ring, 1);
     const s = Shadows.spawn(game, 'massive', c.legs[0].foot.x, c.legs[0].foot.y, 'tide');
     s.home = state.villages[0]; // une marée marche vers le village : sous les pas du Veilleur
     s.cd = 99;

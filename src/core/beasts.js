@@ -7,6 +7,9 @@
 //   swarm    La Nuée : des centaines de fragments autour de quatre noyaux (ses sceaux). Tant que les fragments
 //            entourent le noyau actif, il est à l'abri ; l'onde de pulsation les détruit, l'armée les dévore,
 //            et ils renaissent des noyaux. Les toucher brûle la lumière.
+//   sleeper  Le Dormeur : immense, il ne bouge ni ne combat. Ses sceaux sont des rêves, sur son dos : on ne les
+//            atteint que debout sur lui. Chaque rêve apaisé lâche ses cauchemars (des ombres). Éveillé, il reste
+//            où il est, et l'on peut bâtir sur son dos.
 (function (Vide) {
   'use strict';
   const { util, Colony } = Vide;
@@ -46,6 +49,15 @@
       nuclei: 4,
       orbit: 90,        // rayon où tournent les noyaux (taille de référence)
       cloud: 260,       // rayon du nuage de fragments
+    },
+    sleeper: {
+      kind: 'sleeper',
+      turn: 0.1,
+      points: { dream0: [70, -55], dream1: [-30, 65], dream2: [-110, -25] },
+      eyes: [[285, -26], [285, 26]],
+      radius: 260,
+      extent: 330,
+      shell: 200,       // rayon de son dos (on s'y tient pour atteindre ses rêves ; on y bâtit)
     },
   });
 
@@ -326,7 +338,9 @@
       // la nuée se disperse au loin.
       const { player } = game.state;
       const atk = c.attack && c.attack.phase === 'active' ? c.attack : null;
-      const scatter = c.mode === 'kneel' ? 2.2 : 1;
+      // (Apaisée, sa nuée se resserre autour de la lumière, sans l'étouffer.)
+      const tame = c.mode === 'calm' || c.mode === 'home' || c.mode === 'resident';
+      const scatter = c.mode === 'kneel' ? 2.2 : tame ? 0.6 : 1;
       const k = util.damp(c.mode === 'kneel' ? 1 : 3, dt);
       for (const f of c.shards) {
         f.a += f.spin * dt;
@@ -360,6 +374,59 @@
         v.hurt = Math.max(v.hurt || 0, 0.4);
         if (v.hp <= 0) Vide.Combat.disperse(game);
       }
+    },
+  };
+
+  // --- Le Dormeur ---
+
+  const SLEEPER = {
+    nightmares: 10,   // ombres lâchées par le premier rêve apaisé…
+    worse: 8,         // …et en plus à chaque rêve suivant
+  };
+
+  // Rayon de son dos, dans le monde.
+  const backOf = (d) => C.BODIES.sleeper.shell * d.size;
+
+  // (x, y) est-il sur le dos du Dormeur ? (Il ne bouge jamais : son repaire suffit.)
+  function onBack(state, x, y) {
+    const d = C.def('dormeur');
+    const at = C.lair(state, d);
+    return Math.hypot(x - at.x, y - at.y) <= backOf(d);
+  }
+
+  const sleeper = {
+    init(game, c) {
+      if (c.mode === 'roam') c.mode = 'sleep';
+      c.breath = 0;
+    },
+
+    // Dans son sommeil, il respire. On le découvre en approchant.
+    rest(game, c, dt, dist) {
+      C.stop(c, dt);
+      if (dist < c.def.awareness && C.status(game.state, c.id) === 'heard') {
+        game.state.colossi[c.id] = 'found';
+        Vide.Sim.emit(game, 'colossusFound', { id: c.id, veiled: C.veiled(game.state, c, 0), sleeper: true });
+      }
+    },
+
+    // Ses rêves ne s'atteignent que debout sur son dos.
+    guard: (game, c) => (onBack(game.state, game.state.player.x, game.state.player.y) ? null : 'asleep'),
+
+    // Un rêve apaisé lâche ses cauchemars autour de lui.
+    phase(game, c) {
+      const n = SLEEPER.nightmares + SLEEPER.worse * (C.phase(c) - 1);
+      const kinds = ['errante', 'rodeuse', 'massive'];
+      const R = backOf(c.def) * 1.1;
+      for (let k = 0; k < n; k++) {
+        const a = c.rng() * Math.PI * 2;
+        const s = Vide.Shadows.spawn(game, kinds[k % 3 === 2 && C.phase(c) > 1 ? 2 : k % 2], c.x + Math.cos(a) * R, c.y + Math.sin(a) * R, 'roam');
+        s.nightmare = true;
+      }
+      Vide.Sim.emit(game, 'nightmare', { id: c.id, count: n, left: c.seals.length - c.active });
+    },
+
+    update(game, c, dt) {
+      c.breath += dt / 7; // un souffle très lent
     },
   };
 
@@ -437,5 +504,5 @@
     },
   };
 
-  Vide.Beasts = Object.assign(Vide.Beasts || {}, { bird, medusa, swarm, SWARM });
+  Vide.Beasts = Object.assign(Vide.Beasts || {}, { bird, medusa, swarm, sleeper, SWARM, SLEEPER, onBack, backOf });
 })(globalThis.Vide);

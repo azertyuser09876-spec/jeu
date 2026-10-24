@@ -467,13 +467,25 @@
       if (c.core.x < view.left || c.core.x > view.right || c.core.y < view.top || c.core.y > view.bottom) continue;
       drawAttack(r, c);
       const custom = Vide.Draw.beasts && Vide.Draw.beasts[c.body.kind];
-      if (custom) custom(r, c, game);
+      if (custom) {
+        if (!Vide.Draw.beastsBelow.has(c.body.kind)) custom(r, c, game);
+      }
       else if (c.body.kind === 'serpent') drawSerpent(r, c);
       else drawBody(r, c);
       if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c, game);
       else if (c.id === 'tisseuse') drawWeaving(r, game, c);
     }
     drawQuakes(r, dt);
+  };
+
+  // Corps dessinés sous les territoires (le Dormeur : on bâtit sur son dos), avant tout le reste.
+  Vide.Draw.colossiBelow = function (r, game) {
+    const view = Render.viewBounds(r, 1500);
+    for (const c of game.colossi) {
+      if (!Vide.Draw.beastsBelow.has(c.body.kind)) continue;
+      if (c.core.x < view.left || c.core.x > view.right || c.core.y < view.top || c.core.y > view.bottom) continue;
+      Vide.Draw.beasts[c.body.kind](r, c, game);
+    }
   };
 
   // Outils partagés avec draw-beasts.js.

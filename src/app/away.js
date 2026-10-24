@@ -152,7 +152,10 @@
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
     heartbeat: (e) => Vide.Colossus.def(e.id).heartbeat,
-    colossusFound: (e) => (e.veiled
+    colossusFound: (e) => (e.sleeper
+      ? 'Il dort. Ses rêves sont ses sceaux : monte sur son dos pour les apaiser.'
+        + (e.veiled ? ' Ils sont voilés : tes érudits doivent d’abord les étudier.' : '')
+      : e.veiled
       ? 'Ses sceaux sont voilés : ta pulsation n’y peut rien. Envoie des érudits l’étudier (carte, M). Ton armée peut déjà le faire plier.'
       : 'Brise ses sceaux avec ta pulsation. Ton armée peut le faire plier.'),
     sealBroken: (e) => (e.left ? `Un sceau se brise. Encore ${e.left}.` : null),
@@ -168,13 +171,16 @@
     web: () => (seen.web ? null : (seen.web = true, 'Une toile ! Elle ralentit tout ce qui s’y prend. Sors-en vite.')),
     colossusTamed: (e) => {
       const d = Vide.Colossus.def(e.id);
-      return `${d.name} s’apaise. Il rejoint ton plus grand village. ${d.reward.text}`;
+      return d.stays ? `${d.name} s’éveille, sans bouger. ${d.reward.text}` : `${d.name} s’apaise et rejoint tes villages. ${d.reward.text}`;
     },
     renaissance: 'Tu te dissous… et renais. Tes souvenirs t’attendent dans l’onglet souvenirs.',
     loreBatch: (e) => `Ton journal s’est rempli de ${e.count} fragments du récit (menu ≡).`,
     aloft: (e) => (seen.aloft ? null : (seen.aloft = true,
       'Il vole trop haut : ta pulsation ne l’atteint pas. Cloue-le au sol (chaînes, balistes, harpons, étincelles), '
       + 'ou guette ses posés.')),
+    asleep: () => (seen.asleep ? null : (seen.asleep = true,
+      'Ses rêves sont sur son dos : tiens-toi sur lui pour les atteindre.')),
+    nightmare: (e) => `Un rêve s’apaise… et ses cauchemars s’éveillent (${e.count}) ! Encore ${e.left}.`,
     shielded: () => (seen.shielded ? null : (seen.shielded = true,
       'Ses éclats protègent son noyau : disperse-les d’une onde, ou laisse ton armée les dévorer, puis frappe.')),
     closed: (e) => (seen.closed ? null : (seen.closed = true,

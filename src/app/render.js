@@ -360,6 +360,7 @@
     ctx.translate(-camera.x, -camera.y);
     ctx.globalCompositeOperation = 'lighter';
 
+    Vide.Draw.colossiBelow(r, game);
     Vide.Draw.territory(r, game);
     Vide.Draw.nests(r, game);
     Vide.Draw.roads(r, game);

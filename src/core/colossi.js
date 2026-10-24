@@ -199,5 +199,42 @@
       heartbeat: 'Un bruissement innombrable… Quelque chose se compte par milliers, au plus loin.',
       kneelText: 'se disperse en tous sens',
     },
+    {
+      id: 'dormeur',
+      name: 'Le Dormeur',
+      epithet: 'qui rêve le vide',
+      body: 'sleeper',
+      size: 3.6,
+      stays: true,      // il ne quitte jamais l'endroit où il dort
+      lair: { distance: 18000, angleSeed: 7 },
+      roam: 0,
+      speed: 0,
+      awareness: 2600,
+      leash: 1e9,
+      seals: [
+        { at: 'dream0', hp: 700 },
+        { at: 'dream1', hp: 800 },
+        { at: 'dream2', hp: 900 },
+      ],
+      stagger: 1e9,
+      kneel: 1,
+      attacks: [],
+      fury: [],
+      requires: (state) => ['veilleur', 'tisseuse', 'leviathan', 'oiseau', 'meduse', 'nuee']
+        .every((id) => state.colossi[id] === 'tamed'),
+      reward: {
+        text: 'Éveillé, il te laisse bâtir sur son dos : un village fondé sur lui grandit trois fois plus vite '
+          + 'et rayonne deux fois plus.',
+        modify: () => {},
+        local: (state, village, stats) => {
+          if (!Vide.Beasts.onBack(state, village.x, village.y)) return;
+          stats.territoryGrowth *= 3;
+          stats.territoryYield *= 2;
+        },
+      },
+      tint: [215, 225, 255],
+      heartbeat: 'Un souffle immense, très lent… Quelque chose dort au bout du vide, et rêve.',
+      kneelText: 'soupire dans son sommeil',
+    },
   ];
 })(globalThis.Vide);

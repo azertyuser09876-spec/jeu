@@ -180,7 +180,7 @@
     c.circle = (c.circle || 0) + 0.6 * dt;
     // Loin de toi, il te rejoint à tire-d'aile.
     const far = Math.hypot(player.x - c.x, player.y - c.y) > 2000;
-    return { x: player.x + Math.cos(c.circle) * 320, y: player.y + Math.sin(c.circle) * 320, speed: far ? 1400 : 450 };
+    return { x: player.x + Math.cos(c.circle) * 650, y: player.y + Math.sin(c.circle) * 650, speed: far ? 1400 : 450 };
   }
 
   // --- Méduse ---

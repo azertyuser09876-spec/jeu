@@ -158,6 +158,7 @@
     type(village.type).modify(l);
     for (const t of village.extra || []) type(t).modify(l); // une cité cumule ses spécialités
     if (Vide.Trade && village.stock) Vide.Trade.modify(village, l);
+    if (Vide.Colossus) Vide.Colossus.modifyLocal(state, village, l); // (un village bâti sur le Dormeur)
     return l;
   }
 

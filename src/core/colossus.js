@@ -12,6 +12,7 @@
 //   guard(game, c)                    raison pour laquelle son sceau actif ne peut être frappé, ou null
 //   aloft(c)                          vrai : hors d'atteinte du corps à corps
 //   rest(game, c, dt, dist)           mode propre ('sleep') : tout le comportement
+//   phase(game, c)                    à chaque sceau brisé (sauf le dernier), à la place du rugissement
 // Une attaque peut aussi porter ses propres crochets (voir ATTACKS) : start, strike, step.
 // Tout le reste (position, sceaux entamés, toiles…) est recréé au chargement : un combat abandonné repart de zéro.
 (function (Vide) {
@@ -155,10 +156,15 @@
     return { x: Math.cos(angle) * d.lair.distance, y: Math.sin(angle) * d.lair.distance };
   }
 
-  // Point de ronde d'un colosse apaisé : juste au-delà du bord du plus grand village (ou autour de l'origine).
-  function residentSpot(state, angle) {
+  // Point de ronde d'un colosse apaisé : au-delà du bord du plus grand village (ou autour de l'origine), d'autant
+  // plus loin qu'il est grand (`d` : sa définition) — le village reste visible au milieu de ses gardiens.
+  function ring(state, d) {
+    return Territory.radius(Vide.Villages.main(state)) + 250 + BODIES[d.body].extent * d.size * 0.6;
+  }
+
+  function residentSpot(state, angle, d) {
     const home = Vide.Villages.main(state);
-    const r = Territory.radius(home) + 250;
+    const r = d ? ring(state, d) : Territory.radius(home) + 250;
     const cx = home ? home.x : 0, cy = home ? home.y : 0;
     return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
   }
@@ -237,7 +243,7 @@
     const tamed = status(state, d.id) === 'tamed';
     const orbit = util.hash2(d.lair.angleSeed, 11, state.seed) * Math.PI * 2;
     // (Un colosse qui reste où il est, comme le Dormeur, ne rejoint jamais tes villages.)
-    const at = tamed && !d.stays ? residentSpot(state, orbit) : lair(state, d);
+    const at = tamed && !d.stays ? residentSpot(state, orbit, d) : lair(state, d);
     const body = BODIES[d.body];
     const c = {
       id: d.id,
@@ -698,6 +704,8 @@
     Vide.Sim.emit(game, 'sealBroken', { id: c.id, left });
     if (left === 0) {
       tame(game, c);
+    } else if (beast(c).phase) {
+      beast(c).phase(game, c);
     } else {
       c.mode = 'hunt';
       c.kneel = 0;
@@ -904,7 +912,7 @@
           c.mode = 'resident';
           break;
         }
-        const spot = residentSpot(state, c.orbit);
+        const spot = residentSpot(state, c.orbit, d);
         if (walkTo(c, spot.x, spot.y, 80, dt) < 80) c.mode = 'resident';
         break;
       }
@@ -919,9 +927,9 @@
           stop(c, dt);
           break;
         }
-        const r = Territory.radius(Vide.Villages.main(state)) + 250;
+        const r = ring(state, d);
         c.orbit += (16 / r) * dt;
-        const spot = residentSpot(state, c.orbit);
+        const spot = residentSpot(state, c.orbit, d);
         walkTo(c, spot.x, spot.y, 22, dt);
         break;
       }
@@ -974,10 +982,15 @@
     for (const d of Vide.COLOSSI) if (status(state, d.id) === 'tamed') d.reward.modify(stats);
   }
 
+  // Bienfaits propres à un village (appelé par Villages.local) : reward.local(state, village, stats).
+  function modifyLocal(state, village, stats) {
+    for (const d of Vide.COLOSSI) if (d.reward.local && status(state, d.id) === 'tamed') d.reward.local(state, village, stats);
+  }
+
   Vide.Colossus = {
     BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot,
     toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile, engaged,
     startMarch, provoke, walkTo, stop, turnTowards, endAttack, beast,
-    modify, inCone, inGap, slowAt, startAttack,
+    modify, modifyLocal, inCone, inGap, slowAt, startAttack,
   };
 })(globalThis.Vide);

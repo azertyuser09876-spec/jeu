@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const { test, assert, village } = VideTest;
-  const { CONFIG, State, Sim, Colossus, Engines, Structures } = Vide;
+  const { CONFIG, State, Sim, Colossus, Engines, Structures, Villages } = Vide;
   const dt = CONFIG.step;
 
   function run(game, seconds) {
@@ -303,5 +303,72 @@
     run(game, 10);
     assert.ok(Math.hypot(c.x - state.player.x, c.y - state.player.y) < 200);
     assert.ok(game.vitality.hp >= hp - 1e-9);
+  });
+
+  // --- Le Dormeur ---
+
+  test('le Dormeur ne s’entend qu’une fois tous les autres apaisés', () => {
+    const state = State.create(1);
+    const d = Colossus.def('dormeur');
+    for (const o of Vide.COLOSSI) if (o.id !== 'dormeur' && o.id !== 'nuee') state.colossi[o.id] = 'tamed';
+    assert.equal(d.requires(state), false);
+    state.colossi.nuee = 'tamed';
+    assert.ok(d.requires(state));
+  });
+
+  test('il dort : il ne bouge ni ne combat ; on le découvre en approchant', () => {
+    const { state, game, c } = facing('dormeur', 1500);
+    const at = { x: c.x, y: c.y };
+    game.vitality.invulnerable = 0;
+    const hp = game.vitality.hp;
+    let found = false;
+    for (let i = 0; i < 60 * 10; i++) {
+      Sim.step(game, dt, Sim.emptyInput());
+      found = found || game.events.some((e) => e.type === 'colossusFound' && e.sleeper);
+    }
+    assert.equal(c.mode, 'sleep');
+    assert.equal(Colossus.status(state, 'dormeur'), 'found');
+    assert.ok(found);
+    assert.ok(Math.hypot(c.x - at.x, c.y - at.y) < 1, 'immobile');
+    assert.ok(game.vitality.hp >= hp - 1e-9, 'aucune attaque');
+    assert.equal(Colossus.engaged(c), false, 'ni l’armée ni les engins ne s’en prennent à lui');
+    assert.equal(Colossus.startMarch(game), null);
+  });
+
+  test('ses rêves ne s’atteignent que debout sur son dos ; chacun lâche ses cauchemars', () => {
+    const { state, game, c } = facing('dormeur', 3000);
+    assert.equal(Colossus.sealHit(game, c, 1e6), false, 'loin de lui');
+    assert.ok(game.events.some((e) => e.type === 'asleep'));
+    state.player.x = c.x + 100;
+    state.player.y = c.y;
+    const shadows = game.shadows.list.length;
+    assert.ok(Colossus.sealHit(game, c, 1e6));
+    assert.equal(c.mode, 'sleep', 'il dort toujours');
+    assert.ok(game.shadows.list.length >= shadows + Vide.Beasts.SLEEPER.nightmares);
+    assert.ok(game.events.some((e) => e.type === 'nightmare'));
+    Colossus.sealHit(game, c, 1e6);
+    Colossus.sealHit(game, c, 1e6);
+    assert.equal(Colossus.status(state, 'dormeur'), 'tamed');
+    run(game, 10);
+    assert.ok(Math.hypot(c.x - Colossus.lair(state, c.def).x, c.y - Colossus.lair(state, c.def).y) < 5, 'il reste où il dormait');
+  });
+
+  test('éveillé, il laisse bâtir sur son dos : ce village grandit ×3 et rayonne ×2', () => {
+    const state = State.create(31);
+    village(state, { radius: 200 });
+    const at = Colossus.lair(state, Colossus.def('dormeur'));
+    const back = village(state, { x: at.x + 100, y: at.y, radius: 200 });
+    const base = Villages.local(state, back);
+    for (const d of Vide.COLOSSI) state.colossi[d.id] = 'tamed';
+    const stats = Vide.Stats.compute(state);
+    const on = Villages.local(state, back, stats);
+    const off = Villages.local(state, state.villages[0], stats);
+    assert.near(on.territoryGrowth, off.territoryGrowth * 3, 1e-6);
+    assert.near(on.territoryYield, off.territoryYield * 2, 1e-12);
+    assert.ok(base.territoryGrowth < on.territoryGrowth);
+    // Au chargement, il est là, sous son village.
+    const game = Sim.create(state);
+    const c = game.colossi.find((k) => k.id === 'dormeur');
+    assert.ok(Math.hypot(c.x - at.x, c.y - at.y) < 1);
   });
 })();

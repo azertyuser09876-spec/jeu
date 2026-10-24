@@ -166,8 +166,9 @@
     const px = 1 / r.camera.scale;
     const tint = tintOf(c);
     const glow = glowOf(r, tint);
-    Render.drawGlow(ctx, glow, c.x, c.y, c.body.cloud * s * 1.3, c.mode === 'kneel' ? 0.05 : 0.1);
-    ctx.globalAlpha = 0.75;
+    const tame = c.mode === 'calm' || c.mode === 'home' || c.mode === 'resident';
+    Render.drawGlow(ctx, glow, c.x, c.y, c.body.cloud * s * 1.3, c.mode === 'kneel' || tame ? 0.05 : 0.1);
+    ctx.globalAlpha = tame ? 0.4 : 0.75;
     ctx.strokeStyle = rgb(tint, 1);
     ctx.lineWidth = 1.8 * px;
     ctx.lineCap = 'round';
@@ -185,6 +186,90 @@
       Render.drawGlow(ctx, glow, n.x, n.y, (broken ? 14 : 34) * s, broken ? 0.25 : 0.85);
       Render.drawGlow(ctx, r.glows.white, n.x, n.y, (broken ? 4 : 9) * s, broken ? 0.3 : 0.9);
     });
+  }
+
+  // --- Le Dormeur ---
+
+  // Vue d'en haut : une carapace immense, ovale, pavée de plaques, qui respire très lentement ; la tête posée
+  // devant, les nageoires repliées. Ses rêves s'élèvent de son dos en volutes pâles.
+  function drawSleeper(r, c) {
+    const { ctx } = r;
+    const s = c.def.size;
+    const px = 1 / r.camera.scale;
+    const tint = tintOf(c);
+    const glow = glowOf(r, tint);
+    const breath = 1 + 0.025 * Math.sin(c.breath * Math.PI * 2);
+    const at = (x, y) => Colossus.toWorld(c, x * breath, y * breath);
+    const rx = 300, ry = 215;
+
+    Render.drawGlow(ctx, glow, c.x, c.y, 420 * s, 0.07);
+    // Nageoires repliées, tête et queue.
+    ctx.strokeStyle = rgb(tint, 1);
+    for (const [x, y] of [[170, -190], [170, 190], [-170, -170], [-170, 170]]) {
+      const sx = Math.sign(y);
+      ctx.globalAlpha = 0.08;
+      line(ctx, [at(x, y * 0.8), at(x - 70, y + sx * 70), at(x - 150, y + sx * 40)], 34 * s, rgb(tint, 1));
+      ctx.globalAlpha = 0.3;
+      line(ctx, [at(x, y * 0.8), at(x - 70, y + sx * 70), at(x - 150, y + sx * 40)], 1.6 * px, rgb(tint, 1));
+    }
+    ctx.globalAlpha = 0.3;
+    line(ctx, [at(-rx, 0), at(-rx - 90, 15), at(-rx - 150, -10)], 2 * px, rgb(tint, 1));
+    const head = at(rx + 10, 0);
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = rgb(tint, 1);
+    ctx.beginPath();
+    ctx.arc(head.x, head.y, 60 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1.5 * px;
+    ctx.stroke();
+
+    // La carapace.
+    const shell = [];
+    for (let a = 0; a < 64; a++) {
+      const ang = (a / 64) * Math.PI * 2;
+      shell.push(at(Math.cos(ang) * rx, Math.sin(ang) * ry));
+    }
+    ctx.globalAlpha = 0.08;
+    ctx.beginPath();
+    shell.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = 2 * px;
+    ctx.stroke();
+    // Les plaques : deux anneaux et des rayons.
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = 1.2 * px;
+    for (const k of [0.38, 0.7]) {
+      ctx.beginPath();
+      for (let a = 0; a <= 48; a++) {
+        const ang = (a / 48) * Math.PI * 2;
+        const p = at(Math.cos(ang) * rx * k, Math.sin(ang) * ry * k);
+        if (a === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+    }
+    for (let k = 0; k < 10; k++) {
+      const ang = (k / 10) * Math.PI * 2 + 0.2;
+      const a = at(Math.cos(ang) * rx * 0.38, Math.sin(ang) * ry * 0.38);
+      const b = at(Math.cos(ang) * rx, Math.sin(ang) * ry);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    // Ses yeux, clos tant qu'il dort.
+    if (c.mode !== 'sleep') drawEyes(r, c, (x, y) => at(x, y));
+    // Volutes de rêve qui montent de son dos.
+    if (c.mode === 'sleep') {
+      for (let k = 0; k < 9; k++) {
+        const t = (c.time * 0.12 + k / 9) % 1;
+        const base = at(((k * 37) % 200) - 100, ((k * 53) % 160) - 80);
+        Render.drawGlow(ctx, glow, base.x + Math.sin(t * 6 + k) * 30, base.y - t * 260, 20 * s * (1 - t), 0.35 * (1 - t));
+      }
+    }
   }
 
   // --- Attaques ---
@@ -227,7 +312,8 @@
     }
   }
 
-  Vide.Draw.beasts = { bird: drawBird, medusa: drawMedusa, swarm: drawSwarm };
+  Vide.Draw.beasts = { bird: drawBird, medusa: drawMedusa, swarm: drawSwarm, sleeper: drawSleeper };
+  Vide.Draw.beastsBelow = new Set(['sleeper']);
 
   Vide.Draw.beastAttacks = {
     // Piqué : le couloir qu'il va raser.
