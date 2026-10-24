@@ -26,8 +26,10 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   bâtiments (`buildings.js`), types de villages (`VILLAGE_TYPES` dans `villages.js`), ombres (`SHADOW_KINDS` dans `shadows.js`), zones (`zones.js`), colosses
   (`colossi.js`, corps et attaques dans `colossus.js`), récit (`lore.js`). Les `id` sont stockés dans les
   sauvegardes : ne jamais les renommer.
-- **Boutique** : tout ce qui s'achète s'inscrit au catalogue (`catalog.js`) avec un onglet ; l'interface
-  l'affiche sans rien savoir de l'article. Coûts multi-ressources (`wallet.js` : lumière ✦, échos ◆, souvenirs ✧).
+- **Boutique** : tout ce qui s'achète s'inscrit au catalogue (`catalog.js`) avec un onglet (`village` : ne se montre
+  que dans un village ; `fonder`, `lumiere`, `monde`, `souvenirs`) et une section (`group`, voir `Vide.GROUPS`) ;
+  l'interface l'affiche sans rien savoir de l'article. En tête : la fiche du village (sous-faction) et le compositeur
+  de fondation (`ui.js` ; les articles `composed` n'ont pas de ligne). Coûts multi-ressources (`wallet.js` : lumière ✦, échos ◆, souvenirs ✧).
 - **Événements** : la simulation signale ce qui arrive avec `Sim.emit(game, type, données)` ; l'interface
   (`away.js`), le son (`audio.js`) et le rendu les lisent chaque image. Ajouter un message = une entrée dans
   `MESSAGES` (away.js).
@@ -42,11 +44,18 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   avenues (ouvertes à la lumière seulement). Tout ce qui bouge passe par `Walls.hold` (après son pas) et, pour aller
   quelque part, par `Walls.route` (la porte la mieux placée) ; `game.walled` liste les villages à enceinte achevée.
   Les colosses ne sont jamais arrêtés. Solidité des pans : `game.wallHp`.
+- **Sous-factions** (`factions.js`, village.faction, nest.faction, state.faction = dernier choix du joueur) : choisie à
+  chaque fondation, changeable (`Factions.setVillage`) ; héritée ou mutée pour un village né d'un autre (colons) et
+  pour un avant-poste. Elles disent ce que chaque camp fait d'une créature à bout de forces (`convert`).
+- **Créatures intermédiaires** (`creatures.js`, `Vide.CREATURES`, game.creatures ; village.creatures et nest.creatures
+  = nombres persistants) : camps 'light', 'shadow', 'wild' (faune) ; `Creatures.hit(game, c, amount, by)` avec
+  `by = { side, faction, owner, creature }` (conversion ou mort). Dessin : `draw-creatures.js`.
 - **Intendant** (`steward.js`) : part de la lumière d'un village mise en réserve et dépensée seule (jamais d'échos).
 - **Bâtiments** : `family` (ordre en boutique), `only` (type de village), `scope: 'global'` (effet sur tous les
   villages, via `Structures.modifyGlobal`), `ward` (ralentit les ombres).
 - **Routes, échanges, cités** : `roads.js` (state.roads ; tracé `Roads.route(state, a, b)` par les portes, courbe,
-  troncs communs : `Roads.network`/`Roads.trunks` ; le travail se compte sur la distance entre cœurs), `trade.js` (village.stock, caravanes : la charge ne
+  troncs communs : `Roads.network`/`Roads.trunks` ; le travail se compte sur la distance entre cœurs), `trade.js`
+  (convois attaquables : position, hp, `Trade.hurt`) (village.stock, caravanes : la charge ne
   quitte l'expéditeur qu'à l'arrivée), `cities.js` (fusion au contact, village.extra et village.districts ; une
   cité doit toujours valoir au moins ses villages).
 - **Expéditions** (`expeditions.js`, state.expeditions) : lancées depuis la carte, elles marchent et peuvent être

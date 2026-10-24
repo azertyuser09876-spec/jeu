@@ -1,5 +1,35 @@
 # Historique des versions
 
+## 2.4.0 — Le monde vit
+
+Le vide se peuple : de nouvelles unités, des créatures qui changent de camp, des sous-factions, des colosses plus
+grands, des convois et une faune — et un menu d'achat refait.
+
+- **Nouvelles unités** : le porte-bouclier (il attire les coups des ombres proches et n'en encaisse que la moitié),
+  le lancier (longue allonge ; ses coups comptent quatre fois contre ouvrages et remparts d'ombre). Côté ombres :
+  la cracheuse (elle frappe de loin), la fouisseuse (elle passe sous les murailles), la bélière (elle les enfonce).
+- **Sous-factions** : à chaque fondation, on choisit le type **et** la sous-faction — Éleveurs (ils apprivoisent ;
+  deux êtres de plus), Illuminés (ils purifient ; blanc ×1,4), Lames (×1,5 contre les créatures, deux fois plus
+  d'échos) — et on la change quand on veut, village par village. Un village né d'un autre (des colons) en hérite le
+  plus souvent, ou mute ; tous restent amis. Les bases d'ombre ont les leurs : Dévoreurs, Corrupteurs, Meutes.
+- **Créatures intermédiaires**, aux corps articulés : loups, scolopendres, cerfs (un cerf de lumière s'achète
+  comme gardien d'un village). Tuables ou convertibles par les deux camps : à bout de forces, une créature est
+  apprivoisée, purifiée ou corrompue selon la sous-faction de qui l'abat, et rejoint ce village ou cette base. Les
+  bases mûres ont une garnison ; avec la guerre, leurs raids lâchent des meutes. La lumière des territoires les
+  ronge.
+- **Colosses** plus grands (×1,4) et bien plus solides (sceaux ×2) : de 3 à 7 minutes de combat chacun pour le
+  duelliste.
+- **Convois** : les caravanes roulent sur leurs routes en chariots ; attaqués, ils s'arrêtent pour faire face ; s'ils
+  tombent, la charge est perdue. **Faune du vide**, neutre : lucioles, raies de lumière, baleine du vide —
+  apprivoisées par ta pulsation si tu es Éleveur, prises par les bases de Meutes.
+- **Menu d'achat refait** : un onglet pour le village où l'on est (sa fiche : type, sous-faction à changer d'un
+  geste, population, armée, place, enceintes ; ses achats en sections), un compositeur de fondation (type,
+  sous-faction, prix), « lumière », « monde » (ce qui vaut pour tous tes villages), « souvenirs ».
+- Corrigé en route : les bases lointaines lâchaient des meutes dès les premières minutes (elles ne viennent plus
+  qu'avec la guerre).
+- Sauvegarde : format 25 (sous-factions, créatures attachées).
+- 396 tests de logique, 42 vérifications navigateur.
+
 ## 2.3.0 — Les bases des ombres
 
 Les ombres bâtissent pour de bon : leurs nids deviennent des bases, en négatif de tes villages, et leur

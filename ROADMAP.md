@@ -201,7 +201,7 @@ s'ouvrent qu'aux ombres.
    d'abord (tension : des ombres rôdent sans attaquer), puis de plus en plus rude.
 3. Prendre une base : abattre son cœur rend son terrain au vide, ou à ton village s'il le touche.
 
-### [ ] 2.4 — Le monde vit
+### [x] 2.4 — Le monde vit
 Demandé en cours de route : les créatures intermédiaires sont tuables et convertibles par les deux camps, selon la
 sous-faction de qui les affronte ; les sous-factions sont choisies au début par le joueur, et un village fondé
 depuis un autre a de grandes chances d'être de la même.
@@ -218,14 +218,14 @@ depuis un autre a de grandes chances d'être de la même.
    meute), scolopendre, cerf (gardien d'un village, il s'achète). Tuables ou convertibles par les deux camps : à
    bout de forces, une créature est apprivoisée, purifiée ou corrompue — selon la sous-faction de qui l'abat — au
    lieu de mourir, et rejoint ce village ou cette base.
-4. La sous-faction, village par village (précisé en cours de route) : à chaque fondation on choisit le type **et**
+4. [x] La sous-faction, village par village (précisé en cours de route) : à chaque fondation on choisit le type **et**
    la sous-faction ; on peut changer celle d'un village autant qu'on veut ; un village né d'un autre (colons,
    gouverneurs) peut muter vers une autre sous-faction — tous les villages restent amis.
-5. Le menu d'achat refait (l'ancien est dépassé) : une fondation se compose (type, sous-faction, prix) ; dans un
+5. [x] Le menu d'achat refait (l'ancien est dépassé) : une fondation se compose (type, sous-faction, prix) ; dans un
    village, sa fiche (type, sous-faction à changer d'un geste) et ses achats rangés par sections (êtres, armée,
    créatures, bâtiments, défense, routes) ; ailleurs, la lumière et les souvenirs.
-6. Des colosses plus grands (×1,4) et bien plus solides (sceaux ×2), réglés avec le duelliste.
-7. La vie du monde : de vrais convois sur les routes (plusieurs chariots, attaquables, la charge perdue s'ils
+6. [x] Des colosses plus grands (×1,4) et bien plus solides (sceaux ×2), réglés avec le duelliste.
+7. [x] La vie du monde : de vrais convois sur les routes (plusieurs chariots, attaquables, la charge perdue s'ils
    tombent) ; une faune neutre dans le vide (lucioles qui fuient, raies de lumière qui planent, une baleine du vide
    dans les régions lointaines), qui ne fait pas de mal — les Éleveurs et les Meutes l'apprivoisent.
 

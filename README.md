@@ -38,6 +38,9 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Les villages** : fonde-les où tu veux, du type que tu choisis (jardins, bastion, atelier, observatoire,
   sanctuaire). Chacun a son territoire vivant, qui pousse vers ses bâtiments et grandit lentement, toujours,
   même sans toi ; son cœur blanchit avec le temps, en cinq nuances, jusqu'au blanc pur.
+- **Sous-factions** : à chaque fondation, tu choisis le type du village et sa sous-faction — Éleveurs, Illuminés ou
+  Lames — et tu la changes quand tu veux. Un village né d'un autre en hérite, ou mute. Les bases d'ombre ont les
+  leurs : Dévoreurs, Corrupteurs, Meutes.
 - **Des villes en étoile** : chaque village suit son plan — boulevards en anneaux, quatre avenues vers quatre
   portes, des îlots où chaque bâtiment prend sa place selon son rôle. Entoure-le d'**enceintes** : elles
   arrêtent tout sauf les colosses, leurs portes ne s'ouvrent qu'à la lumière, et les ombres doivent les abattre.
@@ -54,6 +57,9 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Les ombres bâtissent** : des bases d'ombre, en négatif de tes villages — un territoire de noirceur en cinq
   nuances, des fosses, des flèches qui tirent sur la lumière, des remparts qu'elle doit abattre — lancent des raids sur tes
   villages. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
+- **Les créatures** : loups, scolopendres, cerfs de lumière — de grands corps articulés. À bout de forces, une
+  créature est apprivoisée, purifiée ou corrompue selon la sous-faction de qui l'abat, et change de camp. Dans le
+  vide errent des lucioles, des raies de lumière, une baleine ; des convois roulent sur tes routes.
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
   (gardiens, étincelles, veilleuses, harponneurs) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
 - **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.
