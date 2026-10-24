@@ -19,6 +19,8 @@ Ouvre `index.html` dans un navigateur. C'est tout.
 | Ordres de l’armée | barre sous le compteur | G garder · E escorter · C chasser |
 | Carte | ◎ en haut à droite | M |
 | Zoom | molette, pincement à deux doigts | + / − |
+| Capacités : ruée, fanal, retour | petits boutons au-dessus de la pulsation | Maj, F, R |
+| Expéditions | toucher un point de la carte | — |
 | Menu / pause, options, journal | ≡ en haut à droite | Échap |
 
 La partie est sauvegardée automatiquement dans le navigateur ; le monde continue pendant ton absence.
@@ -36,6 +38,8 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
 - **Routes, échanges, cités** : relie tes villages par des routes de lumière ; des caravanes y portent la
   matière ◇ des ateliers, le savoir ✎ des observatoires, les soldats des bastions. Quand deux territoires se
   touchent, ils fusionnent en une cité qui garde toutes leurs spécialités.
+- **Expéditions et capacités** : depuis la carte, envoie des éclaireurs révéler le lointain ou des colons fonder
+  au loin, escortés si tu veux. Ta lumière apprend la ruée, le fanal et le retour.
 - **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
   (gardiens, étincelles, veilleuses) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
 - **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.

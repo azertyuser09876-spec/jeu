@@ -116,7 +116,7 @@ Perdue, la lumière se disperse (animation) et renaît dans un village, ou à l'
 2. Ressources de village (matière ◇, savoir ✎, soldats) et échanges automatiques entre villages reliés.
 3. Cités : villages dont les territoires se touchent, ou village devenu énorme — plusieurs spécialisations.
 
-### [ ] 1.5 — Expéditions et capacités
+### [x] 1.5 — Expéditions et capacités
 1. Expéditions choisies sur la carte : colons (fondent au loin), éclaireurs (révèlent), escortes.
 2. Capacités de la lumière : élan (ruée), fanal (lumière posée), retour (vers un village).
 

@@ -41,6 +41,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - **Routes, échanges, cités** : `roads.js` (state.roads), `trade.js` (village.stock, caravanes : la charge ne
   quitte l'expéditeur qu'à l'arrivée), `cities.js` (fusion au contact, village.extra et village.districts ; une
   cité doit toujours valoir au moins ses villages).
+- **Expéditions** (`expeditions.js`, state.expeditions) : lancées depuis la carte, elles marchent et peuvent être
+  attaquées ; les colons en route comptent dans le prix des fondations. **Capacités** (`abilities.js`) : ruée,
+  fanal (state.beacon, récolte abstraite selon la zone), retour.
 - **Performances** : `grid.js` (grille spatiale) pour tout voisinage d'êtres ; ne pas réintroduire de boucle sur
   tous les êtres à chaque pas et pour chaque être (banc d'essai : 400 êtres sous 12 ms par pas, test colony).
 - **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`

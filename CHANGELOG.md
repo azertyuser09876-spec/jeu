@@ -1,5 +1,25 @@
 # Historique des versions
 
+## 1.5.0 — Expéditions et capacités
+
+- **Expéditions, choisies sur la carte** : toucher un point ouvre un petit panneau.
+  - **Éclaireurs** : ils révèlent les régions autour du point, puis rentrent.
+  - **Colons** : trois lueurs vont fonder au loin un village du type choisi, au prix d'une fondation.
+  - **Escorte** (en option) : deux gardiens les accompagnent.
+
+  Elles partent du village le plus proche et marchent vraiment. Les ombres des zones traversées les attaquent :
+  attaquée, une expédition s'arrête pour faire face, et l'escorte frappe ; à bout de forces, elle est perdue.
+  Elles avancent aussi pendant l'absence.
+- **Capacités de la lumière** (onglet lumière, trois niveaux chacune) :
+  - **Ruée** (Maj) : un élan bref et fulgurant, invulnérable.
+  - **Fanal** (F) : une lumière posée qui récolte seule la lumière alentour, même en ton absence ; repasse
+    la reprendre.
+  - **Retour** (R) : après une courte concentration, ta lumière se rassemble au village le plus proche.
+
+  De petits boutons apparaissent au-dessus de la pulsation.
+- Sauvegarde au format 16 (expéditions, fanal).
+- 273 tests de logique, 34 vérifications navigateur.
+
 ## 1.4.0 — Routes, échanges, cités
 
 - **Routes de lumière** : depuis un village, en planifier une vers le plus proche qui ne lui est pas encore
