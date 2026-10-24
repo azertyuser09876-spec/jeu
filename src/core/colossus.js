@@ -1,5 +1,7 @@
 // Les colosses vivants : marche procédurale, chasse, attaques annoncées, sceaux, apaisement.
-// État persistant : state.colossi[id] = 'heard' (battement entendu) | 'found' (rencontré) | 'tamed' (apaisé).
+// État persistant : state.colossi[id] = 'heard' (battement entendu) | 'found' (rencontré) | 'tamed' (apaisé) ;
+// state.studied[id] = nombre de sceaux dévoilés par les érudits (voir expeditions.js) : un sceau voilé ne se
+// brise pas. Chaque sceau brisé ouvre une phase : il rugit, accélère, frappe plus vite et ajoute une attaque.
 // Tout le reste (position, sceaux entamés, toiles…) est recréé au chargement : un combat abandonné repart de zéro.
 (function (Vide) {
   'use strict';
@@ -29,6 +31,7 @@
       points: { head: [160, 0], back: [10, 0], tail: 'tail' },
       eyes: [[170, -14], [170, 14]],
       radius: 110,
+      extent: 260,    // demi-envergure (pattes comprises), pour que la caméra recule assez
       // Silhouette (demi-contour, de la tête à l'arrière ; symétrisée au dessin).
       outline: [[185, 0], [168, 18], [140, 24], [112, 22], [80, 50], [30, 64], [-20, 60], [-60, 50], [-95, 26], [-112, 0]],
     },
@@ -56,6 +59,7 @@
       points: { head: [120, 0], back: [20, 0], abdomen: [-110, 0], spinneret: [-175, 0] },
       eyes: [[128, -8], [128, 8], [118, -15], [118, 15]],
       radius: 120,
+      extent: 300,
       outline: [[135, 0], [120, 20], [90, 30], [50, 36], [20, 30], [0, 26], [-30, 52], [-80, 70], [-130, 64], [-170, 40], [-190, 0]],
     },
     serpent: {
@@ -65,16 +69,27 @@
       turn: 1.6,
       eyes: [[22, -11], [22, 11]],
       radius: 90,
+      extent: 330,
     },
   };
 
-  // Attaques : toujours annoncées (télégraphiées) avant de frapper.
+  // Attaques : toujours annoncées (télégraphiées) avant de frapper. Les longueurs sont données pour un colosse de
+  // taille REF et grandissent avec lui.
   const ATTACKS = {
-    stomp: { name: 'Piétinement', telegraph: 1.4, radius: 75, damage: 30, beings: 25 },
-    breath: { name: 'Souffle', telegraph: 1.6, active: 0.5, length: 650, spread: 0.3, damage: 45, beings: 30 },
+    stomp: { name: 'Piétinement', telegraph: 1.4, radius: 90, damage: 40, beings: 30 },
+    breath: { name: 'Souffle', telegraph: 1.6, active: 0.5, length: 650, spread: 0.3, damage: 55, beings: 35 },
     web: { name: 'Toile', telegraph: 1.2, radius: 150, duration: 7, slow: 0.35 },
-    charge: { name: 'Charge', telegraph: 1.5, length: 900, width: 55, speed: 700, damage: 50, beings: 35 },
+    charge: { name: 'Charge', telegraph: 1.5, length: 900, width: 55, speed: 700, damage: 60, beings: 40 },
+    // Phases : une onde au sol qui s'étend en anneau, percée de quelques brèches où se glisser (ou à franchir
+    // d'une ruée) ; un souffle étroit qui balaie un large arc ; trois toiles d'un coup.
+    quake: { name: 'Séisme', telegraph: 1.1, radius: 650, speed: 520, band: 50, gaps: 3, gap: 0.3, damage: 40, beings: 30 },
+    sweep: { name: 'Balayage', telegraph: 1.2, active: 1.6, length: 600, spread: 0.13, arc: 1.2, damage: 50, beings: 30 },
+    volley: { name: 'Pluie de toiles', telegraph: 1.4, radius: 130, spread: 260 },
   };
+  const REF = 1.3; // taille de référence des attaques
+
+  // Chaque phase (sceau brisé) : plus rapide, attaques plus fréquentes et mieux cachées.
+  const PHASE = { speed: 0.15, cooldown: 0.18, telegraph: 0.12 };
 
   const FOOT = { damage: 15, radius: 30, shadowRadius: 80, shadowDamage: 60 };
   const MAX_STEP = 1.5; // longueur maximale d'un pas, en foulées
@@ -89,6 +104,36 @@
     return state.colossi[id] || 'unknown';
   }
 
+  // Sceaux dévoilés par les érudits (les premiers d'abord).
+  function revealed(state, id) {
+    return Math.min(state.studied[id] || 0, def(id).seals.length);
+  }
+
+  // Un sceau de plus étudié. Renvoie vrai si cela en a dévoilé un.
+  function study(state, id) {
+    if (revealed(state, id) >= def(id).seals.length) return false;
+    state.studied[id] = revealed(state, id) + 1;
+    return true;
+  }
+
+  const veiled = (state, c, i) => i >= revealed(state, c.id);
+
+  // Phase du combat : nombre de sceaux déjà brisés.
+  const phase = (c) => Math.min(c.active, c.seals.length);
+
+  // Échelle des attaques : elles grandissent avec le colosse.
+  const reach = (c) => c.def.size / REF;
+
+  // Demi-envergure du colosse dans le monde.
+  function extent(c) {
+    return c.body.extent * c.def.size;
+  }
+
+  // Attaques possibles à cette phase : les siennes, plus une par sceau brisé.
+  function attacksOf(c) {
+    return c.def.attacks.concat((c.def.fury || []).slice(0, phase(c)));
+  }
+
   // Repaire : une direction propre à la partie, à la distance prévue.
   function lair(state, d) {
     const angle = util.hash2(d.lair.angleSeed, 7, state.seed) * Math.PI * 2;
@@ -98,7 +143,7 @@
   // Point de ronde d'un colosse apaisé : juste au-delà du bord du plus grand village (ou autour de l'origine).
   function residentSpot(state, angle) {
     const home = Vide.Villages.main(state);
-    const r = Territory.radius(home) + 90;
+    const r = Territory.radius(home) + 250;
     const cx = home ? home.x : 0, cy = home ? home.y : 0;
     return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
   }
@@ -263,7 +308,7 @@
     if (c.mode === 'resident' || c.mode === 'home') {
       // Apaisé : ses pas écrasent les ombres qui rôdent près du territoire.
       for (const s of game.shadows.list) {
-        if (Math.hypot(s.x - foot.x, s.y - foot.y) <= FOOT.shadowRadius) Vide.Shadows.damage(s, FOOT.shadowDamage);
+        if (Math.hypot(s.x - foot.x, s.y - foot.y) <= FOOT.shadowRadius * reach(c)) Vide.Shadows.damage(s, FOOT.shadowDamage);
       }
       return;
     }
@@ -347,12 +392,15 @@
 
   // --- Attaques ---
 
-  function startAttack(game, c) {
+  // Lance une attaque (au hasard parmi celles de la phase, ou celle demandée).
+  function startAttack(game, c, forced) {
     const { player } = game.state;
-    const kind = c.def.attacks[Math.floor(c.rng() * c.def.attacks.length)];
+    const list = attacksOf(c);
+    const kind = forced || list[Math.floor(c.rng() * list.length)];
     const a = ATTACKS[kind];
     const head = pointOf(c, 'head');
     const dir = Math.atan2(player.y - head.y, player.x - head.x);
+    const k = reach(c);
     if (kind === 'stomp') {
       const v = game.velocity;
       const angle = c.rng() * Math.PI * 2;
@@ -368,12 +416,90 @@
       };
     } else if (kind === 'web') {
       c.attack = { kind, t: 0, phase: 'telegraph', at: { x: player.x, y: player.y }, radius: a.radius };
+    } else if (kind === 'volley') {
+      const v = game.velocity;
+      const side = c.rng() * Math.PI * 2;
+      c.attack = {
+        kind, t: 0, phase: 'telegraph', radius: a.radius,
+        webs: [
+          { x: player.x, y: player.y },
+          { x: player.x + v.x * 1.2, y: player.y + v.y * 1.2 },
+          { x: player.x + Math.cos(side) * a.spread, y: player.y + Math.sin(side) * a.spread },
+        ],
+      };
     } else if (kind === 'charge') {
-      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir, length: a.length, width: a.width, travelled: 0, hit: false };
+      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir, length: a.length * k, width: a.width, travelled: 0, hit: false };
+    } else if (kind === 'quake') {
+      // Les brèches, réparties autour de lui, un peu au hasard.
+      const first = c.rng() * Math.PI * 2;
+      const gaps = [];
+      for (let g = 0; g < a.gaps; g++) gaps.push(first + (g / a.gaps) * Math.PI * 2 + (c.rng() - 0.5) * 0.6);
+      c.attack = { kind, t: 0, phase: 'telegraph', origin: { x: c.core.x, y: c.core.y }, length: a.radius * k, ring: 0, gaps, hit: false, struck: new Set() };
+    } else if (kind === 'sweep') {
+      const turn = c.rng() < 0.5 ? -1 : 1;
+      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir: dir - turn * a.arc, from: dir - turn * a.arc, to: dir + turn * a.arc, length: a.length * k, spread: a.spread, hit: false };
     } else {
-      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir, length: a.length, spread: a.spread };
+      c.attack = { kind, t: 0, phase: 'telegraph', origin: head, dir, length: a.length * k, spread: a.spread };
     }
+    // Chaque phase annonce ses coups un peu plus tard.
+    c.attack.telegraph = a.telegraph / (1 + PHASE.telegraph * phase(c));
     Vide.Sim.emit(game, 'colossusAttack', { id: c.id, kind });
+  }
+
+  // L'angle (vu depuis le centre du séisme) tombe-t-il dans une brèche ?
+  function inGap(atk, angle) {
+    const w = ATTACKS.quake.gap;
+    return atk.gaps.some((g) => {
+      let diff = angle - g;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      return Math.abs(diff) <= w;
+    });
+  }
+
+  // Le séisme frappe ce que son anneau traverse (hors des brèches), une fois chacun.
+  function quaking(game, c, dt) {
+    const atk = c.attack;
+    const a = ATTACKS.quake;
+    const before = atk.ring;
+    atk.ring = Math.min(atk.length, atk.ring + a.speed * dt);
+    const crossed = (x, y) => {
+      const d = Math.hypot(x - atk.origin.x, y - atk.origin.y);
+      return d >= before - a.band / 2 && d <= atk.ring + a.band / 2 && !inGap(atk, Math.atan2(y - atk.origin.y, x - atk.origin.x));
+    };
+    const { player } = game.state;
+    if (!atk.hit && crossed(player.x, player.y)) {
+      atk.hit = true;
+      Vide.Combat.hurtPlayer(game, a.damage, atk.origin.x, atk.origin.y);
+    }
+    for (const b of game.colony.beings) {
+      if (Colony.isActive(b) && !atk.struck.has(b) && crossed(b.x, b.y)) {
+        atk.struck.add(b);
+        Vide.Combat.hurtBeing(game, b, a.beings);
+      }
+    }
+    if (atk.ring >= atk.length) endAttack(c);
+  }
+
+  // Le balayage tourne d'un bord à l'autre de son arc ; il touche une fois.
+  function sweeping(game, c, dt) {
+    const atk = c.attack;
+    const a = ATTACKS.sweep;
+    const p = Math.min(1, atk.t / a.active);
+    atk.dir = atk.from + (atk.to - atk.from) * p;
+    const { player } = game.state;
+    if (!atk.hit && inCone(atk, player.x, player.y)) {
+      atk.hit = true;
+      Vide.Combat.hurtPlayer(game, a.damage, atk.origin.x, atk.origin.y);
+    }
+    for (const b of game.colony.beings) {
+      if (Colony.isActive(b) && inCone(atk, b.x, b.y)) Vide.Combat.hurtBeing(game, b, a.beings * dt * 2);
+    }
+  }
+
+  function endAttack(c) {
+    c.attack = null;
+    c.attackCd = (3.5 + c.rng() * 2) * Math.max(0.4, 1 - PHASE.cooldown * phase(c));
   }
 
   function inCone(atk, x, y) {
@@ -390,12 +516,16 @@
     const atk = c.attack;
     const a = ATTACKS[atk.kind];
     const { player } = game.state;
-    if (atk.kind === 'web') {
-      game.webs.push({ x: atk.at.x, y: atk.at.y, radius: atk.radius, life: a.duration, max: a.duration });
-      Vide.Sim.emit(game, 'web', { x: atk.at.x, y: atk.at.y });
+    if (atk.kind === 'web' || atk.kind === 'volley') {
+      const web = ATTACKS.web;
+      for (const at of atk.webs || [atk.at]) {
+        game.webs.push({ x: at.x, y: at.y, radius: atk.radius, life: web.duration, max: web.duration });
+        Vide.Sim.emit(game, 'web', { x: at.x, y: at.y });
+      }
       return;
     }
-    if (atk.kind === 'charge') return; // la charge frappe pendant sa course (voir charging)
+    // La charge, le séisme et le balayage frappent pendant leur course (voir charging, quaking, sweeping).
+    if (atk.kind === 'charge' || atk.kind === 'quake' || atk.kind === 'sweep') return;
     const hits = (x, y) => (atk.kind === 'stomp'
       ? atk.points.some((p) => Math.hypot(x - p.x, y - p.y) <= atk.radius)
       : inCone(atk, x, y));
@@ -426,32 +556,29 @@
       if (Colony.isActive(b) && Math.hypot(b.x - c.x, b.y - c.y) <= reach) Vide.Combat.hurtBeing(game, b, a.beings * dt * 4);
     }
     if (atk.travelled >= atk.length) {
-      c.attack = null;
-      c.attackCd = 3 + c.rng() * 2;
+      endAttack(c);
       c.vx *= 0.2;
       c.vy *= 0.2;
     }
   }
 
+  // Phases d'une attaque : annonce, puis frappe (instantanée, ou qui dure : souffle, balayage, séisme, charge).
   function updateAttack(game, c, dt) {
     const atk = c.attack;
     const a = ATTACKS[atk.kind];
     atk.t += dt;
-    if (atk.phase === 'telegraph' && atk.t >= a.telegraph) {
+    if (atk.phase === 'telegraph' && atk.t >= (atk.telegraph || a.telegraph)) {
       strike(game, c);
-      if (atk.kind === 'charge') {
-        atk.phase = 'active';
-        atk.t = 0;
-      } else if (a.active) {
+      if (atk.kind === 'charge' || atk.kind === 'quake' || a.active) {
         atk.phase = 'active';
         atk.t = 0;
       } else {
-        c.attack = null;
-        c.attackCd = 3.5 + c.rng() * 2;
+        endAttack(c);
       }
-    } else if (atk.phase === 'active' && atk.kind !== 'charge' && atk.t >= a.active) {
-      c.attack = null;
-      c.attackCd = 3.5 + c.rng() * 2;
+    } else if (atk.phase === 'active') {
+      if (atk.kind === 'quake') quaking(game, c, dt);
+      else if (atk.kind === 'sweep') sweeping(game, c, dt);
+      if (c.attack && a.active && atk.t >= a.active) endAttack(c);
     }
   }
 
@@ -466,7 +593,7 @@
     c.mode = 'hunt';
     if (status(game.state, c.id) === 'heard') {
       game.state.colossi[c.id] = 'found';
-      Vide.Sim.emit(game, 'colossusFound', { id: c.id });
+      Vide.Sim.emit(game, 'colossusFound', { id: c.id, veiled: veiled(game.state, c, 0) });
     }
   }
 
@@ -494,11 +621,17 @@
     Vide.Sim.emit(game, 'colossusTamed', { id: c.id });
   }
 
-  // Coup porté au sceau actif (par la pulsation) ; ×2 quand le colosse est à genou.
+  // Coup porté au sceau actif (par la pulsation) ; ×2 quand le colosse est à genou. Un sceau voilé (pas encore
+  // étudié) ne réagit pas. Un sceau brisé (sauf le dernier) ouvre une phase : il se redresse en rugissant, et
+  // l'onde de son rugissement part aussitôt.
   function sealHit(game, c, amount) {
     const seal = activeSeal(c);
     if (!seal || !hostile(c)) return false;
     provoke(game, c);
+    if (veiled(game.state, c, c.active)) {
+      Vide.Sim.emit(game, 'veiled', { id: c.id });
+      return false;
+    }
     seal.hp -= amount * (c.mode === 'kneel' ? 2 : 1);
     c.hitFlash = 1;
     if (seal.hp > 0) return false;
@@ -507,7 +640,15 @@
     c.active++;
     const left = c.seals.length - c.active;
     Vide.Sim.emit(game, 'sealBroken', { id: c.id, left });
-    if (left === 0) tame(game, c);
+    if (left === 0) {
+      tame(game, c);
+    } else {
+      c.mode = 'hunt';
+      c.kneel = 0;
+      c.stagger = 0;
+      startAttack(game, c, 'quake');
+      Vide.Sim.emit(game, 'phase', { id: c.id, phase: phase(c), veiled: veiled(game.state, c, c.active) });
+    }
     return true;
   }
 
@@ -590,12 +731,13 @@
           moved = true;
           break;
         }
+        const k = reach(c);
         if (c.attack && c.attack.kind === 'charge') stop(c, dt); // il se ramasse avant de foncer
-        else if (dist > 380) walkTo(c, player.x, player.y, d.speed, dt);
+        else if (dist > 380 * k) walkTo(c, player.x, player.y, d.speed * (1 + PHASE.speed * phase(c)), dt);
         else stop(c, dt);
         turnTowards(c, Math.atan2(player.y - c.y, player.x - c.x), dt);
         if (c.attack) updateAttack(game, c, dt);
-        else if (c.attackCd <= 0 && dist < 800) startAttack(game, c);
+        else if (c.attackCd <= 0 && dist < 800 * k) startAttack(game, c);
         break;
       }
       case 'kneel':
@@ -620,7 +762,7 @@
       }
       case 'resident': {
         // Ronde lente autour du territoire.
-        const r = Territory.radius(Vide.Villages.main(state)) + 90;
+        const r = Territory.radius(Vide.Villages.main(state)) + 250;
         c.orbit += (16 / r) * dt;
         const spot = residentSpot(state, c.orbit);
         walkTo(c, spot.x, spot.y, 22, dt);
@@ -668,7 +810,8 @@
   }
 
   Vide.Colossus = {
-    BODIES, ATTACKS, FOOT, def, status, lair, residentSpot, toWorld, tailPoints, pointOf, activeSeal, sealPos, knee,
-    create, sync, update, hit, sealHit, pulseHit, target, hostile, modify, inCone, slowAt,
+    BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot,
+    toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile,
+    modify, inCone, inGap, slowAt, startAttack,
   };
 })(globalThis.Vide);

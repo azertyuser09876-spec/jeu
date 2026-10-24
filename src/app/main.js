@@ -120,6 +120,7 @@
   Vide.game = game;
   Vide.renderer = renderer;
   Vide.intro = intro;
+  Vide.map = map;
   canvas.addEventListener('pointerdown', () => Vide.Intro.skip(intro));
 
   // Dispersée (ou rappelée par le Retour), la lumière éclate puis se rassemble au village : on rejoue l'éveil.

@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 17;
+  const FORMAT = 18;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -61,6 +61,13 @@
     15: (data) => ({ ...data, beacon: null }),
     // 1.6 : les nids d'ombre.
     16: (data) => ({ ...data, nests: [], cleared: [], nestTimer: null }),
+    // 1.7 : les sceaux voilés. Un colosse déjà rencontré avait montré tous ses sceaux : ils restent dévoilés.
+    17: (data) => {
+      const studied = {};
+      const colossi = data.colossi && typeof data.colossi === 'object' ? data.colossi : {};
+      for (const d of Vide.COLOSSI) if (colossi[d.id] === 'found') studied[d.id] = d.seals.length;
+      return { ...data, studied };
+    },
   };
 
   function serialize(state, now) {
@@ -154,12 +161,15 @@
       if (![e.x, e.y, e.tx, e.ty].every(Number.isFinite) || !Number.isInteger(e.id)) continue;
       const members = {};
       const raw2 = isObject(e.members) ? e.members : {};
-      for (const id of ['lueur', 'eclaireur', 'gardien']) if (Number.isInteger(raw2[id]) && raw2[id] > 0) members[id] = raw2[id];
+      for (const id of ['lueur', 'eclaireur', 'erudit', 'gardien']) if (Number.isInteger(raw2[id]) && raw2[id] > 0) members[id] = raw2[id];
       if (!Object.keys(members).length) continue;
+      const scholars = e.kind === 'scholars';
+      if (scholars && !Vide.COLOSSI.some((d) => d.id === e.colossus)) continue;
       state.expeditions.push({
         id: e.id, kind: e.kind, from: Number.isInteger(e.from) ? e.from : 0, x: e.x, y: e.y, tx: e.tx, ty: e.ty,
         type: e.kind === 'colons' ? (Vide.VILLAGE_TYPES.some((t) => t.id === e.type) ? e.type : 'jardins') : null,
         members, hp: Math.min(positive(e.hp, 1), Vide.Expeditions.hpOf(members)) || 1, back: e.back === true,
+        ...(scholars ? { colossus: e.colossus, study: Number.isFinite(e.study) && e.study >= 0 ? e.study : null } : {}),
       });
     }
 
@@ -206,6 +216,11 @@
     const colossi = isObject(raw.colossi) ? raw.colossi : {};
     for (const d of Vide.COLOSSI) {
       if (['heard', 'found', 'tamed'].includes(colossi[d.id])) state.colossi[d.id] = colossi[d.id];
+    }
+    const studied = isObject(raw.studied) ? raw.studied : {};
+    for (const d of Vide.COLOSSI) {
+      const n = studied[d.id];
+      if (Number.isInteger(n) && n > 0) state.studied[d.id] = Math.min(n, d.seals.length);
     }
 
     const zones = isObject(raw.zones) ? raw.zones : {};

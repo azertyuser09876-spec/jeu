@@ -196,6 +196,7 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
 
 .boss-seals .broken { opacity: 0.25; }
 .boss-seals .active { text-shadow: 0 0 8px #ffd98a; }
+.boss-seals .veiled { opacity: 0.45; color: #a9b0cf; }
 
 /* Jauge : quand elle est pleine, le colosse plie le genou. */
 .boss-stagger {
@@ -485,6 +486,11 @@ body.dispersing > :not(#view):not(#vignette):not(#toast) {
     transform: none;
   }
   #shop-tabs { margin-bottom: 6px; }
+  /* La barre du colosse passe sous le compteur de lumière. */
+  #boss {
+    top: calc(max(16px, env(safe-area-inset-top)) + 84px);
+    width: calc(100% - 40px);
+  }
   #shop-list {
     flex-direction: row;
     overflow-x: auto;

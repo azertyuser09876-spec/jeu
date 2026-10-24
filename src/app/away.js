@@ -32,6 +32,7 @@
     for (const e of report.expeditions || []) {
       if (e.type === 'settled') lines.push(`Des colons ont fondé ${to(e.village)}.`);
       if (e.type === 'scouted') lines.push('Des éclaireurs ont exploré au loin.');
+      if (e.type === 'studied') lines.push(`Les érudits ont dévoilé un sceau ${ofNamed(e.id)} (${e.revealed}/${e.total}).`);
     }
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
@@ -100,16 +101,22 @@
       'Le bastion forme un soldat avec la réserve de son intendant. En trop, ses soldats iront aux villages reliés.')),
     city: (e) => `Deux villages se rejoignent : une cité naît (${e.types.map((t) => Vide.Villages.type(t).name).join(' · ')}). `
       + 'Elle garde leurs spécialités.',
-    expedition: (e) => (e.kind === 'colons'
-      ? `Des colons partent fonder ${to(e.type)} au loin. Les ombres pourraient les attaquer en chemin.`
-      : 'Des éclaireurs partent explorer au loin.'),
+    expedition: (e) => {
+      if (e.kind === 'colons') return `Des colons partent fonder ${to(e.type)} au loin. Les ombres pourraient les attaquer en chemin.`;
+      if (e.kind === 'scholars') return `Des érudits partent étudier ${named(e.colossus)} depuis un abri.`;
+      return 'Des éclaireurs partent explorer au loin.';
+    },
+    studying: (e) => `Les érudits ont trouvé leur abri. Ils observent ${named(e.id)}.`,
+    studied: (e) => (e.revealed < e.total
+      ? `Les érudits ont percé un voile : un sceau ${ofNamed(e.id)} se dévoile (${e.revealed}/${e.total}).`
+      : `Tous les sceaux ${ofNamed(e.id)} sont dévoilés. Les érudits rentrent.`),
     scouted: (e) => (e.zones.length
       ? `Les éclaireurs ont trouvé : ${e.zones.map((z) => Vide.Zones.get(z).name).join(', ')}. Ils rentrent.`
       : 'Les éclaireurs ont exploré au loin (voir la carte). Ils rentrent.'),
-    returned: 'Les éclaireurs sont rentrés au village.',
+    returned: (e) => (e.kind === 'scholars' ? 'Les érudits sont rentrés au village.' : 'Les éclaireurs sont rentrés au village.'),
     settled: (e) => `Les colons arrivent et fondent ${to(e.village)}.`,
     colonsJoined: (e) => `La place était prise : les colons rejoignent ${to(e.village)} le plus proche.`,
-    expeditionLost: (e) => `Les ombres ont dévoré une expédition (${e.kind === 'colons' ? 'colons' : 'éclaireurs'}).`,
+    expeditionLost: (e) => `Les ombres ont dévoré une expédition (${{ colons: 'colons', scholars: 'érudits' }[e.kind] || 'éclaireurs'}).`,
     beacon: () => (seen.beacon ? null : (seen.beacon = true,
       'Ton fanal brille : il récoltera seul la lumière alentour, même en ton absence. Repasse la reprendre.')),
     beaconCollected: (e) => `Le fanal te rend ✦ ${util.formatNumber(e.light)}.`,
@@ -133,8 +140,15 @@
     broken: (e) => `${Vide.Structures.def(e.building).name} s’éteint sous les ombres. Les bâtisseurs le répareront.`,
     repaired: (e) => `${Vide.Structures.def(e.building).name} brille de nouveau.`,
     heartbeat: (e) => Vide.Colossus.def(e.id).heartbeat,
-    colossusFound: (e) => `Brise ses sceaux avec ta pulsation. Ton armée peut le faire plier.`,
+    colossusFound: (e) => (e.veiled
+      ? 'Ses sceaux sont voilés : ta pulsation n’y peut rien. Envoie des érudits l’étudier (carte, M). Ton armée peut déjà le faire plier.'
+      : 'Brise ses sceaux avec ta pulsation. Ton armée peut le faire plier.'),
     sealBroken: (e) => (e.left ? `Un sceau se brise. Encore ${e.left}.` : null),
+    veiled: (e) => (seen['veiled' + e.id] ? null : (seen['veiled' + e.id] = true,
+      'Ce sceau est voilé : ton onde glisse dessus. Tes érudits doivent d’abord l’étudier.')),
+    phase: (e) => (e.veiled
+      ? 'Il se redresse en rugissant, plus furieux. Le sceau suivant est encore voilé.'
+      : 'Il se redresse en rugissant : plus vif, et une attaque de plus. Glisse-toi dans les brèches de l’onde.'),
     kneel: (e) => {
       const d = Vide.Colossus.def(e.id);
       return `${d.name} ${d.kneelText} ! Ses sceaux sont vulnérables.`;
@@ -163,6 +177,9 @@
   };
   const of = (t) => article(t, true);
   const to = (t) => article(t, false);
+  // « le Veilleur », « du Veilleur », « de la Tisseuse ».
+  const named = (id) => Vide.Colossus.def(id).name.replace(/^L/, 'l');
+  const ofNamed = (id) => Vide.Colossus.def(id).name.replace(/^Le /, 'du ').replace(/^La /, 'de la ');
 
   // Message à la naissance du premier être de chaque espèce.
   const FIRST_BIRTH = {

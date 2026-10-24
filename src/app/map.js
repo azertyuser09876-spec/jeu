@@ -47,6 +47,7 @@
       return btn;
     });
     $('exp-scouts').addEventListener('click', () => launch(map, 'scouts'));
+    $('exp-scholars').addEventListener('click', () => launch(map, 'scholars'));
     $('exp-escort').addEventListener('change', () => refreshActions(map));
     $('exp-close').addEventListener('click', () => {
       map.target = null;
@@ -58,6 +59,8 @@
       const rect = map.canvas.getBoundingClientRect();
       const { ox, oy, scale } = map.view;
       map.target = { x: (e.clientX - rect.left - ox) / scale, y: (e.clientY - rect.top - oy) / scale };
+      // Toucher près d'un colosse aux sceaux voilés propose d'y envoyer des érudits.
+      map.target.colossus = Vide.Expeditions.studyable(map.game.state, map.target.x, map.target.y, Math.max(1500, 24 / scale));
       $('map-actions').hidden = false;
       refreshActions(map);
       draw(map);
@@ -79,17 +82,34 @@
     const colonWhy = E.blocked(state, 'colons', x, y, escort);
     for (const btn of map.colonButtons) btn.disabled = Boolean(colonWhy);
     const colonCost = Vide.util.formatNumber(E.cost(state, 'colons', x, y).light);
+    // Érudits : vers l'abri d'où observer le colosse.
+    const id = map.target.colossus;
+    const scholars = $('exp-scholars');
+    scholars.hidden = !id;
+    let scholarWhy = null;
+    if (id) {
+      const spot = E.studySpot(state, id);
+      const d = Vide.Colossus.def(id);
+      scholarWhy = E.blocked(state, 'scholars', spot.x, spot.y, escort, id);
+      const from = E.origin(state, 'scholars', spot.x, spot.y, escort);
+      scholars.textContent = `érudits · ✦ ${Vide.util.formatNumber(E.cost(state, 'scholars', spot.x, spot.y, from).light)}`;
+      scholars.disabled = Boolean(scholarWhy);
+      $('exp-target').textContent = `${d.name} · sceaux dévoilés ${Vide.Colossus.revealed(state, id)}/${d.seals.length}`;
+    }
     $('exp-status').textContent = [
+      id && scholarWhy ? `érudits : ${scholarWhy}` : '',
       scoutWhy ? `éclaireurs : ${scoutWhy}` : '',
       colonWhy ? `colons : ${colonWhy}` : `colons : ✦ ${colonCost}, trois lueurs du village`,
     ].filter(Boolean).join(' · ');
   }
 
   function launch(map, kind, type) {
-    const { x, y } = map.target;
-    const exp = Vide.Expeditions.launch(map.game.state, kind, x, y, { type, escort: $('exp-escort').checked });
+    let { x, y } = map.target;
+    const colossus = kind === 'scholars' ? map.target.colossus : null;
+    if (colossus) ({ x, y } = Vide.Expeditions.studySpot(map.game.state, colossus));
+    const exp = Vide.Expeditions.launch(map.game.state, kind, x, y, { type, colossus, escort: $('exp-escort').checked });
     if (!exp) return refreshActions(map);
-    Vide.Sim.emit(map.game, 'expedition', { kind, type });
+    Vide.Sim.emit(map.game, 'expedition', { kind, type, colossus });
     map.target = null;
     $('map-actions').hidden = true;
     draw(map);
@@ -282,7 +302,7 @@
       ctx.lineTo(X(g.x), Y(g.y));
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = e.kind === 'colons' ? rgba(Vide.Villages.type(e.type).tint, 0.95) : '#fff';
+      ctx.fillStyle = e.kind === 'colons' ? rgba(Vide.Villages.type(e.type).tint, 0.95) : e.kind === 'scholars' ? '#aac8ff' : '#fff';
       ctx.beginPath();
       ctx.arc(X(e.x), Y(e.y), 2.5, 0, Math.PI * 2);
       ctx.fill();

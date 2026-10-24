@@ -69,8 +69,8 @@
       ctx.globalAlpha = 0.55;
       line(ctx, [hip, knee, foot], (kneeling ? 4 : 3) * px * 1.4, rgb(tint, 1));
       ctx.globalAlpha = 0.12;
-      line(ctx, [hip, knee, foot], 16 * px, rgb(tint, 1));
-      Render.drawGlow(ctx, glow, knee.x, knee.y, 18, 0.7);
+      line(ctx, [hip, knee, foot], 12 * s, rgb(tint, 1));
+      Render.drawGlow(ctx, glow, knee.x, knee.y, 14 * s, 0.7);
       // Un pied levé brille plus et grossit : on « voit » la hauteur du pas.
       Render.drawGlow(ctx, glow, foot.x, foot.y, (22 + leg.lift * 22) * s, 0.55 + leg.lift * 0.3);
     });
@@ -187,9 +187,11 @@
   }
 
   // Sceaux : rune dorée qui pulse pour l'actif, cercle pâle pour les suivants, trace pour les brisés.
-  function drawSeals(r, c) {
+  // Un sceau voilé (pas encore étudié) ne se voit pas : seule l'onde qui le frôle fait frémir un voile gris.
+  function drawSeals(r, c, state) {
     const { ctx } = r;
     const px = 1 / r.camera.scale;
+    const k = Colossus.reach(c);
     c.seals.forEach((seal, i) => {
       const p = Colossus.pointOf(c, seal.at);
       if (seal.broken) {
@@ -197,8 +199,30 @@
         ctx.strokeStyle = '#fff3d6';
         ctx.lineWidth = px;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 10 * k, 0, Math.PI * 2);
         ctx.stroke();
+        return;
+      }
+      if (Colossus.veiled(state, c, i)) {
+        const flash = r.veils && r.veils.get(c.id);
+        if (i !== c.active || !flash) return;
+        const t = (r.time - flash) / 1.4;
+        if (t >= 1) return;
+        ctx.globalAlpha = 0.45 * (1 - t);
+        ctx.strokeStyle = '#9ea6c8';
+        ctx.lineWidth = 1.2 * px;
+        for (let ring = 0; ring < 3; ring++) {
+          ctx.beginPath();
+          for (let a = 0; a <= 24; a++) {
+            const ang = (a / 24) * Math.PI * 2;
+            const wob = 1 + 0.18 * Math.sin(ang * 5 + r.time * 3 + ring * 2);
+            const rad = (14 + ring * 9 + t * 20) * k * wob;
+            const x = p.x + Math.cos(ang) * rad, y = p.y + Math.sin(ang) * rad;
+            if (a === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
         return;
       }
       if (i !== c.active) {
@@ -206,23 +230,23 @@
         ctx.strokeStyle = '#fff3d6';
         ctx.lineWidth = px;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 13 * k, 0, Math.PI * 2);
         ctx.stroke();
         return;
       }
       const beat = 0.6 + 0.4 * Math.sin(c.time * 4);
-      Render.drawGlow(ctx, r.glows.rare, p.x, p.y, 60 * beat, 0.8);
+      Render.drawGlow(ctx, r.glows.rare, p.x, p.y, 60 * k * beat, 0.8);
       ctx.globalAlpha = 0.9;
       ctx.strokeStyle = '#ffe6a8';
       ctx.lineWidth = 1.5 * px;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 18 * k, 0, Math.PI * 2);
       ctx.stroke();
       ctx.beginPath();
-      for (let k = 0; k <= 3; k++) {
-        const a = c.time * 1.5 + (k / 3) * Math.PI * 2;
-        const x = p.x + Math.cos(a) * 12, y = p.y + Math.sin(a) * 12;
-        if (k === 0) ctx.moveTo(x, y);
+      for (let n = 0; n <= 3; n++) {
+        const a = c.time * 1.5 + (n / 3) * Math.PI * 2;
+        const x = p.x + Math.cos(a) * 12 * k, y = p.y + Math.sin(a) * 12 * k;
+        if (n === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
@@ -230,9 +254,27 @@
       ctx.globalAlpha = 0.8;
       ctx.lineWidth = 2.5 * px;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 25, -Math.PI / 2, -Math.PI / 2 + (seal.hp / seal.max) * Math.PI * 2);
+      ctx.arc(p.x, p.y, 25 * k, -Math.PI / 2, -Math.PI / 2 + (seal.hp / seal.max) * Math.PI * 2);
       ctx.stroke();
     });
+  }
+
+  // Anneau du séisme (ou son annonce), interrompu à chaque brèche.
+  function ringWithGaps(ctx, atk, radius) {
+    const step = 0.04;
+    ctx.beginPath();
+    let open = false;
+    for (let a = 0; a < Math.PI * 2 + step / 2; a += step) {
+      if (Colossus.inGap(atk, a)) {
+        open = false;
+        continue;
+      }
+      const x = atk.origin.x + Math.cos(a) * radius, y = atk.origin.y + Math.sin(a) * radius;
+      if (open) ctx.lineTo(x, y);
+      else ctx.moveTo(x, y);
+      open = true;
+    }
+    ctx.stroke();
   }
 
   // Attaques annoncées : cercles qui se remplissent (piétinement), cône qui s'épaissit (souffle).
@@ -241,7 +283,8 @@
     if (!atk) return;
     const { ctx } = r;
     const a = Colossus.ATTACKS[atk.kind];
-    const k = atk.phase === 'telegraph' ? Math.min(1, atk.t / a.telegraph) : 1;
+    const k = atk.phase === 'telegraph' ? Math.min(1, atk.t / (atk.telegraph || a.telegraph)) : 1;
+    const px = 1 / r.camera.scale;
     ctx.globalCompositeOperation = 'source-over';
     if (atk.kind === 'stomp') {
       for (const p of atk.points) {
@@ -257,21 +300,64 @@
         ctx.arc(p.x, p.y, atk.radius, 0, Math.PI * 2);
         ctx.stroke();
       }
-    } else if (atk.kind === 'web') {
+    } else if (atk.kind === 'web' || atk.kind === 'volley') {
       // La toile se dessine avant de tomber.
       ctx.globalAlpha = 0.15 + 0.35 * k;
       ctx.strokeStyle = '#cfffe8';
-      ctx.lineWidth = 1.2 / r.camera.scale;
-      for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2;
+      ctx.lineWidth = 1.2 * px;
+      for (const at of atk.webs || [atk.at]) {
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(at.x, at.y);
+          ctx.lineTo(at.x + Math.cos(a) * atk.radius * k, at.y + Math.sin(a) * atk.radius * k);
+          ctx.stroke();
+        }
         ctx.beginPath();
-        ctx.moveTo(atk.at.x, atk.at.y);
-        ctx.lineTo(atk.at.x + Math.cos(a) * atk.radius * k, atk.at.y + Math.sin(a) * atk.radius * k);
+        ctx.arc(at.x, at.y, atk.radius, 0, Math.PI * 2);
         ctx.stroke();
       }
+    } else if (atk.kind === 'quake') {
+      // Annonce : l'anneau qui viendra, ses brèches marquées d'or. Puis l'onde qui s'étend.
+      ctx.lineCap = 'butt';
+      if (atk.phase === 'telegraph') {
+        ctx.globalAlpha = 0.1 + 0.25 * k;
+        ctx.strokeStyle = '#6b3fd1';
+        ctx.lineWidth = 2 * px;
+        ringWithGaps(ctx, atk, atk.length * (0.3 + 0.7 * k));
+      } else {
+        ctx.globalAlpha = 0.45 * (1 - 0.6 * (atk.ring / atk.length));
+        ctx.strokeStyle = '#b89cff';
+        ctx.lineWidth = Colossus.ATTACKS.quake.band;
+        ringWithGaps(ctx, atk, atk.ring);
+      }
+      ctx.globalAlpha = atk.phase === 'telegraph' ? 0.4 + 0.5 * k : 0.5;
+      ctx.strokeStyle = '#ffd98a';
+      ctx.lineWidth = 2 * px;
+      const w = Colossus.ATTACKS.quake.gap;
+      for (const g of atk.gaps) {
+        ctx.beginPath();
+        ctx.arc(atk.origin.x, atk.origin.y, atk.length, g - w, g + w);
+        ctx.stroke();
+      }
+      ctx.lineCap = 'round';
+    } else if (atk.kind === 'sweep') {
+      // L'arc entier qu'il va balayer, puis le faisceau qui le parcourt.
+      ctx.globalAlpha = atk.phase === 'telegraph' ? 0.05 + 0.12 * k : 0.07;
+      ctx.fillStyle = '#6b3fd1';
       ctx.beginPath();
-      ctx.arc(atk.at.x, atk.at.y, atk.radius, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.moveTo(atk.origin.x, atk.origin.y);
+      ctx.arc(atk.origin.x, atk.origin.y, atk.length, Math.min(atk.from, atk.to), Math.max(atk.from, atk.to));
+      ctx.closePath();
+      ctx.fill();
+      const active = atk.phase === 'active';
+      ctx.globalAlpha = active ? 0.5 : 0.15 + 0.3 * k;
+      ctx.fillStyle = active ? '#e9dcff' : '#8d63ff';
+      ctx.beginPath();
+      ctx.moveTo(atk.origin.x, atk.origin.y);
+      ctx.arc(atk.origin.x, atk.origin.y, atk.length, atk.dir - atk.spread, atk.dir + atk.spread);
+      ctx.closePath();
+      ctx.fill();
     } else if (atk.kind === 'charge') {
       // Le couloir de la charge, tracé avant qu'il ne fonce.
       const w = atk.width * c.def.size;
@@ -298,11 +384,14 @@
     ctx.globalCompositeOperation = 'lighter';
   }
 
-  // Ondes au sol : pas lourds et impacts de piétinement.
+  // Ondes au sol : pas lourds et impacts de piétinement. (Et l'instant où l'onde a frôlé un sceau voilé.)
   function collect(r, game) {
     r.quakes = r.quakes || [];
+    r.veils = r.veils || new Map();
     const { player } = game.state;
     for (const e of game.events) {
+      if (e.type === 'veiled') r.veils.set(e.id, r.time);
+      if (e.type === 'phase') r.shake = Math.max(r.shake || 0, 12);
       if (e.type === 'footfall') {
         r.quakes.push({ x: e.x, y: e.y, t: 0, size: 40 });
         const d = Math.hypot(e.x - player.x, e.y - player.y);
@@ -335,14 +424,14 @@
 
   Vide.Draw.colossi = function (r, game, dt) {
     collect(r, game);
-    const view = Render.viewBounds(r, 600);
+    const view = Render.viewBounds(r, 1200);
     drawWebs(r, game);
     for (const c of game.colossi) {
       if (c.core.x < view.left || c.core.x > view.right || c.core.y < view.top || c.core.y > view.bottom) continue;
       drawAttack(r, c);
       if (c.body.kind === 'serpent') drawSerpent(r, c);
       else drawBody(r, c);
-      if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c);
+      if (c.mode !== 'resident' && c.mode !== 'home') drawSeals(r, c, game.state);
     }
     drawQuakes(r, dt);
   };
@@ -359,20 +448,30 @@
 
   // Repère du colosse sur la carte une fois rencontré.
   Vide.MapMarks = Vide.MapMarks || [];
+  // Entendu : un cercle pâle (on sait d'où vient le battement). Autour, un point par sceau, doré s'il est dévoilé.
   Vide.MapMarks.push((ctx, X, Y, state) => {
     for (const d of Vide.COLOSSI) {
       const st = Colossus.status(state, d.id);
-      if (st !== 'found') continue;
+      if (st !== 'found' && st !== 'heard') continue;
       const at = Colossus.lair(state, d);
-      ctx.strokeStyle = 'rgba(255, 217, 138, 0.9)';
+      const alpha = st === 'found' ? 0.9 : 0.45;
+      ctx.strokeStyle = `rgba(255, 217, 138, ${alpha})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(X(at.x), Y(at.y), 7, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.fillStyle = 'rgba(255, 217, 138, 0.9)';
+      ctx.fillStyle = `rgba(255, 217, 138, ${alpha})`;
       ctx.beginPath();
       ctx.arc(X(at.x), Y(at.y), 2, 0, Math.PI * 2);
       ctx.fill();
+      const shown = Colossus.revealed(state, d.id);
+      d.seals.forEach((seal, i) => {
+        const a = -Math.PI / 2 + (i / d.seals.length) * Math.PI * 2;
+        ctx.fillStyle = i < shown ? 'rgba(255, 230, 168, 0.95)' : 'rgba(150, 160, 190, 0.45)';
+        ctx.beginPath();
+        ctx.arc(X(at.x) + Math.cos(a) * 12, Y(at.y) + Math.sin(a) * 12, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
   });
 })(globalThis.Vide);

@@ -122,6 +122,11 @@
       scoutCost: 1.5,    // lumière par unité de distance, pour des éclaireurs
       reveal: 2600,      // rayon révélé par les éclaireurs
       engage: 90,        // une ombre plus proche que ça arrête l'expédition, qui fait face
+      scholars: 2,       // érudits qui partent étudier un colosse
+      scholarCost: 3,    // lumière par unité de distance, pour des érudits
+      studyRange: 1900,  // ils l'observent à cette distance de son repaire
+      studyTime: 45,     // secondes d'observation pour dévoiler un sceau…
+      knowledgeSpeed: 2, // …deux fois moins si leur village a du savoir
     },
 
     // Capacités de la lumière (voir abilities.js).

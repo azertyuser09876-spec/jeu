@@ -165,17 +165,20 @@
     setClass(ui.pulseBtn, 'ready', Vide.Sim.pulseReady(game));
   }
 
-  // Combat contre un colosse : son nom, ses sceaux (● actif, ○ à venir, · brisé), la jauge qui le fait plier.
+  // Combat contre un colosse : son nom, ses sceaux (● actif, ○ à venir, · brisé, ◌ voilé), la jauge qui le fait plier.
   function updateBoss(ui) {
     const { game } = ui;
     const { player } = game.state;
     const c = game.colossi.find((k) => (k.mode === 'hunt' || k.mode === 'kneel') &&
-      Math.hypot(k.x - player.x, k.y - player.y) < 1600);
+      Math.hypot(k.x - player.x, k.y - player.y) < 1600 + Vide.Colossus.extent(k));
     setClass(ui.boss, 'hidden', !c);
     if (!c) return;
     setText(ui.bossName, c.mode === 'kneel' ? `${c.def.name} · vulnérable` : c.def.name);
-    const seals = c.seals.map((s, i) => (s.broken ? '<span class="broken">·</span>'
-      : i === c.active ? '<span class="active">●</span>' : '○')).join('');
+    const seals = c.seals.map((s, i) => {
+      if (s.broken) return '<span class="broken">·</span>';
+      if (Vide.Colossus.veiled(game.state, c, i)) return '<span class="veiled">◌</span>';
+      return i === c.active ? '<span class="active">●</span>' : '○';
+    }).join('');
     if (ui.bossSeals.innerHTML !== seals) ui.bossSeals.innerHTML = seals;
     const stagger = c.mode === 'kneel' ? 100 : Math.round((c.stagger / c.def.stagger) * 100);
     const width = `${stagger}%`;

@@ -31,6 +31,7 @@
       fog: 0,      // brouillard affiché, qui suit en douceur celui de la zone
       zoom: Vide.util.clamp(Number(Vide.Settings.get('zoom', 1)) || 1, ZOOM_MIN, ZOOM_MAX),
       autoZoom: 1,
+      lean: { x: 0, y: 0 }, // la caméra se décale vers un colosse proche
       introZoom: 1, // rapprochement de l'animation de lancement
       time: 0,
       glows: {
@@ -66,17 +67,33 @@
     Vide.Settings.set('zoom', r.zoom);
   }
 
-  // Recul automatique quand un colosse sauvage approche : on doit voir la créature entière.
+  // Recul automatique quand un colosse sauvage approche : on doit voir la créature (presque) entière, et soi
+  // tout petit à côté d'elle.
   function updateZoom(r, game, dt) {
     let target = 1;
+    const lean = { x: 0, y: 0 };
     const { player } = game.state;
+    // Demi-côté le plus court de l'écran, en unités du monde, sans recul.
+    const half = Math.min(r.width, r.height) / 2 / (r.baseScale * r.zoom);
     for (const c of game.colossi) {
       if (c.mode === 'resident' || c.mode === 'home') continue;
-      const d = Math.hypot(c.core.x - player.x, c.core.y - player.y);
-      const near = Vide.util.clamp((1800 - d) / 900, 0, 1);
-      target = Math.min(target, 1 - 0.45 * near * Math.min(1.6, c.def.size / 1.3));
+      const e = Vide.Colossus.extent(c);
+      const dx = c.core.x - player.x, dy = c.core.y - player.y;
+      const d = Math.hypot(dx, dy);
+      const near = Vide.util.clamp((e * 2 + 1400 - d) / 900, 0, 1);
+      const fit = Vide.util.clamp(half / (e + 0.45 * Math.min(d, e * 2)), 0.42, 1);
+      const zoom = 1 - (1 - fit) * near;
+      if (zoom >= target) continue;
+      target = zoom;
+      // On regarde aussi vers lui, sans jamais perdre la lumière de vue (au plus 55 % du demi-écran).
+      const max = (0.55 * half) / zoom;
+      const k = Math.min(0.4 * near, d ? max / d : 0);
+      lean.x = dx * k;
+      lean.y = dy * k;
     }
     r.autoZoom += (target - r.autoZoom) * Vide.util.damp(1.2, dt);
+    r.lean.x += (lean.x - r.lean.x) * Vide.util.damp(1.2, dt);
+    r.lean.y += (lean.y - r.lean.y) * Vide.util.damp(1.2, dt);
     r.camera.scale = r.baseScale * r.zoom * r.autoZoom * r.introZoom;
   }
 
@@ -300,15 +317,17 @@
       return;
     }
     const { player } = game.state;
+    const tx = player.x + r.lean.x, ty = player.y + r.lean.y;
     // Un saut lointain (lumière dispersée, renvoyée à un village) : la caméra suit d'un coup.
-    if (Math.hypot(player.x - r.camera.x, player.y - r.camera.y) > 900) snapCamera(r, game);
+    if (Math.hypot(tx - r.camera.x, ty - r.camera.y) > 900) snapCamera(r, game);
     const k = Vide.util.damp(5, dt);
-    r.camera.x += (game.state.player.x - r.camera.x) * k;
-    r.camera.y += (game.state.player.y - r.camera.y) * k;
+    r.camera.x += (tx - r.camera.x) * k;
+    r.camera.y += (ty - r.camera.y) * k;
   }
 
   // À appeler une fois au démarrage pour ne pas voir la caméra glisser depuis l'origine.
   function snapCamera(r, game) {
+    r.lean.x = r.lean.y = 0;
     r.camera.x = game.state.player.x;
     r.camera.y = game.state.player.y;
   }

@@ -281,7 +281,7 @@
           if (d < 1500) play('footfall', 1 - d / 1500);
           break;
         }
-        case 'quake': play('quake'); break;
+        case 'quake': case 'phase': play('quake'); break;
         case 'colossusAttack': play('colossusAttack'); break;
         case 'web': play('web'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;

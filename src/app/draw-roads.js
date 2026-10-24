@@ -62,8 +62,8 @@
     const { ctx } = r;
     for (const e of game.state.expeditions) {
       const fighting = game.expeditionsFighting.has(e);
-      const glow = e.kind === 'colons' ? glowOfType(r, e.type) : r.glows.white;
-      const n = (e.members.lueur || 0) + (e.members.eclaireur || 0);
+      const glow = e.kind === 'colons' ? glowOfType(r, e.type) : e.kind === 'scholars' ? scholarGlow(r) : r.glows.white;
+      const n = (e.members.lueur || 0) + (e.members.eclaireur || 0) + (e.members.erudit || 0);
       const flicker = fighting ? 0.6 + 0.4 * Math.abs(Math.sin(r.time * 20)) : 1;
       for (let k = 0; k < n; k++) {
         const a = r.time * 1.3 + (k / n) * Math.PI * 2;
@@ -90,6 +90,13 @@
       ctx.stroke();
       ctx.setLineDash([]);
     }
+  }
+
+  // Les érudits : une lueur bleu pâle, la couleur du savoir.
+  let scholarHalo = null;
+  function scholarGlow(r) {
+    if (!scholarHalo) scholarHalo = r.makeGlow(170, 200, 255);
+    return scholarHalo;
   }
 
   const typeGlows = {};
