@@ -157,6 +157,7 @@
     const target = Villages.nearest(state, base.x, base.y);
     if (!target) return null;
     const dist = Math.hypot(target.x - base.x, target.y - base.y);
+    if (dist > n.outpostRange) return null;
     const toward = Math.atan2(target.y - base.y, target.x - base.x);
     const d = util.clamp(dist * 0.45, n.outpostDistance[0], n.outpostDistance[1]);
     for (const off of [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05]) {
@@ -177,7 +178,8 @@
   // L'horloge d'essaimage d'une base. Renvoie l'avant-poste né, ou null.
   function swarm(state, base, seconds) {
     const n = CONFIG.nests;
-    if (base.parent || level(base) < n.outpostLevel) return null;
+    // Seules les bases nées près de tes villages essaiment (celles des régions lointaines restent chez elles).
+    if (base.parent || base.region || level(base) < n.outpostLevel) return null;
     base.swarm -= seconds * Vide.War.pace(state);
     if (base.swarm > 0) return null;
     base.swarm = n.outpostEvery;

@@ -52,8 +52,12 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - **Expéditions** (`expeditions.js`, state.expeditions) : lancées depuis la carte, elles marchent et peuvent être
   attaquées ; les colons en route comptent dans le prix des fondations. **Capacités** (`abilities.js`) : ruée,
   fanal (state.beacon, récolte abstraite selon la zone), retour.
-- **Nids d'ombre** (`nests.js`, state.nests, state.cleared) : apparition, obscurité, raids ; ordre « siege » de
-  l'armée (`Combat.anchor`), cœur ciblé via `Nests.target`, `Nests.hit`.
+- **Bases d'ombre** (« nids », `nests.js`, state.nests, state.cleared) : des villages en négatif (`nest.dark`) —
+  cellules de noirceur (mêmes fonctions de `Territory` ; `Territory.grow(v, others)` empêche villages et bases de
+  s'empiéter), plan radial, ouvrages (`ouvrages.js`, `Vide.darkWork`), remparts d'ombre (`walls.js`, sans porte pour
+  la lumière, traversés par les ombres), raids. Siège : ouvrages (`Nests.workTarget`, `hitWork`) puis cœur
+  (`Nests.target`, `Nests.hit`) ; une base abattue rend son terrain au village qui la touche (`Nests.fall`).
+  Avant-postes (`nest.parent`) et **guerre** (`war.js`, state.war : tension, âpre, rude ; `War.pace`, `raidScale`).
 - **Colosses** (`colossus.js`) : `state.studied` (sceaux dévoilés par les érudits ; un sceau voilé ne se brise
   pas), phases (`fury`, `PHASE`), marche sur un village (mode 'march', pendant le jeu seulement : `game.marchClock`),
   `Colossus.engaged` pour tout ce qui peut s'en prendre à lui. Engins de siège : `engines.js` (state.engines, bâtis

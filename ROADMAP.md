@@ -189,7 +189,7 @@ rayonnent du cœur vers quatre portes (alignées d'une enceinte à l'autre), des
    (autoroutes) partent des portes qui se font face ; les caravanes les suivent.
 4. Refonte graphique : bâtiments, rues, enceintes, territoires, carte.
 
-### [ ] 2.3 — Les bases des ombres
+### [x] 2.3 — Les bases des ombres
 Choix : les nids deviennent des bases, bâties comme tes villages mais en négatif — un territoire de noirceur
 (les mêmes cellules, cinq nuances de noir), un plan radial, des ouvrages d'ombre, des remparts dont les portes ne
 s'ouvrent qu'aux ombres.

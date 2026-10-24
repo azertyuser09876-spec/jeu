@@ -40,6 +40,11 @@
     assert.equal(Nests.swarm(state, Nests.add(state, -5000, 0, 0), 1e9), null);
     assert.ok(Nests.swarm(state, base, 1e9));
     assert.equal(Nests.swarm(state, base, 1e9), null);
+    // Une base lointaine reste chez elle.
+    const far = Nests.add(state, CONFIG.nests.outpostRange + 3000, 9000, CONFIG.nests.levelEvery * 4);
+    assert.equal(Nests.spawnOutpost(state, far), null);
+    const lair = Nests.add(state, 0, -4000, CONFIG.nests.levelEvery * 4, '0,-3');
+    assert.equal(Nests.swarm(state, lair, 1e9), null, 'une base d’une région lointaine');
   });
 
   test('pendant la tension, un avant-poste n’envoie que des rôdeuses, qui tournent sans attaquer puis s’en vont', () => {

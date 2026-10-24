@@ -1,5 +1,33 @@
 # Historique des versions
 
+## 2.3.0 — Les bases des ombres
+
+Les ombres bâtissent pour de bon : leurs nids deviennent des bases, en négatif de tes villages, et leur
+essaimage ouvre la guerre.
+
+- **De vraies bases** : un cœur noir et un territoire de noirceur (les mêmes cellules que tes territoires, en cinq
+  nuances de noir jusqu'au noir pur) qui grandit avec l'âge. Ni la base ni tes villages n'empiètent l'un sur
+  l'autre. Sur leur plan radial, elles bâtissent seules : **fosses** (raids plus nombreux, défenseurs de plus),
+  **flèches** (elles tirent sur toi, tes êtres, tes expéditions), puis des **remparts d'ombre** — sans porte pour
+  la lumière, que les ombres traversent.
+- **Le siège** : l'armée frappe le rempart qui l'arrête jusqu'à la brèche, abat les ouvrages (les flèches
+  d'abord), puis le cœur ; ta pulsation touche aussi ouvrages et remparts.
+- **Les avant-postes** : une base mûre, née près de tes villages, essaime vers le plus proche (les bases des régions
+  lointaines restent chez elles). Le premier avant-poste **ouvre la
+  guerre** — douce d'abord (la tension : des ombres rôdent autour de tes villages sans attaquer, puis s'en vont),
+  puis âpre, puis rude en une heure : vrais raids, plus gros, raids, constructions et essaimage plus rapides. Une
+  ligne discrète sous ta lumière dit où elle en est. Pendant l'absence, tout est possible : des avant-postes
+  naissent, la guerre s'ouvre et mûrit (résumé au retour).
+- **Prendre une base** : abattre son cœur rend son terrain au vide, ou à ton village s'il le touche (une lumière
+  neuve, qui blanchira).
+- Dessin : un voile violet sombre qui s'épaissit à chaque nuance, le noir pur cerné de violet au cœur, remparts à
+  double liseré, fosses, flèches et leurs traits ; sur la carte, le territoire réel des bases. On dit désormais
+  « base d'ombre » (le « nid » est un logis de tes villages).
+- Performances : flèches, murailles et onde ne calculent plus que ce qui est à portée. Le robot d'équilibrage
+  suit les bases et la guerre : elle s'ouvre vers 50 min, devient âpre vers une heure ; la progression reste saine.
+- Sauvegarde : format 23 (territoire, ouvrages, remparts et avant-postes des bases ; la guerre).
+- 370 tests de logique, 41 vérifications navigateur.
+
 ## 2.2.0 — Des villages bâtis avec logique
 
 Chaque village devient une ville en étoile : un plan, des rues, des portes, des enceintes.
