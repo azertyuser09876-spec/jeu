@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 8;
+  const FORMAT = 9;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -23,6 +23,8 @@
     6: (data) => ({ ...data, colossi: {} }),
     // 0.8 : le récit.
     7: (data) => ({ ...data, lore: [] }),
+    // 1.0 : la renaissance.
+    8: (data) => ({ ...data, memories: 0, legacy: {}, renaissances: 0, runStart: 0 }),
   };
 
   function serialize(state, now) {
@@ -87,11 +89,15 @@
     state.totalLight = Math.max(positive(raw.totalLight, 0), state.light);
 
     const upgrades = isObject(raw.upgrades) ? raw.upgrades : {};
+    const legacy = isObject(raw.legacy) ? raw.legacy : {};
     for (const up of Vide.UPGRADES) {
-      const level = upgrades[up.id];
+      const level = (up.legacy ? legacy : upgrades)[up.id];
       if (!Number.isInteger(level) || level <= 0) continue;
-      state.upgrades[up.id] = up.max === null ? level : Math.min(level, up.max);
+      (up.legacy ? state.legacy : state.upgrades)[up.id] = up.max === null ? level : Math.min(level, up.max);
     }
+    state.memories = positive(raw.memories, 0);
+    state.renaissances = Number.isInteger(raw.renaissances) && raw.renaissances > 0 ? raw.renaissances : 0;
+    state.runStart = Math.min(positive(raw.runStart, 0), state.totalLight);
 
     const player = isObject(raw.player) ? raw.player : {};
     state.player.x = finite(player.x, 0);

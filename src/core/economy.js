@@ -8,8 +8,13 @@
     return up;
   }
 
+  // Les améliorations « héritées » (souvenirs) sont rangées à part : elles survivent aux renaissances.
+  function store(state, up) {
+    return up.legacy ? state.legacy : state.upgrades;
+  }
+
   function level(state, id) {
-    return state.upgrades[id] || 0;
+    return store(state, get(id))[id] || 0;
   }
 
   function cost(up, lvl) {
@@ -40,14 +45,14 @@
     const up = get(id);
     if (level(state, id) > 0) return true;
     if (up.requires && !up.requires(state)) return false;
-    // Une amélioration payée en échos se dévoile dès que ses conditions sont remplies.
+    // Une amélioration payée en échos ou en souvenirs se dévoile dès que ses conditions sont remplies.
     return currency(up) !== 'light' || state.totalLight >= up.baseCost * 0.5;
   }
 
   function buy(state, id) {
     if (!canBuy(state, id)) return false;
     state[currency(get(id))] -= nextCost(state, id);
-    state.upgrades[id] = level(state, id) + 1;
+    store(state, get(id))[id] = level(state, id) + 1;
     return true;
   }
 
@@ -56,7 +61,9 @@
     const up = get(id);
     const now = up.show(Vide.Stats.compute(state));
     if (isMaxed(state, id)) return { now, next: null };
-    const next = { ...state, upgrades: { ...state.upgrades, [id]: level(state, id) + 1 } };
+    const next = up.legacy
+      ? { ...state, legacy: { ...state.legacy, [id]: level(state, id) + 1 } }
+      : { ...state, upgrades: { ...state.upgrades, [id]: level(state, id) + 1 } };
     return { now, next: up.show(Vide.Stats.compute(next)) };
   }
 
@@ -69,7 +76,7 @@
       revealed: (state) => isRevealed(state, up.id),
       maxed: (state) => isMaxed(state, up.id),
       cost: (state) => ({ [currency(up)]: nextCost(state, up.id) }),
-      apply: (state) => { state.upgrades[up.id] = level(state, up.id) + 1; },
+      apply: (state) => { store(state, up)[up.id] = level(state, up.id) + 1; },
       label: (state) => {
         const l = level(state, up.id);
         return isMaxed(state, up.id) ? 'max' : l ? `niv. ${l}` : '';

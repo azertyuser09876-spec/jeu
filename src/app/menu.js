@@ -65,10 +65,16 @@
 
   function refresh(menu) {
     const { state } = menu.game;
-    menu.stats.textContent =
-      `${formatDuration(state.stats.playTime)} dans le vide · ` +
-      `${util.formatNumber(state.totalLight)} de lumière récoltée · ` +
-      `${util.formatNumber(state.stats.collected)} particules`;
+    const tamed = Vide.COLOSSI.filter((d) => state.colossi[d.id] === 'tamed').length;
+    const parts = [
+      `${formatDuration(state.stats.playTime)} dans le vide`,
+      `${util.formatNumber(state.totalLight)} de lumière récoltée`,
+      `${util.formatNumber(state.stats.collected)} particules`,
+    ];
+    if (state.stats.shadows) parts.push(`${util.formatNumber(state.stats.shadows)} ombres dissipées`);
+    if (tamed) parts.push(`${tamed}/${Vide.COLOSSI.length} colosses apaisés`);
+    if (state.renaissances) parts.push(`${state.renaissances} renaissance${state.renaissances > 1 ? 's' : ''}`);
+    menu.stats.textContent = parts.join(' · ');
     menu.saveStatus.textContent = saveText();
     menu.showSound();
     // Journal : les fragments du récit déjà révélés.

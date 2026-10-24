@@ -42,6 +42,7 @@
     state.stats.shadows = 20;
     state.zones.discovered = Vide.ZONES.map((z) => z.id);
     for (const d of Vide.COLOSSI) state.colossi[d.id] = 'tamed';
+    state.renaissances = 1;
     Lore.check(state);
     assert.equal(state.lore.length, LORE.length);
   });

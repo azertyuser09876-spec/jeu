@@ -22,10 +22,10 @@
     };
     if (applied <= 0) return report;
 
-    const radiated = Territory.advance(state, stats, applied);
+    const radiated = Territory.advance(state, stats, applied) * stats.lightMult;
     report.built = Vide.Structures.advanceOffline(state, stats, applied);
     // Les êtres continuent leur travail au rythme mesuré avant le départ.
-    const brought = Vide.Colony.total(state) > 0 ? state.colonyRate * applied : 0;
+    const brought = Vide.Colony.total(state) > 0 ? state.colonyRate * applied * stats.lightMult : 0;
     const light = radiated + brought;
     state.light += light;
     state.totalLight += light;

@@ -31,6 +31,7 @@
       region: null,             // région du vide où se trouve la lumière (voir zones.js)
       zoneShown: null,          // dernière zone annoncée à l'écran
       loreCheck: 0,             // délai avant de vérifier les fragments du récit
+      renaissances: state.renaissances, // pour détecter une renaissance (achetée dans la boutique)
     };
     updateRegion(game, true);
     Vide.Field.fill(game.field, state.player.x, state.player.y, game.stats);
@@ -132,6 +133,11 @@
 
   function step(game, dt, input) {
     const { state } = game;
+    if (state.renaissances !== game.renaissances) {
+      game.renaissances = state.renaissances;
+      Vide.Renaissance.resetRuntime(game);
+      emit(game, 'renaissance', { count: state.renaissances, memories: state.memories });
+    }
     game.stats = Vide.Stats.compute(state);
     game.time += dt;
     state.stats.playTime += dt;
@@ -150,7 +156,9 @@
     const picked = Vide.Garden.update(game.garden, state, game.stats, dt);
     harvest.value += picked.value;
     harvest.count += picked.count;
-    let gained = harvest.value * game.stats.value;
+    // Toute la lumière gagnée est multipliée par l'Éclat ancien (souvenirs).
+    const mult = game.stats.lightMult;
+    let gained = harvest.value * game.stats.value * mult;
     if (harvest.count) {
       gainLight(game, gained);
       state.stats.collected += harvest.count;
@@ -161,13 +169,13 @@
       game.lit = true;
       emit(game, 'foyer');
     }
-    const radiated = Vide.Territory.advance(state, game.stats, dt);
+    const radiated = Vide.Territory.advance(state, game.stats, dt) * mult;
     if (radiated > 0) {
       gainLight(game, radiated);
       gained += radiated;
     }
     Vide.Colony.sync(game);
-    const brought = Vide.Colony.update(game, dt);
+    const brought = Vide.Colony.update(game, dt) * mult;
     if (brought > 0) {
       gainLight(game, brought);
       gained += brought;

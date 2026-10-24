@@ -20,7 +20,8 @@
     const t = state.territory;
     if (t.lit) return false;
     t.lit = true;
-    t.area = Math.PI * CONFIG.territory.startRadius * CONFIG.territory.startRadius;
+    const r = Vide.Stats.compute(state).startRadius; // les souvenirs (Racines) l'agrandissent
+    t.area = Math.PI * r * r;
     return true;
   }
 

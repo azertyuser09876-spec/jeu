@@ -7,6 +7,8 @@
 //   max       niveau maximal, ou null si illimité
 //   currency  ressource utilisée (par défaut 'light', ou 'echoes')
 //   effects   { caractéristique: niveau => valeur } ; la valeur au niveau 0 doit être la valeur de base
+//   modify    si présent : (stats, niveau) appliqué après tous les effets (pour cumuler avec une autre amélioration)
+//   legacy    vrai pour une amélioration héritée (souvenirs) : rangée dans state.legacy, survit aux renaissances
 //   show      caractéristiques => texte court de l'effet (affiché « actuel → suivant »)
 (function (Vide) {
   'use strict';
@@ -38,9 +40,9 @@
       name: 'Éclat',
       desc: 'Chaque particule rapporte plus.',
       baseCost: 30,
-      growth: 2.1,
+      growth: 2.2,
       max: null,
-      effects: { value: (l) => Math.pow(1.4, l) },
+      effects: { value: (l) => Math.pow(1.35, l) },
       show: (s) => util.formatMultiplier(s.value),
     },
     {
@@ -87,9 +89,9 @@
       desc: 'Chaque parcelle du territoire rayonne davantage.',
       requires: (state) => state.territory.lit,
       baseCost: 400,
-      growth: 1.9,
+      growth: 2.1,
       max: null,
-      effects: { territoryYield: (l) => CONFIG.territory.yield * Math.pow(1.45, l) },
+      effects: { territoryYield: (l) => CONFIG.territory.yield * Math.pow(1.4, l) },
       show: (s) => util.formatMultiplier(s.territoryYield / CONFIG.territory.yield),
     },
     {
@@ -149,9 +151,9 @@
       desc: 'La lumière rapportée par les êtres vaut plus.',
       requires: (state) => (state.beings.lueur || 0) > 0,
       baseCost: 900,
-      growth: 2.3,
+      growth: 2.5,
       max: null,
-      effects: { beingValue: (l) => Math.pow(1.35, l) },
+      effects: { beingValue: (l) => Math.pow(1.3, l) },
       show: (s) => util.formatMultiplier(s.beingValue),
     },
     {
@@ -231,6 +233,80 @@
       max: 10,
       effects: { echoGain: (l) => 1 + 0.2 * l },
       show: (s) => util.formatMultiplier(s.echoGain),
+    },
+
+    // --- Souvenirs (hérités : ils survivent aux renaissances) ---
+    {
+      id: 'ancientGlow',
+      tab: 'souvenirs',
+      legacy: true,
+      name: 'Éclat ancien',
+      desc: 'Toute la lumière que tu gagnes, d’où qu’elle vienne, vaut davantage. Pour toujours.',
+      currency: 'memories',
+      requires: (state) => state.renaissances > 0 || state.memories > 0,
+      baseCost: 1,
+      growth: 1.6,
+      max: 30,
+      effects: { lightMult: (l) => 1 + 0.25 * l },
+      show: (s) => util.formatMultiplier(s.lightMult),
+    },
+    {
+      id: 'roots',
+      tab: 'souvenirs',
+      legacy: true,
+      name: 'Racines',
+      desc: 'Tu renais avec le foyer déjà allumé, et un territoire plus vaste.',
+      currency: 'memories',
+      requires: (state) => state.renaissances > 0 || state.memories > 0,
+      baseCost: 2,
+      growth: 1.8,
+      max: 10,
+      effects: { startRadius: (l) => CONFIG.territory.startRadius + 50 * l },
+      show: (s) => `rayon ${Math.round(s.startRadius)}`,
+    },
+    {
+      id: 'earlyWake',
+      tab: 'souvenirs',
+      legacy: true,
+      name: 'Éveil précoce',
+      desc: 'Des lueurs t’attendent déjà au foyer quand tu renais.',
+      currency: 'memories',
+      requires: (state) => state.renaissances > 0 || state.memories > 0,
+      baseCost: 2,
+      growth: 1.7,
+      max: 6,
+      effects: { startLueurs: (l) => l },
+      show: (s) => `${s.startLueurs} lueur${s.startLueurs > 1 ? 's' : ''}`,
+    },
+    {
+      id: 'ancientBreath',
+      tab: 'souvenirs',
+      legacy: true,
+      name: 'Souffle ancien',
+      desc: 'Ta pulsation se recharge plus vite, quelle que soit la vie.',
+      currency: 'memories',
+      requires: (state) => state.renaissances > 0 || state.memories > 0,
+      baseCost: 1,
+      growth: 1.7,
+      max: 10,
+      effects: {},
+      modify: (stats, l) => { stats.pulseCooldown *= Math.pow(0.9, l); }, // s'ajoute à l'amélioration Pulsation
+      show: (s) => `${s.pulseCooldown.toFixed(1).replace('.', ',')}s`,
+    },
+    {
+      id: 'deepMemory',
+      tab: 'souvenirs',
+      legacy: true,
+      name: 'Mémoire profonde',
+      desc: 'Le territoire se souvient de toi deux heures de plus par niveau.',
+      currency: 'memories',
+      requires: (state) => state.renaissances > 0 || state.memories > 0,
+      baseCost: 1,
+      growth: 1.6,
+      max: 6,
+      effects: {},
+      modify: (stats, l) => { stats.offlineCap += 2 * 3600 * l; }, // s'ajoute à l'amélioration Mémoire
+      show: (s) => `${Math.round(s.offlineCap / 3600)} h`,
     },
   ];
 })(globalThis.Vide);

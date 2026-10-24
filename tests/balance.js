@@ -1,4 +1,5 @@
-// Robot d'équilibrage : `node tests/balance.js [minutes]`.
+// Robot d'équilibrage : `node tests/balance.js [minutes] [--renaissance]`.
+// Avec --renaissance, il renaît dès que possible et compare le rythme de chaque vie.
 // Joue une partie simulée (marche aléatoire douce, pulsation dès qu'elle est prête, achète toujours
 // l'article le moins cher du catalogue, revient à l'origine quand un achat l'exige) et affiche la progression.
 // Sert à vérifier le rythme après un réglage.
@@ -8,6 +9,7 @@ const path = require('path');
 const vm = require('vm');
 
 const minutes = Number(process.argv[2]) || 20;
+const reborn = process.argv.includes('--renaissance');
 const html = fs.readFileSync(path.join(__dirname, 'tests.html'), 'utf8');
 const context = vm.createContext({ console });
 for (const m of html.matchAll(/<script src="(\.\.\/src\/core\/[^"]+)"><\/script>/g)) {
@@ -25,6 +27,10 @@ const dt = CONFIG.step;
 const stepsPerMinute = Math.round(60 / dt);
 let angle = 0;
 const firsts = {};
+// Chaque vie : quand elle atteint 1 M de lumière (depuis sa naissance).
+const lives = [];
+let lifeStart = 0;
+let lifeMillion = null;
 // Événements de combat comptés pendant la partie.
 const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, foyerAttacked: 0 };
 
@@ -33,8 +39,8 @@ const price = (item) => Object.values(item.cost(state)).reduce((a, b) => a + b, 
 
 for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   // Un achat qui attend le joueur à l'origine : on y retourne.
-  const waiting = Catalog.all().find((i) => i.revealed(state) && !i.maxed(state) && i.blocked(state) &&
-    Wallet.has(state, i.cost(state)));
+  const waiting = Catalog.all().find((i) => i.revealed(state) && !i.maxed(state) &&
+    i.blocked(state) === 'rejoins l’origine' && Wallet.has(state, i.cost(state)));
   if (waiting) {
     const d = Math.hypot(state.player.x, state.player.y) || 1;
     input.move.x = -state.player.x / d;
@@ -48,10 +54,16 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   Sim.step(game, dt, input);
   for (const e of game.events) if (e.type in events) events[e.type]++;
   game.events.length = 0;
+  if (lifeMillion === null && state.totalLight - state.runStart >= 1e6) lifeMillion = game.time - lifeStart;
+  if (state.renaissances > lives.length) {
+    lives.push(`vie ${lives.length + 1} : 1 M en ${lifeMillion === null ? '—' : (lifeMillion / 60).toFixed(1) + ' min'}, renaissance à ${(game.time / 60).toFixed(1)} min (✧ ${state.memories})`);
+    lifeStart = game.time;
+    lifeMillion = null;
+  }
 
   if (s % 30 === 0) {
     const buyable = Catalog.all()
-      .filter((i) => i.revealed(state) && Catalog.canBuy(state, i.id))
+      .filter((i) => (reborn || i.id !== 'renaissance') && i.revealed(state) && Catalog.canBuy(state, i.id))
       .sort((a, b) => price(a) - price(b));
     if (buyable.length) {
       const item = buyable[0];
@@ -73,4 +85,5 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     );
   }
 }
+if (reborn) for (const l of lives) console.log(l);
 console.log('premiers achats : ' + Object.entries(firsts).map(([k, t]) => `${k} ${Math.round(t)} s`).join(', '));

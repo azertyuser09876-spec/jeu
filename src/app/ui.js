@@ -66,6 +66,8 @@
       rate: $('rate-amount'),
       echoes: $('echoes'),
       echoAmount: $('echo-amount'),
+      memories: $('memories'),
+      memoryAmount: $('memory-amount'),
       orders: $('orders'),
       boss: $('boss'),
       bossName: $('boss-name'),
@@ -94,6 +96,9 @@
   }
 
   function buy(ui, id) {
+    const item = Catalog.get(id);
+    // Achat irréversible (renaissance) : on demande d'abord.
+    if (item.confirm && Catalog.canBuy(ui.game.state, id) && !window.confirm(item.confirm(ui.game.state))) return false;
     if (!Catalog.buy(ui.game.state, id)) return false;
     const row = ui.rows.find((r) => r.item.id === id);
     // Relance l'animation d'achat même si on achète plusieurs fois de suite.
@@ -198,6 +203,8 @@
     setText(ui.rate, util.formatRate(game.rate));
     setClass(ui.echoes, 'hidden', state.echoes <= 0 && state.stats.shadows === 0);
     setText(ui.echoAmount, util.formatNumber(state.echoes));
+    setClass(ui.memories, 'hidden', state.memories <= 0 && state.renaissances === 0);
+    setText(ui.memoryAmount, util.formatNumber(state.memories));
     setClass(ui.orders, 'hidden', Vide.Combat.armySize(state) === 0);
     for (const btn of ui.orderButtons) setClass(btn, 'active', btn.dataset.posture === state.army.posture);
 

@@ -10,6 +10,7 @@
 //   apply(state)     effet de l'achat (le coût est déjà payé)
 //   label(state)     texte de niveau / quantité ("niv. 3", "4/6"…)
 //   effect(state)    texte d'effet ("60 → 71")
+//   confirm(state)   si présent : question posée avant l'achat (achat irréversible)
 (function (Vide) {
   'use strict';
 
@@ -19,6 +20,7 @@
     { id: 'etres', name: 'êtres' },
     { id: 'batiments', name: 'bâtiments' },
     { id: 'armee', name: 'armée' },
+    { id: 'souvenirs', name: 'souvenirs' },
   ];
 
   const items = [];

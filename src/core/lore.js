@@ -47,6 +47,8 @@
       text: 'Le vide recule. Ou peut-être apprend-il à briller.' },
     { id: 'armee', when: (s) => Vide.Combat.armySize(s) >= 6,
       text: 'Tu n’as jamais voulu d’armée. Seulement que personne ne s’éteigne.' },
+    { id: 'renaissance', when: (s) => s.renaissances > 0,
+      text: 'Se dissoudre n’est pas disparaître. C’est choisir ce que l’on emporte.' },
     { id: 'confins', when: (s) => s.zones.discovered.length >= Vide.ZONES.length,
       text: 'Le vide n’a pas de bord. Seulement des endroits où l’on n’est pas encore allé.' },
   ];

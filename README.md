@@ -1,15 +1,15 @@
 # Le Vide
 
-Une lumière seule dans un vide infini.
-Récolte la lumière qui flotte dans le noir, deviens plus forte, va plus loin.
+Une lumière seule dans un vide infini, qui grandit.
 
-Un jeu incrémental *interactif* : tu ne regardes pas des chiffres monter, tu te déplaces, tu attires, tu pulses.
-À terme, ton territoire de lumière s'étendra, des êtres de lumière vivront et bâtiront sans toi,
-et des colosses immenses rôderont dans les profondeurs (voir [ROADMAP.md](ROADMAP.md)).
+Un jeu incrémental *interactif*, en français, en HTML / CSS / JavaScript pur, sans aucune dépendance :
+tu ne regardes pas des chiffres monter, tu te déplaces, tu attires la lumière, tu pulses. Puis ton territoire
+s'étend, même sans toi ; des êtres de lumière vivent, bâtissent et se défendent seuls ; et, aux confins,
+des colosses immenses attendent d'être mérités.
 
 ## Jouer
 
-Ouvre `index.html` dans un navigateur. Aucune installation, aucune dépendance.
+Ouvre `index.html` dans un navigateur. C'est tout.
 
 | Action | Souris / tactile | Clavier |
 | --- | --- | --- |
@@ -18,9 +18,23 @@ Ouvre `index.html` dans un navigateur. Aucune installation, aucune dépendance.
 | Acheter | clic sur une carte | 1 à 9 (Tab : onglet suivant) |
 | Ordres de l’armée | barre sous le compteur | G garder · E escorter · C chasser |
 | Carte | ◎ en haut à droite | M |
-| Menu / pause | ≡ en haut à droite | Échap |
+| Menu / pause, son, journal | ≡ en haut à droite | Échap |
 
-La partie est sauvegardée automatiquement dans le navigateur.
+La partie est sauvegardée automatiquement dans le navigateur ; le monde continue pendant ton absence.
+
+## Ce qui t'attend
+
+- **La récolte** : la lumière flotte dans le vide ; attire-la, pulse pour tout attraper d'un coup.
+- **Le territoire** : allume le foyer à l'origine ; ton territoire grandit lentement, toujours, et rayonne.
+- **Les êtres** : lueurs qui récoltent le jardin, bâtisseurs qui choisissent où construire tes nids,
+  prismes, phares et tours ; ils se croisent, dansent, ravitaillent les chantiers.
+- **Les ombres** : des marées attirées par ta lumière. Ta pulsation les blesse ; une armée automatique
+  (gardiens, étincelles, veilleuses) obéit à tes ordres. Les ombres vaincues laissent des échos ◆.
+- **Les zones** : Calme, Brume, Courants, Murmure, Éclat, Gouffre — plus loin, plus riche, plus dangereux.
+- **Les colosses** : le Veilleur, la Tisseuse, le Léviathan. Suis leur battement, esquive leurs attaques
+  annoncées, brise leurs sceaux, fais-les plier avec ton armée… et ils deviennent tes gardiens.
+- **La renaissance** : te dissoudre pour renaître avec des souvenirs ✧ et des bienfaits éternels.
+- **Le son et le récit** : tout est synthétisé en direct ; des fragments d'histoire se révèlent au fil du jeu.
 
 ## Publier sur GitHub Pages
 
@@ -30,17 +44,18 @@ Le jeu sera disponible à `https://<utilisateur>.github.io/<dépôt>/`.
 ## Développement
 
 ```
-node tests/run.js        # tests de la logique (aussi : ouvrir tests/tests.html)
-node tests/smoke.js      # test de fumée dans Chromium (nécessite Playwright)
-node tests/balance.js 30 # robot d'équilibrage : simule 30 minutes de jeu
+node tests/run.js                         # tests de la logique (aussi : ouvrir tests/tests.html)
+node tests/smoke.js                       # test de fumée dans Chromium (nécessite Playwright)
+node tests/balance.js 60                  # robot d'équilibrage : une heure de jeu simulée
+node tests/balance.js 120 --renaissance   # … avec renaissances, vie après vie
 ```
 
 ```
 index.html, style.css
-src/core/   logique pure, sans navigateur — testée
-src/app/    affichage (canvas), contrôles, interface, stockage
+src/core/   logique pure, sans navigateur — entièrement testée
+src/app/    affichage (canvas), contrôles, interface, son, stockage
 tests/      tests, test de fumée, robot d'équilibrage
 ```
 
 La méthode de travail et les règles d'architecture sont dans [CLAUDE.md](CLAUDE.md),
-l'historique des versions dans [CHANGELOG.md](CHANGELOG.md).
+l'historique dans [CHANGELOG.md](CHANGELOG.md), la feuille de route dans [ROADMAP.md](ROADMAP.md).

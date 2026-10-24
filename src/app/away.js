@@ -75,6 +75,7 @@
       const d = Vide.Colossus.def(e.id);
       return `${d.name} s’apaise. Il rejoint ton territoire. ${d.reward.text}`;
     },
+    renaissance: 'Tu te dissous… et renais. Tes souvenirs t’attendent dans l’onglet souvenirs.',
     loreBatch: (e) => `Ton journal s’est rempli de ${e.count} fragments du récit (menu ≡).`,
     colossusLost: (e) => `${Vide.Colossus.def(e.id).name} se détourne et retourne à son repaire.`,
     beingDown: () => (seen.beingDown ? null : (seen.beingDown = true, 'Un être s’éteint… il se rallumera au foyer.')),
@@ -133,6 +134,7 @@
     for (const e of game.events) {
       if (e.type === 'zoneEnter') showZone(e.zone, discovered.has(e.zone));
       if (e.type === 'lore') notify(`« ${Vide.Lore.get(e.id).text} »`, 'lore');
+      if (e.type === 'renaissance') showTitle('Renaissance', `${e.count}ᵉ vie · ${util.formatNumber(e.memories)} souvenirs ✧`, [255, 226, 160]);
       if (e.type === 'colossusFound') {
         const d = Vide.Colossus.def(e.id);
         showTitle(d.name, d.epithet, [255, 226, 160]);

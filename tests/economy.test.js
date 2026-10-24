@@ -11,7 +11,7 @@
       ids.add(up.id);
       assert.ok(up.baseCost > 0 && up.growth > 1, `${up.id} : prix invalide`);
       assert.ok(up.max === null || up.max > 0, `${up.id} : max invalide`);
-      assert.ok(typeof up.show === 'function' && Object.keys(up.effects).length, `${up.id} : effets manquants`);
+      assert.ok(typeof up.show === 'function' && (Object.keys(up.effects).length || up.modify), `${up.id} : effets manquants`);
     }
   });
 
@@ -27,7 +27,7 @@
       for (const key in up.effects) {
         const state = State.create(1);
         const before = Stats.compute(state)[key];
-        state.upgrades[up.id] = 3;
+        (up.legacy ? state.legacy : state.upgrades)[up.id] = 3;
         const after = Stats.compute(state)[key];
         const better = LOWER_IS_BETTER.has(key) ? after < before : after > before;
         assert.ok(better, `${up.id} → ${key} : ${before} puis ${after}`);
@@ -104,7 +104,8 @@
 
   // Garde-fou contre l'emballement : pour chaque source de revenu, les améliorations sans maximum
   // qui la multiplient doivent avoir Σ ln(multiplicateur par niveau) / ln(croissance du prix) < 1,
-  // sinon le revenu grandit plus vite que les prix et la partie explose (vu au robot en 0.4).
+  // sinon le revenu grandit plus vite que les prix et la partie explose (vu au robot en 0.4, puis en 1.0 :
+  // d'autres facteurs grandissent en même temps — nombre d'êtres, jardin — d'où la marge à 0,75).
   // Une nouvelle amélioration sans maximum doit être rattachée ici à la caractéristique qu'elle multiplie.
   const STREAMS = {
     champ: ['value'],
@@ -124,7 +125,7 @@
           sum += Math.log(perLevel) / Math.log(up.growth);
         }
       }
-      assert.ok(sum < 0.95, `${stream} : ${sum.toFixed(2)}`);
+      assert.ok(sum < 0.75, `${stream} : ${sum.toFixed(2)}`);
     }
     for (const up of UPGRADES) {
       if (up.max !== null) continue;

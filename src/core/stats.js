@@ -27,14 +27,23 @@
       pulseDamage: CONFIG.combat.pulseDamage,
       vitality: CONFIG.combat.vitality,
       echoGain: 1,          // multiplicateur des échos laissés par les ombres
+      lightMult: 1,         // multiplicateur de toute la lumière gagnée (souvenirs)
+      startRadius: CONFIG.territory.startRadius, // rayon du territoire au départ (souvenirs)
+      startLueurs: 0,       // lueurs présentes dès le départ d'une renaissance (souvenirs)
     };
   }
 
   function compute(state) {
     const stats = base();
     for (const up of Vide.UPGRADES) {
-      const level = state.upgrades[up.id] || 0;
+      const level = (up.legacy ? state.legacy : state.upgrades)[up.id] || 0;
       for (const key in up.effects) stats[key] = up.effects[key](level);
+    }
+    // Modificateurs qui se cumulent aux effets (souvenirs…).
+    for (const up of Vide.UPGRADES) {
+      if (!up.modify) continue;
+      const level = (up.legacy ? state.legacy : state.upgrades)[up.id] || 0;
+      if (level > 0) up.modify(stats, level);
     }
     // Les bâtiments achevés modifient ensuite ces valeurs (+places, croissance…).
     if (Vide.Structures) Vide.Structures.modify(state, stats);

@@ -183,6 +183,16 @@ const { chromium } = require('playwright');
   await page.click('#away-close');
   check(!(await page.isVisible('#away')), 'l’écran d’absence se ferme');
 
+  // Renaissance : après confirmation, la partie repart avec des souvenirs.
+  await page.evaluate(() => { const st = Vide.game.state; st.totalLight += 9e6; });
+  await page.waitForTimeout(200);
+  await page.click('.tab:has-text("souvenirs")');
+  page.once('dialog', (d) => d.accept());
+  await page.click('#shop-list li:not([hidden]) .item:has-text("Renaissance")');
+  await page.waitForTimeout(400);
+  const life = await page.evaluate(() => ({ r: Vide.game.state.renaissances, m: Vide.game.state.memories, l: Vide.game.state.light }));
+  check(life.r === 1 && life.m > 0 && (await page.isVisible('#memories')), `la renaissance (confirmée) donne des souvenirs (${life.m} ✧)`);
+
   // Menu : Échap l'ouvre et met le jeu en pause.
   await page.keyboard.press('Escape');
   const t0 = await page.evaluate(() => Vide.game.state.stats.playTime);

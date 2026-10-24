@@ -291,7 +291,7 @@
         case 'colossusAttack': play('colossusAttack'); break;
         case 'web': play('web'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;
-        case 'colossusTamed': play('tamed'); break;
+        case 'colossusTamed': case 'renaissance': play('tamed'); break;
         case 'lore': case 'zoneDiscovered': play('lore'); break;
         case 'heartbeat': play('heartbeat', 1); break;
       }

@@ -22,8 +22,20 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   vit dans l'objet `game` de `sim.js` et se recalcule.
 - Simulation à **pas fixe** (`CONFIG.step`) ; `Sim.step(game, dt, input)` est déterministe pour une graine donnée.
 - Les caractéristiques (`Stats.compute`) se recalculent à chaque pas à partir de l'état : pas de cache à invalider.
-- **Contenu = données** : améliorations dans `src/core/upgrades.js` (même principe à suivre pour unités,
-  bâtiments, zones, colosses). Les `id` sont stockés dans les sauvegardes : ne jamais les renommer.
+- **Contenu = données**, chaque catalogue dans son fichier : améliorations (`upgrades.js`), espèces (`species.js`),
+  bâtiments (`buildings.js`), ombres (`SHADOW_KINDS` dans `shadows.js`), zones (`zones.js`), colosses
+  (`colossi.js`, corps et attaques dans `colossus.js`), récit (`lore.js`). Les `id` sont stockés dans les
+  sauvegardes : ne jamais les renommer.
+- **Boutique** : tout ce qui s'achète s'inscrit au catalogue (`catalog.js`) avec un onglet ; l'interface
+  l'affiche sans rien savoir de l'article. Coûts multi-ressources (`wallet.js` : lumière ✦, échos ◆, souvenirs ✧).
+- **Événements** : la simulation signale ce qui arrive avec `Sim.emit(game, type, données)` ; l'interface
+  (`away.js`), le son (`audio.js`) et le rendu les lisent chaque image. Ajouter un message = une entrée dans
+  `MESSAGES` (away.js).
+- **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `garden.js`, `colony.js`
+  (êtres et comportements par rôle), `structures.js` (bâtiments), `shadows.js`, `combat.js` (vitalité, armée,
+  projectiles, tours), `zones.js`, `colossus.js`, `offline.js` (absence), `renaissance.js`, `save.js`.
+- **Améliorations héritées** (`legacy: true`, payées en souvenirs) : rangées dans `state.legacy`, elles survivent
+  aux renaissances ; `modify(stats, niveau)` permet de cumuler avec une autre amélioration.
 
 ## Sauvegardes
 
@@ -36,7 +48,8 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - Après tout réglage, lancer `node tests/balance.js 60` : le robot joue une heure sans défendre activement.
   Vérifier que la progression ne cale pas et ne s'emballe pas.
 - Améliorations sans maximum : pour une même source de revenu, Σ ln(multiplicateur par niveau) / ln(croissance
-  du prix) doit rester < 1 (garde-fou dans tests/economy.test.js — y rattacher toute nouvelle amélioration illimitée).
+  du prix) doit rester < 0,75 (garde-fou dans tests/economy.test.js — y rattacher toute nouvelle amélioration
+  illimitée). Une marge est nécessaire : d'autres facteurs (nombre d'êtres, jardin…) grandissent en même temps.
 - Éviter les impasses : toujours vérifier qu'un joueur ne peut pas se bloquer (ex. population pleine sans bâtisseur
   possible — d'où les bâtisseurs hors population).
 

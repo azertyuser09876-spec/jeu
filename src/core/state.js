@@ -21,6 +21,10 @@
       tides: 0,          // marées d'ombres déjà venues (leur taille en dépend)
       army: { posture: 'garde' }, // ordre donné à l'armée : garde, escorte, chasse
       lore: [],          // fragments du récit déjà révélés, dans l'ordre
+      memories: 0,       // souvenirs (✧) gagnés en renaissant
+      legacy: {},        // améliorations héritées (achetées en souvenirs) : elles survivent aux renaissances
+      renaissances: 0,   // nombre de renaissances
+      runStart: 0,       // lumière totale au moment de la dernière renaissance
       colossi: {},       // colosses : 'heard' (entendu), 'found' (rencontré), 'tamed' (apaisé)
       zones: {
         visited: [],     // régions visitées (clés "i,j"), pour la carte

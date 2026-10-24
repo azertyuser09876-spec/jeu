@@ -1,5 +1,23 @@
 # Historique des versions
 
+## 1.0.0 — Renaissance
+
+- **Renaissance** (onglet souvenirs) : après 4 M de lumière récoltée depuis le dernier départ, se dissoudre
+  pour renaître. Souvenirs ✧ gagnés selon la racine carrée de la lumière récoltée. Repartent de zéro :
+  lumière, améliorations, territoire, êtres, bâtiments, échos. Restent : colosses (et leurs bienfaits),
+  zones explorées, journal, souvenirs. Confirmation avant de renaître, bannière, nouveau fragment du récit.
+- **5 bienfaits éternels** en souvenirs : Éclat ancien (toute lumière ×), Racines (foyer déjà allumé,
+  territoire plus vaste), Éveil précoce (lueurs dès le départ), Souffle ancien (pulsation plus rapide),
+  Mémoire profonde (absence plus longue).
+- Statistiques de partie dans le menu (ombres dissipées, colosses apaisés, renaissances).
+- Robot d'équilibrage : mode `--renaissance` pour comparer les vies successives ; corrigé un retour au
+  foyer intempestif du robot.
+- Mise en page mobile revue (messages, bannières, jauge de combat).
+- **Équilibrage** : un emballement tardif (révélé par le robot corrigé) est maîtrisé — Éclat, Ferveur et
+  Fertilité réglées, garde-fou plus strict ; la progression ralentit en douceur sur deux heures de jeu.
+- Sauvegarde au format 9 : toutes les parties depuis la 0.1 se chargent.
+- 193 tests de logique, 24 vérifications navigateur.
+
 ## 0.9.0 — D'autres colosses
 
 - **La Tisseuse**, fileuse des courants (après le Veilleur) : araignée colossale à **huit pattes** qui marche

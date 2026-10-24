@@ -129,6 +129,16 @@ button { font: inherit; letter-spacing: inherit; }
   transition: opacity 2s ease;
 }
 
+#memories {
+  margin-top: 4px;
+  font-size: 1rem;
+  color: #ffe2a6;
+  text-shadow: 0 0 14px rgba(255, 210, 140, 0.5);
+  font-variant-numeric: tabular-nums;
+  transition: opacity 2s ease;
+}
+
+#memories .glyph,
 #echoes .glyph {
   font-size: 0.75em;
   margin-right: 0.5em;
@@ -187,7 +197,7 @@ button { font: inherit; letter-spacing: inherit; }
 
 #orders {
   position: fixed;
-  top: calc(max(18px, env(safe-area-inset-top)) + 96px);
+  top: calc(max(18px, env(safe-area-inset-top)) + 124px);
   left: max(22px, env(safe-area-inset-left));
   display: flex;
   align-items: center;
@@ -640,10 +650,13 @@ button { font: inherit; letter-spacing: inherit; }
 }
 
 @media (max-width: 640px) {
+  /* Sur téléphone, le haut est occupé par le compteur et les ordres : messages et bannière plus bas. */
   #toast {
-    top: calc(max(14px, env(safe-area-inset-top)) + 70px);
+    top: calc(max(14px, env(safe-area-inset-top)) + 172px);
     bottom: auto;
   }
+  #zone-banner { top: 34%; }
+  #boss { width: calc(100% - 150px); }
 }
 
 .menu-card h1 {

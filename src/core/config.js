@@ -57,6 +57,12 @@
       offlineCap: 4 * 3600,  // durée d'absence prise en compte (avant améliorations)
     },
 
+    // Renaissance : souvenirs = ⌊√(lumière récoltée depuis la dernière renaissance / unit)⌋.
+    renaissance: {
+      threshold: 4e6,    // lumière à récolter (depuis la dernière renaissance) pour pouvoir renaître
+      unit: 4e5,         // 4 M de lumière → 3 souvenirs ; 100 M → 15
+    },
+
     // Le jardin : la lumière qui naît dans le territoire, récoltée par les lueurs.
     garden: {
       density: 0.00015,  // particules par unité² de territoire

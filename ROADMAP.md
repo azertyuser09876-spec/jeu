@@ -73,6 +73,14 @@ Déplacement, récolte, améliorations, pulsation, sauvegarde versionnée, ambia
 1. La Tisseuse (huit pattes, toiles qui ralentissent) et le Léviathan (serpent du Gouffre).
 2. Colosses décrits par des données : corps, attaques, sceaux, bienfaits.
 
-### [ ] 1.0 — Renaissance
+### [x] 1.0 — Renaissance
 1. Renaissance : se dissoudre pour renaître plus fort (souvenirs ✧, bienfaits permanents).
 2. Équilibrage complet au robot, finitions, documentation.
+
+## Après 1.0 — pistes
+
+- D'autres colosses (le corps et les attaques sont des données : un oiseau aux ailes immenses, une méduse…).
+- Des zones plus rares (une zone inversée où la lumière blesse, un sanctuaire sans ombre…).
+- Une deuxième génération d'êtres (spécialisations, êtres qui en éveillent d'autres).
+- Des défis de renaissance (renaître avec des contraintes pour des souvenirs supplémentaires).
+- Exporter / importer sa sauvegarde (changer d'appareil).
