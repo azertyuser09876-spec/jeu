@@ -1,5 +1,30 @@
 # Historique des versions
 
+## 2.6.0 — La guerre
+
+La guerre prend corps : des fronts qui avancent et reculent, des colosses qu'on se dispute, une vue stratégique au
+recul le plus large, et une guerre qui continue pendant ton absence.
+
+- **Les fronts** : là où un village touche une base, les deux camps se disputent les parcelles du contact. Tes
+  soldats et tes tours poussent ; une base pousse selon son niveau, sa garnison et la rudesse de la guerre. Une
+  parcelle cède d'autant moins qu'elle a mûri : le blanc pur et la noirceur profonde tiennent, un cœur toujours.
+  Prise, elle change de camp avec sa surface ; le bâtiment ou l'ouvrage qui s'y trouvait tombe. En guerre ouverte,
+  la noirceur rampe vers tes villages jusqu'à les toucher.
+- **Des colosses disputés** : en guerre ouverte, les bases mûres rongent les colosses apaisés à leur portée ; on
+  le voit, ils s'assombrissent. Ta pulsation chasse les ombres. Rongé jusqu'au bout, un colosse est corrompu :
+  sans rôle ni bienfait, teinté de violet, il se retourne contre ton village. On le reprend sceau après sceau.
+- **La vue stratégique** : recule au-delà du recul le plus large (molette, pincement, −), ou touche M : la carte
+  s'ouvre, vivante — le monde continue. Les fronts, les armées en mouvement, les effectifs, les campagnes, le
+  niveau des bases, l'état de la guerre. Touche une base pour y mener campagne depuis un village, ou la rappeler.
+  Zoomer ramène au monde.
+- **L'absence** : la guerre continue — fronts, assauts contre tes villages (repoussés, ils laissent des échos ;
+  sinon des bâtiments s'éteignent), campagnes, colosses rongés. Un récit t'attend au retour.
+- **Une absence bien plus rapide** : une longue absence calait dans une partie avancée (plus de 5 minutes pour
+  12 h) ; elle prend désormais de moins d'une seconde à quelques secondes (blanchiment, croissance, placement des
+  bâtiments revus, mêmes résultats).
+- Sauvegarde : format 28 (colosses corrompus, ce que les ombres en ont rongé).
+- 431 tests de logique, 45 vérifications navigateur.
+
 ## 2.5.0 — Les gouverneurs
 
 Chaque village et chaque base d'ombre a son gouverneur : un même cerveau, un budget, et des stats invisibles pour

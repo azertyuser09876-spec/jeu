@@ -57,7 +57,12 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
   lumière apprend la ruée, le fanal et le retour.
 - **Les ombres bâtissent** : des bases d'ombre, en négatif de tes villages — un territoire de noirceur en cinq
   nuances, des fosses, des flèches qui tirent sur la lumière, des remparts qu'elle doit abattre — lancent des raids sur tes
-  villages. Chacune a son gouverneur, qui dépense sa noirceur en ouvrages, bêtes, avant-postes et assauts. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
+  villages. Chacune a son gouverneur, qui dépense sa noirceur en ouvrages, bêtes, avant-postes et assauts.
+- **La guerre** : avec le premier avant-poste, la guerre s'ouvre, douce d'abord. Puis des fronts se forment où tes
+  villages touchent la noirceur : les parcelles se prennent et se perdent, le blanc pur tient le plus longtemps.
+  Les ombres rongent tes colosses apaisés — ta pulsation les en protège ; corrompus, il faut les reprendre. Recule
+  au plus large pour passer en vue stratégique : fronts, armées, campagnes à lancer. Elle continue pendant ton
+  absence, et tu en trouves le récit au retour. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
 - **Les créatures** : loups, scolopendres, cerfs de lumière — de grands corps articulés. À bout de forces, une
   créature est apprivoisée, purifiée ou corrompue selon la sous-faction de qui l'abat, et change de camp. Dans le
   vide errent des lucioles, des raies de lumière, une baleine ; des convois roulent sur tes routes.

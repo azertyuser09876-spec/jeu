@@ -246,7 +246,7 @@ un budget, choisit l'action qu'il veut le plus et peut s'offrir — ou économis
    ambition), au lieu d'envies réglées à la main.
 5. Équilibrage (robot) : le monde, vide au début, se remplit des deux côtés.
 
-### [ ] 2.6 — La guerre
+### [x] 2.6 — La guerre
 1. Les fronts : territoire, bâtiments et troupes se gagnent et se perdent, des deux côtés ; le blanc pur et la
    noirceur profonde tiennent le plus longtemps.
 2. Des colosses disputés : les ombres peuvent corrompre un colosse apaisé, et on peut le reprendre.
