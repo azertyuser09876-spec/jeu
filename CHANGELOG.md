@@ -1,5 +1,37 @@
 # Historique des versions
 
+## 2.5.0 — Les gouverneurs (en préparation)
+
+Chaque village et chaque base d'ombre a son gouverneur : un même cerveau, un budget, et des stats invisibles pour
+bien choisir. Le monde, vide au début, se remplit des deux côtés.
+
+- **Le cerveau commun** : on présente au gouverneur ce qu'il pourrait faire, chaque geste avec son prix ; il prend
+  celui qui rend le plus, ou économise pour lui en ne s'accordant que de petites dépenses. Son ambition grandit avec
+  le temps.
+- **Des stats invisibles** (à la demande du joueur) : tout ce qu'un gouverneur peut acheter porte, caché, ce qu'il
+  rapporte — production, croissance, places, défense, soins, chantiers ; côté ombres, assaut, défense, expansion.
+  Il les pèse selon l'état réel de son village (sa production, ce que rend une lueur, la menace, la place qui reste :
+  ses derniers emplacements vont à ce qui rapporte le plus) ou de sa base.
+- **Le gouverneur d'un village** (l'intendant devient gouverneur ; tu lui confies toujours une part de la lumière
+  du village) : il bâtit selon le plan et le type, lève une milice et monte des enceintes quand la menace monte ;
+  ambitieux, il trace des routes, fait de son village une cité de sa sous-faction, envoie des colons escortés fonder
+  le type de village qui manque au monde (le nouveau village hérite de son gouverneur), et mène l'armée du village
+  contre une base proche. La fiche du village dit ce qu'il vise.
+- **Le gouverneur d'une base** : un budget de noirceur qui grandit avec elle, dépensé en ouvrages, remparts, bêtes,
+  avant-postes et assauts ; menacée, elle se défend ; sa sous-faction la fait pencher (Dévoreurs : l'assaut ;
+  Corrupteurs : ouvrages et remparts ; Meutes : bêtes). Une base abattue près de tes villages : les ombres en lèvent
+  une autre, ailleurs, trois minutes plus tard.
+- Au robot (une heure, sans défendre) : 4 villages de 4 types dont 3 colonies, 6 routes, une cité, 7 campagnes
+  gagnées ; en face, une centaine d'assauts, 61 ouvrages, 15 remparts.
+- **Une cité vaut enfin ses villages** (les colonies des gouverneurs, nées près de leur village, finissent par le
+  toucher) : ses anciens cœurs restent des dépôts pour les lueurs, et elle a droit à autant de chaque bâtiment que
+  tous ses villages réunis — sa population se figeait, et la progression calait après la fusion.
+- Corrigé en route : des colons payés pour rien (la réserve était débitée avant le départ) ; la boutique s'ouvrait
+  parfois sur le compositeur de fondation au lieu de la lumière ; un effet un peu long poussait le prix hors de sa
+  carte ; les infobulles des sous-factions disaient encore « un choix pour toute la vie ».
+- Sauvegarde : format 27 (campagnes des villages, noirceur des bases).
+- 414 tests de logique, 42 vérifications navigateur.
+
 ## 2.4.0 — Le monde vit
 
 Le vide se peuple : de nouvelles unités, des créatures qui changent de camp, des sous-factions, des colosses plus

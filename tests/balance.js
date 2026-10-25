@@ -171,7 +171,8 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   if (s % (2 * stepsPerMinute) === 0) {
     const levels = Object.entries(state.upgrades).map(([k, v]) => `${k} ${v}`).join(', ');
     const territory = state.villages.length
-      ? `  villages ${state.villages.map((v) => `${v.type[0]}${Math.round(Territory.radius(v))}`).join(' ')}` : '';
+      ? `  villages ${state.villages.map((v) => `${v.type[0]}${Math.round(Territory.radius(v))}`).join(' ')}`
+        + (process.env.RATES ? ` (${state.villages.map((v) => util.formatRate(v.rate)).join(' ')})` : '') : '';
     const counts = {};
     for (const v of state.villages) for (const [k, n] of Object.entries(v.beings)) counts[k] = (counts[k] || 0) + n;
     const beings = Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(' ');

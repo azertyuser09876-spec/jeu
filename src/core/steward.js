@@ -86,9 +86,11 @@
       if (Structures.crowded(v, d) || pending(d.id) || (d.only && d.only !== v.type && !(v.extra || []).includes(d.only))) return;
       if (d.requires && !d.requires(state)) return;
       const worth = d.worth || {};
-      // Chaque exemplaire de plus rapporte moins (sauf les places : quatre de plus restent quatre de plus).
+      // Chaque exemplaire de plus rapporte moins (sauf les places : quatre de plus restent quatre de plus) ; dans une
+      // cité, ils se comptent par quartier.
       const linear = 'room' in worth || 'army' in worth;
-      let g = Governors.gain(worth, need) * (linear ? 1 : Math.pow(CONFIG.governors.fade, Structures.countIn(v, d.id, true)));
+      const copies = Structures.countIn(v, d.id, true) / (1 + (v.districts || []).length);
+      let g = Governors.gain(worth, need) * (linear ? 1 : Math.pow(CONFIG.governors.fade, copies));
       if (d.scope === 'global') g *= need.total / need.rate; // (son effet vaut pour tous tes villages)
       const cost = Structures.cost(state, d);
       // Son vrai prix : la place qu'il prend, et les êtres qu'il faudra pour remplir un logis.

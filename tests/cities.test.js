@@ -55,6 +55,41 @@
     assert.ok(city.gardenMax >= 2 * CONFIG.garden.max, 'jardin');
   });
 
+  test('une cité rapporte autant que ses villages : ses anciens cœurs restent des dépôts', () => {
+    const light = (gap) => {
+      const state = State.create(3);
+      village(state, { radius: 450, beings: { lueur: 30 } });
+      village(state, { x: gap, radius: 450, type: 'atelier', beings: { lueur: 30 } });
+      state.player.x = 50000;
+      const game = Sim.create(state);
+      game.field.particles.length = 0;
+      run(game, 40);
+      const before = state.totalLight;
+      run(game, 60);
+      return { villages: state.villages.length, rate: (state.totalLight - before) / 60 };
+    };
+    const apart = light(5000), city = light(880);
+    assert.equal(apart.villages, 2);
+    assert.equal(city.villages, 1, 'fusionnés');
+    assert.ok(city.rate >= apart.rate * 0.95, `${city.rate.toFixed(1)} contre ${apart.rate.toFixed(1)}`);
+    const v = village(State.create(1), { radius: 300 });
+    v.districts.push({ x: 600, y: 0, type: 'atelier' });
+    assert.deepEqual(Vide.Structures.nearestDeposit(v, 590, 10), { x: 600, y: 0, mult: 1, building: null });
+  });
+
+  test('une cité a droit à autant de chaque bâtiment que tous ses villages réunis', () => {
+    const { state } = neighbors();
+    const nid = Vide.Structures.def('nid');
+    Cities.fuse(state);
+    const city = state.villages[0];
+    assert.equal(Vide.Structures.maxIn(city, nid), nid.max * 2);
+    city.area = 1e8;
+    while (Vide.Structures.countIn(city, 'nid', true) < nid.max) city.buildings.push({ type: 'nid', x: 0, y: 0, work: 40 });
+    assert.equal(Vide.Structures.crowded(city, nid), null, 'encore de la place pour des logis');
+    while (Vide.Structures.countIn(city, 'nid', true) < nid.max * 2) city.buildings.push({ type: 'nid', x: 0, y: 0, work: 40 });
+    assert.equal(Vide.Structures.crowded(city, nid), `${nid.max * 2} au plus dans cette cité`);
+  });
+
   test('fusionner ne rend pas la fondation suivante moins chère', () => {
     const { state } = neighbors();
     const before = Villages.foundCost(state);

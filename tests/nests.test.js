@@ -293,6 +293,20 @@
     assert.equal(state.nests.length, 0, 'la base est tombée');
   });
 
+  test('une base abattue près de tes villages : les ombres en lèvent une autre bientôt, ailleurs', () => {
+    const state = twoVillages();
+    state.nestTimer = CONFIG.nests.every;
+    const near = Nests.add(state, 3000, 0, 0);
+    const lair = Nests.add(state, 0, -9000, 0, '0,-3');
+    Nests.fall(state, lair);
+    assert.equal(state.nestTimer, CONFIG.nests.every, 'une base lointaine ne revient pas');
+    Nests.fall(state, near);
+    assert.equal(state.nestTimer, CONFIG.nests.answer);
+    const game = Sim.create(state);
+    run(game, CONFIG.nests.answer + 1);
+    assert.equal(state.nests.filter((n) => !n.region).length, 1, 'une autre s’est levée');
+  });
+
   test('nids sauvegardés : relus, nettoyés ; migration ; renaissance', () => {
     const state = twoVillages();
     Nests.add(state, 4000, 0, 600, '3,-2');

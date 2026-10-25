@@ -60,9 +60,15 @@
     return 1 + Math.floor(village.area / CONFIG.villages.lotArea);
   }
 
+  // Le maximum de ce bâtiment dans ce village : une cité en a autant que tous ses villages réunis.
+  function maxIn(village, d) {
+    return d.max * (1 + (village.districts || []).length);
+  }
+
   // Raison qui empêche de planifier ce bâtiment dans ce village (place, maximum), ou null.
   function crowded(village, d) {
-    if (countIn(village, d.id, true) >= d.max) return `${d.max} au plus par village`;
+    const max = maxIn(village, d);
+    if (countIn(village, d.id, true) >= max) return `${max} au plus ${(village.districts || []).length ? 'dans cette cité' : 'par village'}`;
     if (village.buildings.length >= lots(village)) return 'plus de place : le territoire doit grandir';
     return null;
   }
@@ -173,10 +179,19 @@
     return best;
   }
 
-  // Point de dépôt le plus proche pour une lueur : le cœur de son village, ou un relais (prisme) achevé.
+  // Point de dépôt le plus proche pour une lueur : le cœur de son village, un ancien cœur (dans une cité), ou un
+  // relais (prisme) achevé.
   function nearestDeposit(village, x, y) {
     let best = { x: village.x, y: village.y, mult: 1, building: null };
     let bestD2 = (village.x - x) ** 2 + (village.y - y) ** 2;
+    // Dans une cité, les anciens cœurs (ses quartiers) restent des dépôts.
+    for (const q of village.districts || []) {
+      const d2 = (q.x - x) ** 2 + (q.y - y) ** 2;
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = { x: q.x, y: q.y, mult: 1, building: null };
+      }
+    }
     for (const b of village.buildings) {
       const d = def(b.type);
       if (!d.deposit || !isWorking(b)) continue;
@@ -268,7 +283,7 @@
         const village = Villages.current(state);
         const built = village ? countIn(village, d.id, false) : count(state, d.id, false);
         const pending = (village ? countIn(village, d.id, true) : count(state, d.id, true)) - built;
-        const of = village ? `/${d.max}` : '';
+        const of = village ? `/${maxIn(village, d)}` : '';
         return pending ? `×${built}${of} · ${pending} en chantier` : `×${built}${of}`;
       },
       // L'effet, et la place qui reste dans le village.
@@ -280,7 +295,7 @@
   }
 
   Vide.Structures = {
-    def, isDone, isWorking, count, countIn, all, working, sites, cost, lots, crowded, site, plan, addWork, nearestSite,
+    def, isDone, isWorking, count, countIn, all, working, sites, cost, lots, maxIn, crowded, site, plan, addWork, nearestSite,
     nearestDeposit,
     modify, modifyGlobal, wardAt, advanceOffline, hp, damage, repair, mostDamaged, MIN_TERRITORY,
   };

@@ -490,7 +490,7 @@ body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
   position: relative;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto; /* (un effet long passe à la ligne au lieu de pousser le prix dehors) */
   grid-template-areas:
     "name label"
     "effect cost";
@@ -524,7 +524,7 @@ body.dispersing > :not(#view):not(#vignette):not(#toast):not(#cinema) {
 
 .item .name { grid-area: name; }
 .item .label { grid-area: label; font-size: 0.75rem; opacity: 0.7; align-self: center; }
-.item .effect { grid-area: effect; font-size: 0.78rem; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.item .effect { grid-area: effect; font-size: 0.78rem; opacity: 0.75; font-variant-numeric: tabular-nums; white-space: normal; }
 .item .cost { grid-area: cost; font-size: 0.78rem; text-align: right; font-variant-numeric: tabular-nums; }
 .item.affordable .cost { color: var(--light); }
 

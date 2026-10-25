@@ -575,9 +575,11 @@
   }
 
   // Une base tombe : ses ouvrages et ses remparts s'effondrent ; son terrain retourne au vide, ou rejoint ton
-  // village s'il le touche (une lumière neuve, qui devra blanchir). Renvoie { village, cells } ou null.
+  // village s'il le touche (une lumière neuve, qui devra blanchir). Les ombres répondent : si elle était née près de
+  // tes villages, une autre s'y lève bientôt, ailleurs. Renvoie { village, cells } ou null.
   function fall(state, nest) {
     state.nests.splice(state.nests.indexOf(nest), 1);
+    if (!nest.region && !nest.parent && state.nestTimer !== null) state.nestTimer = Math.min(state.nestTimer, CONFIG.nests.answer);
     const heir = neighbor(state, nest);
     if (!heir) return null;
     let cells = 0;
