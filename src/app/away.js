@@ -159,6 +159,10 @@
     nestBuilt: (e) => (e.kind === 'rempart' ? 'Une base d’ombre se ceint d’un rempart : il arrête la lumière. Ton armée devra l’abattre.' : null),
     workDown: (e) => `${Vide.darkWork(e.kind).name} d’ombre abattue. ◆ ${util.formatNumber(e.echoes)}.`,
     darkBreach: () => 'Une brèche dans le rempart d’ombre.',
+    front: (e) => (e.side === 'light'
+      ? `Le front avance : la noirceur recule devant ${to(e.village)}.`
+      : `Le front recule : la noirceur mord sur le territoire ${of(e.village)}.`),
+    structureLost: (e) => `Les ombres s’emparent d’un bâtiment ${of(e.village)} : ${Vide.Structures.def(e.kind).name.toLowerCase()}.`,
     convoyLost: (e) => (e.kind === 'soldat'
       ? `Un convoi de soldats tombe sous les ombres, entre ${to(e.from)} et ${to(e.to)}.`
       : `Un convoi tombe sous les ombres, entre ${to(e.from)} et ${to(e.to)} : sa charge est perdue.`),

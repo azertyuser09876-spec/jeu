@@ -97,7 +97,8 @@
 
   function shapeOf(r, v) {
     let sum = 0;
-    for (let k = 2; k < v.cells.length; k += 3) sum += v.cells[k];
+    // (Les nuances, et les positions : un front peut prendre une cellule et en rendre une autre.)
+    for (let k = 0; k < v.cells.length; k += 3) sum += v.cells[k + 2] + v.cells[k] * 31 + v.cells[k + 1] * 17;
     const sig = v.cells.length * 1e7 + sum;
     const known = shapes.get(v);
     if (known && (known.sig === sig || r.time - known.at < 0.25)) return known;

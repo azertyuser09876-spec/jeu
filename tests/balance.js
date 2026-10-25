@@ -192,5 +192,6 @@ if (reborn) for (const l of lives) console.log(l);
 console.log(`monde : villages ${state.villages.length} (colons des gouverneurs ${world.colons} — colonies fondées ${world.settled}, `
   + `rejointes ${world.joined}, perdues ${world.lost} — routes ${world.route}, cités ${world.specialite}, `
   + `campagnes ${world.campagne} dont gagnées ${world.won}) · bases ${state.nests.filter((n) => !n.parent).length}+${state.nests.filter((n) => n.parent).length} `
-  + `(assauts ${world.raid}, avant-postes ${world.outpost}, ouvrages ${world.work}, remparts ${world.rempart}, bêtes ${world.beast})`);
+  + `(assauts ${world.raid}, avant-postes ${world.outpost}, ouvrages ${world.work}, remparts ${world.rempart}, bêtes ${world.beast}) `
+  + `· fronts : cellules prises par la lumière ${game.fronts.taken.light}, par les ombres ${game.fronts.taken.shadow}`);
 console.log('premiers achats : ' + Object.entries(firsts).map(([k, t]) => `${k} ${Math.round(t)} s`).join(', '));

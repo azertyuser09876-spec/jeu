@@ -154,6 +154,26 @@
     }
   }
 
+  // Les fronts : une cellule quitte ce territoire, avec sa surface (renvoie vrai si elle en faisait partie)…
+  function lose(v, i, j) {
+    const idx = index(v);
+    const k = idx.map.get(key(i, j));
+    if (k === undefined) return false;
+    v.cells.splice(k, 3);
+    v.area = Math.max(CELL * CELL, v.area - CELL * CELL);
+    idx.length = -1; // (l'index se refait à la prochaine lecture, sans oublier où en est le blanc)
+    return true;
+  }
+
+  // …et en rejoint un autre, neuve (sa nuance repart de zéro), avec sa surface.
+  function claim(v, i, j) {
+    const idx = index(v);
+    if (idx.map.has(key(i, j))) return false;
+    addCell(v, idx, i, j);
+    v.area += CELL * CELL;
+    return true;
+  }
+
   // Ajoute les cellules qui manquent pour que la forme corresponde à la surface. Renvoie le nombre ajouté.
   // `others` : des territoires où il ne peut pas s'étendre (les bases des ombres pour un village, et l'inverse) ;
   // s'il est cerné, il ne grandit plus de ce côté.
@@ -391,6 +411,6 @@
 
   Vide.Territory = {
     CELL, NUANCES, HOLD, cellOf, radius, targetCells, has, whiteOf, contains, isInside, whiteAt, distanceToEdge,
-    nuance, hold, grow, owned, whiten, whiteness, randomPoint, outline, advance, production,
+    nuance, hold, grow, lose, claim, owned, whiten, whiteness, randomPoint, outline, advance, production,
   };
 })(globalThis.Vide);

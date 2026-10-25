@@ -51,6 +51,7 @@
     Vide.Trade.create(game);
     Vide.Abilities.create(game);
     Vide.Nests.create(game);
+    Vide.Fronts.create(game);
     Vide.Engines.create(game);
     Vide.Creatures.create(game);
     // Une partie déjà avancée (venue d'une version sans récit) remplit son journal d'un coup,
@@ -224,6 +225,7 @@
     Vide.Cities.update(game, dt);
     Vide.Expeditions.update(game, dt);
     Vide.Nests.update(game, dt);
+    Vide.Fronts.update(game, dt);
     for (const r of Vide.Roads.advance(state, (v) => Vide.Villages.statsOf(game, v), dt)) {
       const [a, b] = Vide.Roads.ends(state, r);
       emit(game, 'road', { a: a.type, b: b.type, first: state.roads.filter((x) => Vide.Roads.isDone(state, x)).length === 1 });

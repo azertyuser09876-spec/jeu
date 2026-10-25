@@ -135,6 +135,20 @@
       inherit: 0.85,     // chance qu'un village fondé depuis un autre (un avant-poste depuis sa base) en hérite
     },
 
+    // Les fronts (voir fronts.js) : là où un village touche une base, les cellules du contact se disputent.
+    fronts: {
+      every: 4,            // un tour toutes les 4 s
+      bite: 0.6,           // chance qu'une cellule neuve cède à un assaut…
+      hold: 0.9,           // …moins cette part pour une cellule de blanc pur ou de noirceur profonde
+      perSoldier: 0.25,    // pression d'un village : par soldat…
+      perTower: 0.6,       // …par tour (une citadelle en vaut deux)
+      darkBase: 0.5,       // pression d'une base (en guerre ouverte) : de base…
+      perLevel: 0.25,      // …par niveau…
+      perBeast: 0.3,       // …par bête de sa garnison (le tout multiplié par la rudesse de la guerre)
+      tellEvery: 60,       // un message par front et par camp, au plus chaque minute
+      creepEvery: 10,      // en guerre ouverte, la noirceur d'une base rampe d'une cellule vers ton village toutes les 10 s
+    },
+
     // La guerre (voir war.js) : elle s'ouvre avec le premier avant-poste.
     war: {
       ramp: 3600,        // elle atteint sa plus grande âpreté en une heure

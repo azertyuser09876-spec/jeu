@@ -20,7 +20,8 @@
   const shapes = new WeakMap();
   function shapeOf(r, nest) {
     let sum = 0;
-    for (let k = 2; k < nest.cells.length; k += 3) sum += nest.cells[k];
+    // (Les nuances, et les positions : un front peut prendre une cellule et en rendre une autre.)
+    for (let k = 0; k < nest.cells.length; k += 3) sum += nest.cells[k + 2] + nest.cells[k] * 31 + nest.cells[k + 1] * 17;
     const sig = nest.cells.length * 1e7 + sum;
     const known = shapes.get(nest);
     if (known && (known.sig === sig || r.time - known.at < 0.25)) return known;
