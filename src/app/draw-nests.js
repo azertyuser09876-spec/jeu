@@ -283,4 +283,55 @@
     ctx.stroke();
     ctx.restore();
   }
+
+  // --- Les fronts ---
+
+  // La lisière d'un front : là où une cellule de lumière touche une cellule de noirceur, un trait qui palpite, entre
+  // le blanc et le violet. Les contacts de chaque paire village-base se recalculent quand leurs formes changent (ou
+  // au plus deux fois par seconde).
+  const fronts = new Map();
+  function contactsOf(r, v, nest) {
+    const key = `${v.id}:${nest.id}`;
+    const sig = `${v.cells.length}:${nest.cells.length}`;
+    let known = fronts.get(key);
+    if (!known || (known.sig !== sig && r.time - known.at > 0.5)) {
+      known = { sig, at: r.time, list: Vide.Fronts.contacts(v, nest) };
+      fronts.set(key, known);
+    }
+    return known.list;
+  }
+
+  Vide.Draw.fronts = function (r, game) {
+    const { ctx } = r;
+    const view = Render.viewBounds(r, 80);
+    const C = Vide.Territory.CELL;
+    const t = r.time;
+    for (const v of game.state.villages) {
+      for (const nest of game.state.nests) {
+        // (Deux territoires hors de vue, ou trop loin l'un de l'autre : pas de front à dessiner.)
+        const R = Vide.Territory.radius(v) + Vide.Territory.radius(nest);
+        if (Math.hypot(v.x - nest.x, v.y - nest.y) > R * 1.6 + 4 * C) continue;
+        for (const c of contactsOf(r, v, nest)) {
+          const vertical = c.vi === c.ni; // (voisines l'une au-dessus de l'autre : leur bord commun est horizontal)
+          const mx = (Math.max(c.vi, c.ni) + (vertical ? 0.5 : 0)) * C;
+          const my = (Math.max(c.vj, c.nj) + (vertical ? 0 : 0.5)) * C;
+          if (mx < view.left || mx > view.right || my < view.top || my > view.bottom) continue;
+          const pulse = 0.5 + 0.5 * Math.sin(t * 2.6 + (c.vi + c.vj) * 0.9);
+          ctx.globalAlpha = 0.18 + 0.32 * pulse;
+          ctx.strokeStyle = pulse > 0.5 ? 'rgb(235, 225, 255)' : 'rgb(170, 120, 255)';
+          ctx.lineWidth = 3 / r.camera.scale + 2;
+          ctx.beginPath();
+          if (vertical) {
+            ctx.moveTo(mx - C / 2, my);
+            ctx.lineTo(mx + C / 2, my);
+          } else {
+            ctx.moveTo(mx, my - C / 2);
+            ctx.lineTo(mx, my + C / 2);
+          }
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  };
 })(globalThis.Vide);

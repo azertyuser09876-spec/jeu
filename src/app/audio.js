@@ -175,6 +175,27 @@
       tone({ freq: 55, type: 'sawtooth', dur: 3, gain: 0.05, attack: 1.2, filter: 300 });
       tone({ freq: 55.8, type: 'sawtooth', dur: 3, gain: 0.05, attack: 1.2, filter: 300 });
     },
+    // La guerre : un front qui avance (deux notes qui montent) ou recule (un grondement qui descend) ; une corne
+    // grave pour une campagne des ombres ; un accord qui se gâte pour un colosse corrompu.
+    front(light) {
+      if (!throttle('front', 2)) return;
+      if (light) {
+        tone({ freq: 392, type: 'sine', dur: 0.5, gain: 0.035, attack: 0.05 });
+        tone({ freq: 587, type: 'sine', dur: 0.7, gain: 0.03, attack: 0.25 });
+      } else {
+        tone({ freq: 98, glideTo: 62, type: 'triangle', dur: 1.1, gain: 0.06, attack: 0.1 });
+        noise({ dur: 0.6, gain: 0.02, from: 180, type: 'lowpass' });
+      }
+    },
+    horn() {
+      tone({ freq: 73, type: 'sawtooth', dur: 2.6, gain: 0.05, attack: 0.6, filter: 420 });
+      tone({ freq: 110, type: 'sawtooth', dur: 2.2, gain: 0.03, attack: 0.9, filter: 380 });
+    },
+    corrupted() {
+      tone({ freq: 220, glideTo: 207, type: 'triangle', dur: 2.4, gain: 0.05, attack: 0.3 });
+      tone({ freq: 233, glideTo: 196, type: 'triangle', dur: 2.4, gain: 0.05, attack: 0.3 });
+      tone({ freq: 55, type: 'sawtooth', dur: 2.6, gain: 0.04, attack: 1, filter: 260 });
+    },
     shadowDown() {
       if (!throttle('shadowDown', 0.08)) return;
       tone({ freq: 160, glideTo: 50, type: 'triangle', dur: 0.35, gain: 0.07 });
@@ -290,7 +311,9 @@
         case 'birth': play('birth'); break;
         case 'built': case 'repaired': case 'wallDone': case 'wallRepaired': play('built'); break;
         case 'breach': play('footfall', 0.5); break;
-        case 'tide': case 'raid': case 'war': play('tide'); break;
+        case 'tide': case 'war': play('tide'); break;
+        case 'raid': play(e.kind === 'campaign' ? 'horn' : 'tide'); break;
+        case 'front': play('front', e.side === 'light'); break;
         case 'shadowDown': case 'workDown': case 'creatureDown': play('shadowDown'); break;
         case 'converted': play('built'); break;
         case 'darkBreach': case 'structureLost': play('footfall', 0.4); break;
@@ -317,7 +340,7 @@
         case 'engineBuilt': play('built'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;
         case 'colossusTamed': case 'colossusRetaken': case 'renaissance': play('tamed'); break;
-        case 'colossusCorrupted': play('tide'); break;
+        case 'colossusCorrupted': play('corrupted'); break;
         case 'lore': case 'zoneDiscovered': play('lore'); break;
         case 'heartbeat': play('heartbeat', 1); break;
       }

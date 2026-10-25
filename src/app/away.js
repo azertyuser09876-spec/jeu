@@ -37,7 +37,7 @@
     }
     for (const t of b.fallen) lines.push(`La campagne ${of(t)} a abattu sa base d’ombre.`);
     for (const t of b.retreats) lines.push(`L’armée ${of(t)}, trop amenuisée, est rentrée de campagne.`);
-    for (const id of b.corrupted) lines.push(`Les ombres ont pris ${named(id)} : reprends-le, sceau après sceau.`);
+    for (const id of b.corrupted) lines.push(`Les ombres ont pris ${named(id)} : il faudra reprendre ce colosse, sceau après sceau.`);
     if (b.echoes > 0) lines.push(`La guerre t’a laissé ◆ ${util.formatNumber(b.echoes)}.`);
     return lines;
   }
@@ -116,7 +116,7 @@
       // Ses gestes d'ambition, toujours annoncés.
       const who = `Le gouverneur ${of(e.village)}`;
       if (e.kind === 'colons') return `${who} envoie des colons fonder un village.`;
-      if (e.kind === 'city') return `${who} en fait une cité.`;
+      if (e.kind === 'city') return `${who} fait de son village une cité.`;
       if (e.kind === 'road') return `${who} lance une route vers le village le plus proche.`;
       if (e.kind === 'campaign') return `${who} mène son armée contre une base d’ombre.`;
       if (seen.steward) return null;
@@ -270,7 +270,7 @@
       : `Le sol tremble : ${named(e.id)} quitte son repaire et marche sur ${to(e.village)} !`),
     corrupting: (e) => `Les ombres rongent ${named(e.id)} : ta pulsation, si elle l’atteint, les chasse.`,
     purified: (e) => `Ta pulsation chasse les ombres ${ofNamed(e.id)}.`,
-    colossusCorrupted: (e) => `Les ombres ont pris ${named(e.id)} : son rôle et son bienfait sont perdus. Reprends-le, sceau après sceau.`,
+    colossusCorrupted: (e) => `Les ombres ont pris ${named(e.id)} : son rôle et son bienfait sont perdus. Reprends ce colosse, sceau après sceau.`,
     colossusRetaken: (e) => `Tu reprends ${named(e.id)} aux ombres. ${Vide.Colossus.def(e.id).reward.text}`,
     rampage: (e) => `${Vide.Colossus.def(e.id).name} piétine ${to(e.village)} ! Provoque-le, ou fais-le plier, pour le détourner.`,
     colossusLeaves: (e) => `${Vide.Colossus.def(e.id).name} s’en retourne à son repaire.`,
