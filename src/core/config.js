@@ -258,6 +258,12 @@
       guardStagger: 60,    // jauge remplie par seconde par le Veilleur qui affronte un colosse en marche
       weave: 45,           // longueur de route tissée par seconde par la Tisseuse
       carry: 3,            // le Léviathan porte une expédition trois fois plus vite
+      // Les colosses disputés (voir corruption.js).
+      corruptRange: 7000,  // en guerre ouverte, une base mûre ronge les colosses apaisés à cette distance…
+      corruptLevel: 4,     // …dès ce niveau…
+      corruptTime: 900,    // …une base, guerre au plus fort, le corrompt en 15 min (deux, deux fois plus vite)
+      purify: 0.35,        // une pulsation qui le touche efface cette part de ce qui est rongé
+      corruptWarn: 0.5,    // tu es prévenu quand la moitié est rongée
     },
 
     // Engins de siège bâtis par des sapeurs (voir engines.js).

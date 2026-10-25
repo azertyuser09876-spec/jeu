@@ -1,5 +1,6 @@
 // Les colosses vivants : marche procédurale, chasse, attaques annoncées, sceaux, apaisement.
-// État persistant : state.colossi[id] = 'heard' (battement entendu) | 'found' (rencontré) | 'tamed' (apaisé) ;
+// État persistant : state.colossi[id] = 'heard' (battement entendu) | 'found' (rencontré) | 'tamed' (apaisé) |
+// 'corrupted' (pris par les ombres : hostile comme un colosse rencontré, voir corruption.js) ;
 // state.studied[id] = nombre de sceaux dévoilés par les érudits (voir expeditions.js) : un sceau voilé ne se
 // brise pas. Chaque sceau brisé ouvre une phase : il rugit, accélère, frappe plus vite et ajoute une attaque.
 // Pendant le jeu (jamais pendant l'absence), un colosse déjà rencontré quitte parfois son repaire pour marcher sur
@@ -265,6 +266,7 @@
       wander: null,
       pause: 0,
       calm: tamed ? 1 : 0,   // 0 sauvage → 1 apaisé (teinte dorée)
+      corrupt: status(state, d.id) === 'corrupted' ? 1 : (state.corruption[d.id] || 0), // noirceur (affichage)
       calmTimer: 0,
       orbit,
       lastWave: -1,
@@ -671,11 +673,14 @@
   }
 
   function tame(game, c) {
+    const retaken = game.state.colossi[c.id] === 'corrupted';
     game.state.colossi[c.id] = 'tamed';
+    delete game.state.corruption[c.id];
     c.mode = 'calm';
     c.calmTimer = 6;
     c.attack = null;
-    Vide.Sim.emit(game, 'colossusTamed', { id: c.id });
+    c.corrupt = 0;
+    Vide.Sim.emit(game, retaken ? 'colossusRetaken' : 'colossusTamed', { id: c.id });
   }
 
   // Coup porté au sceau actif (par la pulsation) ; ×2 quand le colosse est à genou. Un sceau voilé (pas encore
@@ -748,7 +753,7 @@
     const M = Vide.CONFIG.colossi;
     if (game.colossi.some((c) => c.mode === 'march' || c.mode === 'hunt' || c.mode === 'kneel')) return null;
     if (Vide.Combat.armySize(state) < M.marchArmy) return null;
-    const ready = game.colossi.filter((c) => c.mode === 'roam' && status(state, c.id) === 'found');
+    const ready = game.colossi.filter((c) => c.mode === 'roam' && ['found', 'corrupted'].includes(status(state, c.id)));
     for (const c of ready) {
       const v = Vide.Villages.nearest(state, c.x, c.y);
       if (!v || Math.hypot(v.x - c.x, v.y - c.y) > M.marchRange) continue;
@@ -992,7 +997,7 @@
   Vide.Colossus = {
     BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot,
     toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile, engaged,
-    startMarch, provoke, walkTo, stop, turnTowards, endAttack, beast,
+    startMarch, provoke, walkTo, stop, turnTowards, endAttack, beast, tame,
     modify, modifyLocal, inCone, inGap, slowAt, startAttack,
   };
 })(globalThis.Vide);

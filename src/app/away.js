@@ -234,7 +234,13 @@
     landed: () => 'L’Oiseau d’aube se pose… vite, ses sceaux sont à portée !',
     gale: () => (seen.gale ? null : (seen.gale = true, 'Une rafale ! Elle repousse tout ce qui se tient devant lui.')),
     sighted: (e) => `L’Oiseau d’aube a aperçu au loin : ${e.zones.map((z) => Vide.Zones.get(z).name).join(', ')}.`,
-    march: (e) => `Le sol tremble : ${named(e.id)} quitte son repaire et marche sur ${to(e.village)} !`,
+    march: (e) => (e.corrupted
+      ? `Le sol tremble : ${named(e.id)} se retourne contre ${to(e.village)} !`
+      : `Le sol tremble : ${named(e.id)} quitte son repaire et marche sur ${to(e.village)} !`),
+    corrupting: (e) => `Les ombres rongent ${named(e.id)} : ta pulsation, si elle l’atteint, les chasse.`,
+    purified: (e) => `Ta pulsation chasse les ombres ${ofNamed(e.id)}.`,
+    colossusCorrupted: (e) => `Les ombres ont pris ${named(e.id)} : son rôle et son bienfait sont perdus. Reprends-le, sceau après sceau.`,
+    colossusRetaken: (e) => `Tu reprends ${named(e.id)} aux ombres. ${Vide.Colossus.def(e.id).reward.text}`,
     rampage: (e) => `${Vide.Colossus.def(e.id).name} piétine ${to(e.village)} ! Provoque-le, ou fais-le plier, pour le détourner.`,
     colossusLeaves: (e) => `${Vide.Colossus.def(e.id).name} s’en retourne à son repaire.`,
     guardClash: (e) => `Le Veilleur se dresse contre ${named(e.id)} !`,

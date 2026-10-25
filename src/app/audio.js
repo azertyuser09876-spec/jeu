@@ -316,7 +316,8 @@
         case 'chained': play('chained'); break;
         case 'engineBuilt': play('built'); break;
         case 'sealBroken': case 'kneel': play('sealBroken'); break;
-        case 'colossusTamed': case 'renaissance': play('tamed'); break;
+        case 'colossusTamed': case 'colossusRetaken': case 'renaissance': play('tamed'); break;
+        case 'colossusCorrupted': play('tide'); break;
         case 'lore': case 'zoneDiscovered': play('lore'); break;
         case 'heartbeat': play('heartbeat', 1); break;
       }

@@ -252,7 +252,7 @@
     const points = cells.slice();
     for (const d of Vide.COLOSSI) {
       const st = Vide.Colossus.status(state, d.id);
-      if (st === 'heard' || st === 'found') points.push(Vide.Colossus.lair(state, d));
+      if (st === 'heard' || st === 'found' || st === 'corrupted') points.push(Vide.Colossus.lair(state, d));
     }
     for (const c of points) {
       minX = Math.min(minX, c.x - pad); maxX = Math.max(maxX, c.x + pad);

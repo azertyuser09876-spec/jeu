@@ -28,7 +28,8 @@
       legacy: {},        // améliorations héritées (achetées en souvenirs) : elles survivent aux renaissances
       renaissances: 0,   // nombre de renaissances
       runStart: 0,       // lumière totale au moment de la dernière renaissance
-      colossi: {},       // colosses : 'heard' (entendu), 'found' (rencontré), 'tamed' (apaisé)
+      colossi: {},       // colosses : 'heard' (entendu), 'found' (rencontré), 'tamed' (apaisé), 'corrupted' (pris par les ombres)
+      corruption: {},    // ce que les ombres ont rongé de chaque colosse apaisé (0 à 1, voir corruption.js)
       studied: {},       // sceaux dévoilés par les érudits, par colosse
       engines: [],       // engins de siège : balistes et chaînes (voir engines.js)
       zones: {

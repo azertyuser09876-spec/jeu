@@ -234,6 +234,7 @@
     Vide.Creatures.update(game, dt);
     Vide.Engines.update(game, dt);
     Vide.Colossus.update(game, dt);
+    Vide.Corruption.update(game, dt);
     Vide.Combat.update(game, dt);
 
     // Récit : vérifié une fois par seconde, c'est bien assez.

@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 27;
+  const FORMAT = 28;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -125,6 +125,8 @@
     // 2.5 : chaque base a un gouverneur, avec un budget de noirceur (nest.funds, 0 par défaut) ; l’horloge de
     // construction des bases (nest.build) disparaît.
     26: (data) => data,
+    // 2.6 : les colosses disputés (un colosse apaisé peut être corrompu ; ce que les ombres en ont rongé).
+    27: (data) => ({ ...data, corruption: {} }),
   };
 
   function serialize(state, now) {
@@ -318,7 +320,13 @@
 
     const colossi = isObject(raw.colossi) ? raw.colossi : {};
     for (const d of Vide.COLOSSI) {
-      if (['heard', 'found', 'tamed'].includes(colossi[d.id])) state.colossi[d.id] = colossi[d.id];
+      if (['heard', 'found', 'tamed', 'corrupted'].includes(colossi[d.id])) state.colossi[d.id] = colossi[d.id];
+    }
+    // (Seul un colosse apaisé se ronge ; une jauge pleine l'aurait déjà corrompu.)
+    const corruption = isObject(raw.corruption) ? raw.corruption : {};
+    for (const d of Vide.COLOSSI) {
+      const g = corruption[d.id];
+      if (state.colossi[d.id] === 'tamed' && Number.isFinite(g) && g > 0) state.corruption[d.id] = Math.min(g, 0.99);
     }
     const studied = isObject(raw.studied) ? raw.studied : {};
     for (const d of Vide.COLOSSI) {

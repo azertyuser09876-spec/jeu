@@ -10,6 +10,12 @@
     return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t));
   }
 
+  // Sa teinte : sauvage, apaisé (doré), rongé ou corrompu par les ombres (violet sombre).
+  const DARK = [118, 74, 168];
+  function tintOf(c) {
+    return mix(mix(c.def.tint, GOLD, c.calm), DARK, (c.corrupt || 0) * 0.85);
+  }
+
   function rgb(c, alpha) {
     return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`;
   }
@@ -37,7 +43,7 @@
     const s = c.def.size;
     const px = 1 / r.camera.scale;
     // Sauvage : argent bleuté. Apaisé : doré. Touché : il blanchit un instant.
-    let tint = mix(c.def.tint, GOLD, c.calm);
+    let tint = tintOf(c);
     tint = mix(tint, [255, 255, 255], c.hitFlash * 0.6);
     const glow = glowOf(r, tint);
     const kneeling = c.mode === 'kneel';
@@ -121,7 +127,7 @@
     const { ctx } = r;
     const s = c.def.size;
     const px = 1 / r.camera.scale;
-    let tint = mix(c.def.tint, GOLD, c.calm);
+    let tint = tintOf(c);
     tint = mix(tint, [255, 255, 255], c.hitFlash * 0.6);
     const glow = glowOf(r, tint);
     const seg = c.segments;
@@ -489,7 +495,7 @@
   };
 
   // Outils partagés avec draw-beasts.js.
-  Vide.Draw.colossusKit = { GOLD, LIFT, mix, rgb, glowOf, line, drawEyes };
+  Vide.Draw.colossusKit = { GOLD, LIFT, mix, tintOf, rgb, glowOf, line, drawEyes };
 
   // Battement : une flèche dorée qui bat comme un cœur, vers un colosse pas encore apaisé.
   Vide.Draw.colossiOverlay = function (r, game) {
@@ -507,10 +513,11 @@
   Vide.MapMarks.push((ctx, X, Y, state) => {
     for (const d of Vide.COLOSSI) {
       const st = Colossus.status(state, d.id);
-      if (st !== 'found' && st !== 'heard') continue;
+      if (st !== 'found' && st !== 'heard' && st !== 'corrupted') continue;
       const at = Colossus.lair(state, d);
-      const alpha = st === 'found' ? 0.9 : 0.45;
-      ctx.strokeStyle = `rgba(255, 217, 138, ${alpha})`;
+      const alpha = st === 'heard' ? 0.45 : 0.9;
+      // (Corrompu : son repaire se marque de la teinte des ombres.)
+      ctx.strokeStyle = st === 'corrupted' ? `rgba(170, 120, 220, ${alpha})` : `rgba(255, 217, 138, ${alpha})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(X(at.x), Y(at.y), 7, 0, Math.PI * 2);

@@ -3,10 +3,11 @@
 (function (Vide) {
   'use strict';
   const { Render, Colossus } = Vide;
-  const { GOLD, LIFT, mix, rgb, glowOf, line, drawEyes } = Vide.Draw.colossusKit;
+  const { LIFT, mix, rgb, glowOf, line, drawEyes } = Vide.Draw.colossusKit;
 
+  // Sa teinte (sauvage, apaisé, rongé : voir draw-colossus.js), qui blanchit un instant quand on le touche.
   function tintOf(c) {
-    const t = mix(c.def.tint, GOLD, c.calm);
+    const t = Vide.Draw.colossusKit.tintOf(c);
     return mix(t, [255, 255, 255], c.hitFlash * 0.6);
   }
 
