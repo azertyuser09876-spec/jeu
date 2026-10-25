@@ -1,6 +1,6 @@
 # Historique des versions
 
-## 2.5.0 — Les gouverneurs (en préparation)
+## 2.5.0 — Les gouverneurs
 
 Chaque village et chaque base d'ombre a son gouverneur : un même cerveau, un budget, et des stats invisibles pour
 bien choisir. Le monde, vide au début, se remplit des deux côtés.
@@ -21,8 +21,9 @@ bien choisir. Le monde, vide au début, se remplit des deux côtés.
   avant-postes et assauts ; menacée, elle se défend ; sa sous-faction la fait pencher (Dévoreurs : l'assaut ;
   Corrupteurs : ouvrages et remparts ; Meutes : bêtes). Une base abattue près de tes villages : les ombres en lèvent
   une autre, ailleurs, trois minutes plus tard.
-- Au robot (une heure, sans défendre) : 4 villages de 4 types dont 3 colonies, 6 routes, une cité, 7 campagnes
-  gagnées ; en face, une centaine d'assauts, 61 ouvrages, 15 remparts.
+- Au robot (sans défendre) : en une heure, 4 villages de 4 types dont 3 colonies (aucune perdue), 5 routes, une
+  cité ; en face, 15 bases et 3 avant-postes, 108 assauts, 67 ouvrages. En cent minutes, 15 campagnes (14
+  gagnées), et les ombres tiennent encore 12 bases.
 - **Une cité vaut enfin ses villages** (les colonies des gouverneurs, nées près de leur village, finissent par le
   toucher) : ses anciens cœurs restent des dépôts pour les lueurs, et elle a droit à autant de chaque bâtiment que
   tous ses villages réunis — sa population se figeait, et la progression calait après la fusion.
@@ -35,7 +36,7 @@ bien choisir. Le monde, vide au début, se remplit des deux côtés.
   parfois sur le compositeur de fondation au lieu de la lumière ; un effet un peu long poussait le prix hors de sa
   carte ; les infobulles des sous-factions disaient encore « un choix pour toute la vie ».
 - Sauvegarde : format 27 (campagnes des villages, noirceur des bases).
-- 414 tests de logique, 42 vérifications navigateur.
+- 417 tests de logique, 42 vérifications navigateur.
 
 ## 2.4.0 — Le monde vit
 

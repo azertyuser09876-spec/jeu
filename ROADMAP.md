@@ -229,7 +229,7 @@ depuis un autre a de grandes chances d'être de la même.
    tombent) ; une faune neutre dans le vide (lucioles qui fuient, raies de lumière qui planent, une baleine du vide
    dans les régions lointaines), qui ne fait pas de mal — les Éleveurs et les Meutes l'apprivoisent.
 
-### [ ] 2.5 — Les gouverneurs
+### [x] 2.5 — Les gouverneurs
 Choix : l'intendant devient gouverneur, et chaque base d'ombre a le sien : un même cerveau (governors.js) qui, avec
 un budget, choisit l'action qu'il veut le plus et peut s'offrir — ou économise pour elle —, selon le moment
 (menace, guerre) et son ambition, qui grandit avec le temps.
