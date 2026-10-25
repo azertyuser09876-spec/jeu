@@ -203,7 +203,8 @@
 
   // Fonde un village du type donné à l'emplacement du joueur (ou en `at`, pour des colons). Le premier d'une vie
   // reçoit les lueurs offertes par les souvenirs (Éveil précoce). Sa sous-faction : celle que le joueur a choisie ;
-  // né d'un autre village (`from` : des colons), il en hérite le plus souvent, ou mute.
+  // né d'un autre village (`from` : des colons), il en hérite le plus souvent, ou mute — et il hérite de la part de
+  // son gouverneur (sans sa réserve).
   function found(state, typeId, at, from) {
     const stats = Vide.Stats.compute(state);
     const where = at || state.player;
@@ -230,6 +231,7 @@
     };
     village.faction = parent && parent.faction
       ? Vide.Factions.inherit(state, parent.faction, Vide.FACTIONS, village.id) : state.faction;
+    if (parent) village.steward = parent.steward || 0;
     Territory.grow(village);
     if (state.villages.length === 0 && stats.startLueurs > 0) village.beings.lueur = stats.startLueurs;
     state.villages.push(village);

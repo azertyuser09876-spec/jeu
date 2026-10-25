@@ -97,13 +97,15 @@
       const t = [g.specialty[v.faction], ...Vide.VILLAGE_TYPES.map((x) => x.id)].find((id) => id && !has.includes(id));
       if (t) list.push({ kind: 'city', id: 'specialite', cost: Vide.Cities.specializeCost(v), want: 0.2 + 0.3 * a, act: () => v.extra.push(t) });
     }
-    // Des colons, pour fonder un village de son type (de sa sous-faction, le plus souvent).
+    // Des colons, pour fonder le type de village qui manque le plus au monde (de sa sous-faction, le plus souvent) ;
+    // escortés de gardiens (qui resteront là-bas) s'il peut en garder un chez lui.
     if (a >= g.colonsFrom && state.villages.length < CONFIG.villages.max && (v.beings.lueur || 0) >= CONFIG.expeditions.colonists + 2) {
       const spot = colonySpot(state, v);
+      const escort = (v.beings.gardien || 0) > CONFIG.expeditions.escort;
       if (spot) {
         list.push({
           kind: 'colons', id: 'colons', cost: Vide.Expeditions.cost(state, 'colons', spot.x, spot.y, v), want: 0.15 + 0.45 * a,
-          act: () => Vide.Expeditions.launch(state, 'colons', spot.x, spot.y, { type: v.type, by: v }),
+          act: () => Vide.Expeditions.launch(state, 'colons', spot.x, spot.y, { type: colonyType(state, v), by: v, escort }),
         });
       }
     }
@@ -112,6 +114,14 @@
       const nest = Vide.Nests.nearest(state, v.x, v.y, g.campaignRange);
       if (nest) list.push({ kind: 'campaign', id: 'campagne', cost: { light: 0 }, want: 0.4 + 0.4 * a, act: () => { v.campaign = nest.id; } });
     }
+  }
+
+  // Le type d'un village à fonder : le moins représenté parmi tes villages (à égalité, celui de son village).
+  function colonyType(state, v) {
+    const count = (id) => state.villages.filter((o) => o.type === id).length;
+    let best = v.type;
+    for (const t of Vide.VILLAGE_TYPES) if (count(t.id) < count(best)) best = t.id;
+    return best;
   }
 
   // Un lieu pour de nouveaux colons : à bonne distance du village, loin des autres et des bases, hors de la noirceur.
@@ -146,8 +156,10 @@
     intents.set(v, { id: goal.id, kind: goal.kind, cost: goal.cost, saving: !choice.done || Boolean(choice.saving) });
     if (!choice.done) return null;
     const w = choice.action;
+    // (Un geste qui échoue — plus de place, plus de chemin — ne coûte rien.)
+    const done = w.act();
+    if (done === null || done === false) return null;
     v.funds -= w.cost;
-    w.act();
     return { kind: w.kind, id: w.id, cost: w.price };
   }
 
@@ -237,5 +249,5 @@
     },
   });
 
-  Vide.Steward = { SHARES, WANT, threat, wishes, ambitions, colonySpot, act, intent, label, campaigns, update, catchUp, share };
+  Vide.Steward = { SHARES, WANT, threat, wishes, ambitions, colonySpot, colonyType, act, intent, label, campaigns, update, catchUp, share };
 })(globalThis.Vide);

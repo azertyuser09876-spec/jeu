@@ -174,18 +174,57 @@
     state.stats.playTime = CONFIG.governors.ambitionTime;
     assert.ok(kinds().includes('road'));
     assert.ok(kinds().includes('colons'));
-    const done = Steward.catchUp(state, v, 200).map((w) => w.kind);
+    const gestures = Steward.catchUp(state, v, 200);
+    const done = gestures.map((w) => w.kind);
+    // Chaque geste se paie une fois, et une seule (les colons aussi).
+    assert.near(1e12 - v.funds, gestures.reduce((sum, w) => sum + w.cost.light, 0), 1e-3);
     assert.ok(done.includes('road'), 'une route');
     assert.ok(state.roads.some((r) => [r.a, r.b].includes(other.id)));
     const colons = state.expeditions.find((e) => e.kind === 'colons');
     assert.ok(colons, 'des colons en route');
     assert.equal(colons.from, v.id);
-    assert.equal(colons.type, v.type);
+    // (Le type qui manque au monde : ici, les deux villages sont des jardins.)
+    assert.equal(colons.type, Steward.colonyType(state, v));
+    assert.ok(colons.type !== 'jardins');
+    assert.ok(!colons.members.gardien, 'sans gardien à quitter, pas d’escorte');
+    // Arrivés, ils fondent un village qui a lui aussi son gouverneur (la même part, sans réserve).
+    v.steward = 0.25;
+    const born = Vide.Villages.found(state, colons.type, { x: colons.tx, y: colons.ty }, v);
+    assert.equal(born.steward, 0.25);
+    assert.equal(born.funds, 0);
+    state.villages.pop();
     assert.ok(v.funds < 1e12, 'payés sur sa réserve');
     // Une cité, celle de sa sous-faction (les Illuminés : le sanctuaire), dès que le village peut se spécialiser.
     if (Vide.Cities.canSpecialize(v) || v.extra.length) {
       assert.ok(v.extra.includes(CONFIG.governors.specialty.illumines));
     }
+  });
+
+  test('ses colons fondent le type de village qui manque le plus (à égalité, le sien)', () => {
+    const state = State.create(6);
+    const v = village(state, { radius: 300, type: 'bastion' });
+    assert.equal(Steward.colonyType(state, v), 'jardins', 'il manque des jardins');
+    village(state, { x: 3000, radius: 300 });
+    assert.equal(Steward.colonyType(state, v), 'atelier');
+    for (const t of Vide.VILLAGE_TYPES) if (!state.villages.some((x) => x.type === t.id)) village(state, { x: 3000 * state.villages.length, radius: 300, type: t.id });
+    assert.equal(Steward.colonyType(state, v), 'bastion', 'à égalité : le sien');
+  });
+
+  test('il escorte ses colons de deux gardiens s’il peut en garder un chez lui ; ils restent au nouveau village', () => {
+    const state = State.create(6);
+    const v = village(state, { radius: 300, beings: { lueur: 8, gardien: 3 } });
+    state.stats.playTime = CONFIG.governors.ambitionTime;
+    v.funds = 1e9;
+    const w = Steward.wishes(state, v).find((x) => x.kind === 'colons');
+    assert.ok(w);
+    assert.ok(w.act());
+    const colons = state.expeditions[0];
+    assert.equal(colons.members.gardien, CONFIG.expeditions.escort);
+    assert.equal(v.beings.gardien, 1);
+    Vide.Expeditions.offline(state, 3600);
+    const born = state.villages.find((x) => x !== v);
+    assert.ok(born, 'fondé');
+    assert.equal(born.beings.gardien, CONFIG.expeditions.escort);
   });
 
   test('ambitieux et bien armé, il mène l’armée de son village contre une base proche, qui tombe', () => {

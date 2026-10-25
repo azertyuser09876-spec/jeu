@@ -240,7 +240,11 @@ un budget, choisit l'action qu'il veut le plus et peut s'offrir — ou économis
    un village (de sa sous-faction, le plus souvent), et mène l'armée de son village contre une base proche.
 3. Le gouverneur d'une base : un budget de noirceur qui grandit avec elle, dépensé en ouvrages, remparts, bêtes,
    avant-postes et assauts, avec le même cerveau.
-4. Équilibrage (robot) : le monde, vide au début, se remplit des deux côtés.
+4. Des stats invisibles (demande du joueur) : chaque geste porte des valeurs cachées — ce qu'il rapporte en
+   lumière par seconde, en place pour des êtres, en défense, en puissance d'ombre — estimées sur l'état réel du
+   village ou de la base ; le gouverneur choisit le meilleur rapport gain/prix selon ses besoins (menace, place,
+   ambition), au lieu d'envies réglées à la main.
+5. Équilibrage (robot) : le monde, vide au début, se remplit des deux côtés.
 
 ### [ ] 2.6 — La guerre
 1. Les fronts : territoire, bâtiments et troupes se gagnent et se perdent, des deux côtés ; le blanc pur et la

@@ -1,5 +1,6 @@
-// Robot d'équilibrage : `node tests/balance.js [minutes] [--renaissance]`.
-// Avec --renaissance, il renaît dès que possible et compare le rythme de chaque vie.
+// Robot d'équilibrage : `node tests/balance.js [minutes] [--renaissance] [--save=M:fichier]`.
+// Avec --renaissance, il renaît dès que possible et compare le rythme de chaque vie. Avec --save=M:fichier, il écrit
+// la sauvegarde de sa partie à la minute M (pour étudier ce moment sans rejouer tout ce qui précède).
 // Joue une partie simulée (marche aléatoire douce, pulsation dès qu'elle est prête, achète toujours
 // l'article le moins cher du catalogue, sauf ce qui débloque un village plein — bâtisseur, nid — pour lequel il
 // économise ; rejoint un village quand un achat l'exige, s'en éloigne pour en fonder un autre) et affiche la
@@ -12,6 +13,7 @@ const vm = require('vm');
 
 const minutes = Number(process.argv[2]) || 20;
 const reborn = process.argv.includes('--renaissance');
+const saveAt = (process.argv.find((a) => a.startsWith('--save=')) || '').slice(7).split(':');
 const html = fs.readFileSync(path.join(__dirname, 'tests.html'), 'utf8');
 const context = vm.createContext({ console });
 for (const m of html.matchAll(/<script src="(\.\.\/src\/core\/[^"]+)"><\/script>/g)) {
@@ -36,7 +38,10 @@ let lifeMillion = null;
 // Événements de combat comptés pendant la partie.
 const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, heartAttacked: 0, march: 0 };
 // Le monde qui se remplit, des deux côtés (gestes des gouverneurs, des bases).
-const world = { colons: 0, route: 0, specialite: 0, campagne: 0, won: 0, raid: 0, outpost: 0, work: 0, rempart: 0, beast: 0 };
+const world = {
+  colons: 0, settled: 0, joined: 0, lost: 0, route: 0, specialite: 0, campagne: 0, won: 0,
+  raid: 0, outpost: 0, work: 0, rempart: 0, beast: 0,
+};
 
 // Coût total d'un article, toutes ressources confondues (approximation suffisante pour choisir).
 const price = (item) => Object.values(item.cost(state)).reduce((a, b) => a + b, 0);
@@ -125,6 +130,9 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     if (e.type in events) events[e.type]++;
     if (e.type === 'steward' && e.id in world) world[e.id]++;
     if (e.type === 'campaignEnd' && e.won) world.won++;
+    if (e.type === 'settled') world.settled++;
+    if (e.type === 'colonsJoined') world.joined++;
+    if (e.type === 'expeditionLost' && e.kind === 'colons') world.lost++;
     if (e.type === 'raid' || e.type === 'outpost') world[e.type]++;
     if (e.type === 'nestBuilt') world[e.kind === 'rempart' ? 'rempart' : Vide.darkWork(e.kind) ? 'work' : 'beast']++;
   }
@@ -158,6 +166,8 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     }
   }
 
+  if (saveAt[1] && s === Number(saveAt[0]) * stepsPerMinute) fs.writeFileSync(saveAt[1], Vide.Save.serialize(state, 0));
+
   if (s % (2 * stepsPerMinute) === 0) {
     const levels = Object.entries(state.upgrades).map(([k, v]) => `${k} ${v}`).join(', ');
     const territory = state.villages.length
@@ -178,7 +188,8 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   }
 }
 if (reborn) for (const l of lives) console.log(l);
-console.log(`monde : villages ${state.villages.length} (colons des gouverneurs ${world.colons}, routes ${world.route}, cités ${world.specialite}, `
+console.log(`monde : villages ${state.villages.length} (colons des gouverneurs ${world.colons} — colonies fondées ${world.settled}, `
+  + `rejointes ${world.joined}, perdues ${world.lost} — routes ${world.route}, cités ${world.specialite}, `
   + `campagnes ${world.campagne} dont gagnées ${world.won}) · bases ${state.nests.filter((n) => !n.parent).length}+${state.nests.filter((n) => n.parent).length} `
   + `(assauts ${world.raid}, avant-postes ${world.outpost}, ouvrages ${world.work}, remparts ${world.rempart}, bêtes ${world.beast})`);
 console.log('premiers achats : ' + Object.entries(firsts).map(([k, t]) => `${k} ${Math.round(t)} s`).join(', '));

@@ -46,7 +46,8 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
   arrêtent tout sauf les colosses, leurs portes ne s'ouvrent qu'à la lumière, et les ombres doivent les abattre.
 - **Les êtres** : dans chaque village, des lueurs récoltent le jardin, des bâtisseurs choisissent où construire
   nids, prismes, phares, tours et bien d'autres ; ils se croisent, dansent, ravitaillent les chantiers.
-  Confie une part de lumière à l'**intendant** d'un village : il le fait grandir seul.
+  Confie une part de lumière au **gouverneur** d'un village : il le fait grandir seul, selon son type et la menace ;
+  ambitieux, il trace des routes, en fait une cité, envoie des colons fonder et mène son armée contre une base.
 - **Routes, échanges, cités** : relie tes villages par de grandes routes de lumière, qui partent des portes et
   partagent un tronc quand elles sortent ensemble ; des caravanes y portent la
   matière ◇ des ateliers, le savoir ✎ des observatoires, les soldats des bastions. Quand deux territoires se
@@ -56,7 +57,7 @@ Depuis le menu, tu peux l'**exporter** en un code (pour la garder ou changer d'a
   lumière apprend la ruée, le fanal et le retour.
 - **Les ombres bâtissent** : des bases d'ombre, en négatif de tes villages — un territoire de noirceur en cinq
   nuances, des fosses, des flèches qui tirent sur la lumière, des remparts qu'elle doit abattre — lancent des raids sur tes
-  villages. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
+  villages. Chacune a son gouverneur, qui dépense sa noirceur en ouvrages, bêtes, avant-postes et assauts. Assiège-les avec ton armée, détruis leur cœur, et la région redevient une clairière.
 - **Les créatures** : loups, scolopendres, cerfs de lumière — de grands corps articulés. À bout de forces, une
   créature est apprivoisée, purifiée ou corrompue selon la sous-faction de qui l'abat, et change de camp. Dans le
   vide errent des lucioles, des raies de lumière, une baleine ; des convois roulent sur tes routes.

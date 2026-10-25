@@ -90,7 +90,7 @@
 
   // Raison qui empêche cette expédition, ou null. `what` : le colosse à étudier (érudits) ou l'engin à bâtir
   // (sapeurs). `by` : un gouverneur qui l'envoie de son village, sur sa réserve (sinon : le joueur, du village le
-  // mieux placé, sur sa lumière).
+  // mieux placé, sur sa lumière ; un gouverneur paie lui-même, une fois l'expédition partie).
   function blocked(state, kind, tx, ty, escort, what, by) {
     const e = CONFIG.expeditions;
     if (!state.villages.length) return 'il faut un village';
@@ -128,9 +128,7 @@
     if (!KINDS.includes(kind) || blocked(state, kind, tx, ty, o.escort, what, by)) return null;
     const e = CONFIG.expeditions;
     const from = by || origin(state, kind, tx, ty, o.escort);
-    const price = cost(state, kind, tx, ty, from, what).light;
-    if (by) by.funds -= price;
-    else state.light -= price;
+    if (!by) state.light -= cost(state, kind, tx, ty, from, what).light;
     const members = {
       colons: { lueur: e.colonists }, scholars: { erudit: e.scholars }, sappers: { batisseur: CONFIG.engines.sappers },
     }[kind] || { eclaireur: e.scouts };
