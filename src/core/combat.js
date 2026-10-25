@@ -296,7 +296,12 @@
         if (nest) return { x: nest.x, y: nest.y, radius: Vide.Nests.radius(nest) + 250, nest };
         return { x: v.x, y: v.y, radius: R + 260 };
       }
-      default: return { x: v.x, y: v.y, radius: R + 260 };
+      default: {
+        // En garde, l'armée d'un village en campagne (son gouverneur l'y a menée) assiège sa base.
+        const nest = v.campaign ? state.nests.find((n) => n.id === v.campaign) : null;
+        if (nest) return { x: nest.x, y: nest.y, radius: Vide.Nests.radius(nest) + 250, nest };
+        return { x: v.x, y: v.y, radius: R + 260 };
+      }
     }
   }
 

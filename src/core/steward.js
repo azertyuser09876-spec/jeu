@@ -75,7 +75,60 @@
     // Une enceinte, avec la guerre.
     const ring = builders > 0 && danger >= CONFIG.governors.wallFrom && !Walls.site(v) ? Walls.nextRing(v) : null;
     if (ring) list.push({ kind: 'wall', id: 'enceinte', cost: Walls.cost(ring), want: 0.2 + danger * 0.7, act: () => Walls.plan(v) });
+    ambitions(state, v, list, builders);
     return list.filter((w) => lightOnly(w.cost));
+  }
+
+  // Ambitieux, il agrandit le monde : une route vers le village le plus proche, une cité, des colons pour fonder,
+  // une campagne contre une base proche. (Rien de tout cela tant que son ambition est faible.)
+  function ambitions(state, v, list, builders) {
+    const g = CONFIG.governors;
+    const a = Vide.Governors.ambition(state.stats.playTime);
+    if (a < g.ambitionFrom) return;
+    // Une route (une seule en chantier à la fois).
+    const to = Vide.Roads.candidate(state, v);
+    const building = state.roads.some((r) => (r.a === v.id || r.b === v.id) && !Vide.Roads.isDone(state, r));
+    if (to && !building && (builders > 0 || to.beings.batisseur > 0)) {
+      list.push({ kind: 'road', id: 'route', cost: Vide.Roads.cost(state, v, to), want: 0.25 + 0.35 * a, act: () => Vide.Roads.plan(state, v, to) });
+    }
+    // Une cité : la spécialité qui va avec sa sous-faction, sinon une autre.
+    if (Vide.Cities.canSpecialize(v)) {
+      const has = Vide.Cities.types(v);
+      const t = [g.specialty[v.faction], ...Vide.VILLAGE_TYPES.map((x) => x.id)].find((id) => id && !has.includes(id));
+      if (t) list.push({ kind: 'city', id: 'specialite', cost: Vide.Cities.specializeCost(v), want: 0.2 + 0.3 * a, act: () => v.extra.push(t) });
+    }
+    // Des colons, pour fonder un village de son type (de sa sous-faction, le plus souvent).
+    if (a >= g.colonsFrom && state.villages.length < CONFIG.villages.max && (v.beings.lueur || 0) >= CONFIG.expeditions.colonists + 2) {
+      const spot = colonySpot(state, v);
+      if (spot) {
+        list.push({
+          kind: 'colons', id: 'colons', cost: Vide.Expeditions.cost(state, 'colons', spot.x, spot.y, v), want: 0.15 + 0.45 * a,
+          act: () => Vide.Expeditions.launch(state, 'colons', spot.x, spot.y, { type: v.type, by: v }),
+        });
+      }
+    }
+    // Une campagne : l'armée du village part contre la base la plus proche (sans rien coûter).
+    if (!v.campaign && a >= g.campaignFrom && Colony.usedIn(v, 'armyCap') >= g.campaignArmy) {
+      const nest = Vide.Nests.nearest(state, v.x, v.y, g.campaignRange);
+      if (nest) list.push({ kind: 'campaign', id: 'campagne', cost: { light: 0 }, want: 0.4 + 0.4 * a, act: () => { v.campaign = nest.id; } });
+    }
+  }
+
+  // Un lieu pour de nouveaux colons : à bonne distance du village, loin des autres et des bases, hors de la noirceur.
+  function colonySpot(state, v) {
+    const R = Territory.radius(v);
+    const base = Vide.Nests.nearest(state, v.x, v.y);
+    const away = base ? Math.atan2(v.y - base.y, v.x - base.x) : (v.id * 2.399) % (Math.PI * 2);
+    for (let k = 0; k < 12; k++) {
+      const a = away + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 6);
+      const d = R + CONFIG.villages.gap + CONFIG.governors.colonyReach;
+      const x = v.x + Math.cos(a) * d, y = v.y + Math.sin(a) * d;
+      if (Vide.Nests.darkAt(state, x, y)) continue;
+      if (state.nests.some((n) => Math.hypot(n.x - x, n.y - y) < CONFIG.governors.colonyClear)) continue;
+      if (state.expeditions.some((e) => e.kind === 'colons' && Math.hypot(e.tx - x, e.ty - y) < CONFIG.villages.gap * 2)) continue;
+      if (!Vide.Expeditions.blocked(state, 'colons', x, y, false, null, Object.assign({}, v, { funds: Infinity }))) return { x, y };
+    }
+    return null;
   }
 
   // Ce que vise chaque gouverneur (pour la fiche du village) : { id, kind, cost, saving }.
@@ -104,7 +157,19 @@
   function label(goal) {
     if (goal.kind === 'being') return Colony.species(goal.id).name.toLowerCase();
     if (goal.kind === 'building') return Structures.def(goal.id).name.toLowerCase();
-    return { enceinte: 'une enceinte', route: 'une route', colons: 'des colons', specialite: 'une cité' }[goal.id] || goal.id;
+    return { enceinte: 'une enceinte', route: 'une route', colons: 'des colons', specialite: 'une cité', campagne: 'une campagne' }[goal.id] || goal.id;
+  }
+
+  // Une campagne finit quand la base est tombée, ou quand l'armée du village s'est trop amenuisée.
+  function campaigns(game) {
+    const { state } = game;
+    for (const v of state.villages) {
+      if (!v.campaign) continue;
+      const nest = state.nests.find((n) => n.id === v.campaign);
+      if (nest && Colony.usedIn(v, 'armyCap') >= CONFIG.governors.campaignRetreat) continue;
+      Vide.Sim.emit(game, 'campaignEnd', { village: v.type, won: !nest });
+      v.campaign = null;
+    }
   }
 
   // Pendant le jeu : chaque village réfléchit toutes les deux secondes.
@@ -112,6 +177,7 @@
     game.stewardClock = (game.stewardClock || 0) + dt;
     if (game.stewardClock < THINK) return;
     game.stewardClock = 0;
+    campaigns(game);
     for (const v of game.state.villages) {
       if (!v.funds) continue;
       const done = act(game.state, v);
@@ -171,5 +237,5 @@
     },
   });
 
-  Vide.Steward = { SHARES, WANT, threat, wishes, act, intent, label, update, catchUp, share };
+  Vide.Steward = { SHARES, WANT, threat, wishes, ambitions, colonySpot, act, intent, label, campaigns, update, catchUp, share };
 })(globalThis.Vide);

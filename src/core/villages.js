@@ -226,6 +226,7 @@
       walls: [],
       faction: null,
       creatures: {},
+      campaign: null,
     };
     village.faction = parent && parent.faction
       ? Vide.Factions.inherit(state, parent.faction, Vide.FACTIONS, village.id) : state.faction;

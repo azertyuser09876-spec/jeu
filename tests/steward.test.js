@@ -160,4 +160,68 @@
     assert.ok(goal.saving);
     assert.equal(Steward.label(goal), 'bâtisseur');
   });
+
+  // --- Ambitions ---
+
+  test('sans ambition, il ne s’agrandit pas ; ambitieux, il relie, fait une cité de sa sous-faction, envoie des colons', () => {
+    const state = State.create(6);
+    state.faction = 'illumines';
+    const v = village(state, { radius: 760, beings: { batisseur: 2, lueur: 14 } });
+    const other = village(state, { x: 4000, radius: 300 });
+    v.funds = 1e12;
+    const kinds = () => Steward.wishes(state, v).map((w) => w.kind);
+    assert.ok(!kinds().some((k) => ['road', 'city', 'colons'].includes(k)), 'pas encore');
+    state.stats.playTime = CONFIG.governors.ambitionTime;
+    assert.ok(kinds().includes('road'));
+    assert.ok(kinds().includes('colons'));
+    const done = Steward.catchUp(state, v, 200).map((w) => w.kind);
+    assert.ok(done.includes('road'), 'une route');
+    assert.ok(state.roads.some((r) => [r.a, r.b].includes(other.id)));
+    const colons = state.expeditions.find((e) => e.kind === 'colons');
+    assert.ok(colons, 'des colons en route');
+    assert.equal(colons.from, v.id);
+    assert.equal(colons.type, v.type);
+    assert.ok(v.funds < 1e12, 'payés sur sa réserve');
+    // Une cité, celle de sa sous-faction (les Illuminés : le sanctuaire), dès que le village peut se spécialiser.
+    if (Vide.Cities.canSpecialize(v) || v.extra.length) {
+      assert.ok(v.extra.includes(CONFIG.governors.specialty.illumines));
+    }
+  });
+
+  test('ambitieux et bien armé, il mène l’armée de son village contre une base proche, qui tombe', () => {
+    const state = State.create(7);
+    const v = village(state, { radius: 300, beings: { gardien: 10, etincelle: 6 } });
+    state.upgrades.edge = 8;
+    const nest = Vide.Nests.add(state, 1600, 0, 0);
+    state.stats.playTime = CONFIG.governors.ambitionTime;
+    v.steward = 0.1;
+    v.funds = 1;
+    const w = Steward.wishes(state, v).find((x) => x.kind === 'campaign');
+    assert.ok(w, 'une campagne voulue');
+    w.act();
+    assert.equal(v.campaign, nest.id);
+    state.player.x = -5000;
+    const game = Sim.create(state);
+    const a = Vide.Combat.anchor(game, game.colony.beings[0]);
+    assert.equal(a.nest, nest, 'en garde, l’armée assiège sa base');
+    let ended = null;
+    for (let i = 0; i < 60 * 180 && !ended; i++) {
+      Sim.step(game, dt, Sim.emptyInput());
+      ended = game.events.find((e) => e.type === 'campaignEnd') || null;
+    }
+    assert.ok(ended && ended.won, 'la base est tombée');
+    assert.equal(v.campaign, null);
+  });
+
+  test('sauvegarde : la campagne d’un village se garde ; nettoyée ; les anciennes parties n’en ont pas', () => {
+    const state = State.create(7);
+    const v = village(state, { radius: 300 });
+    v.campaign = 4;
+    assert.equal(Save.deserialize(Save.serialize(state, 1)).state.villages[0].campaign, 4);
+    const old = JSON.parse(Save.serialize(state, 1));
+    old.format = 25;
+    delete old.state.villages[0].campaign;
+    assert.equal(Save.deserialize(JSON.stringify(old)).state.villages[0].campaign, null);
+    assert.equal(Save.sanitize({ villages: [{ id: 1, x: 0, y: 0, campaign: 'x' }] }).villages[0].campaign, null);
+  });
 })();

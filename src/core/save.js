@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 25;
+  const FORMAT = 26;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -120,6 +120,8 @@
     23: (data) => ({ ...data, faction: null }),
     // 2.4 : les créatures attachées aux villages et aux bases (aucune encore).
     24: (data) => data,
+    // 2.5 : la campagne d'un village, menée par son gouverneur (aucune encore).
+    25: (data) => data,
   };
 
   function serialize(state, now) {
@@ -359,6 +361,7 @@
       walls: [],
       faction: Vide.Factions.isLight(raw.faction) ? raw.faction : null,
       creatures: readCreatures(raw.creatures),
+      campaign: Number.isInteger(raw.campaign) && raw.campaign > 0 ? raw.campaign : null,
     };
     const known = (t) => Vide.VILLAGE_TYPES.some((x) => x.id === t);
     for (const t of Array.isArray(raw.extra) ? raw.extra : []) {

@@ -278,7 +278,10 @@
   function updateShop(ui) {
     const { state } = ui.game;
     const tabs = Catalog.tabs(state);
-    if (tabs.length && !tabs.some((t) => t.id === ui.activeTab)) ui.activeTab = tabs[0].id;
+    // L'onglet actif disparaît (on quitte un village, la boutique s'ouvre) : retour à la lumière, le cœur du jeu.
+    if (tabs.length && !tabs.some((t) => t.id === ui.activeTab)) {
+      ui.activeTab = (tabs.find((t) => t.id === 'lumiere') || tabs[0]).id;
+    }
 
     for (const [id, btn] of ui.tabs) {
       const available = tabs.some((t) => t.id === id);

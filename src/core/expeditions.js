@@ -80,9 +80,18 @@
     return { x: at.x + (dx / d) * r, y: at.y + (dy / d) * r };
   }
 
+  // Ce village a-t-il ce qu'il faut pour cette expédition ?
+  function fits(v, kind, escort) {
+    const e = CONFIG.expeditions;
+    if (kind === 'colons' && (v.beings.lueur || 0) < e.colonists) return false;
+    if (kind === 'sappers' && (v.beings.batisseur || 0) < CONFIG.engines.sappers) return false;
+    return !(escort && (v.beings.gardien || 0) < e.escort);
+  }
+
   // Raison qui empêche cette expédition, ou null. `what` : le colosse à étudier (érudits) ou l'engin à bâtir
-  // (sapeurs).
-  function blocked(state, kind, tx, ty, escort, what) {
+  // (sapeurs). `by` : un gouverneur qui l'envoie de son village, sur sa réserve (sinon : le joueur, du village le
+  // mieux placé, sur sa lumière).
+  function blocked(state, kind, tx, ty, escort, what, by) {
     const e = CONFIG.expeditions;
     if (!state.villages.length) return 'il faut un village';
     if (state.expeditions.length >= e.max) return 'trop d’expéditions en route';
@@ -95,7 +104,7 @@
       const planned = state.expeditions.filter((x) => x.kind === 'sappers' && x.site === null).length;
       if (state.engines.length + planned >= CONFIG.engines.max) return 'assez d’engins';
     }
-    const from = origin(state, kind, tx, ty, escort);
+    const from = by ? (fits(by, kind, escort) ? by : null) : origin(state, kind, tx, ty, escort);
     if (!from) {
       if (kind === 'colons') return `il faut ${e.colonists} lueurs dans un village`;
       if (kind === 'sappers') return `il faut ${CONFIG.engines.sappers} bâtisseurs dans un village`;
@@ -107,7 +116,7 @@
         if (Math.hypot(v.x - tx, v.y - ty) - Territory.radius(v) < CONFIG.villages.gap) return 'trop près d’un village';
       }
     }
-    if (state.light < cost(state, kind, tx, ty, from, what).light) return 'pas assez de lumière';
+    if ((by ? by.funds : state.light) < cost(state, kind, tx, ty, from, what).light) return 'pas assez de lumière';
     return null;
   }
 
@@ -115,10 +124,13 @@
   function launch(state, kind, tx, ty, opts) {
     const o = opts || {};
     const what = kind === 'sappers' ? o.engine : o.colossus;
-    if (!KINDS.includes(kind) || blocked(state, kind, tx, ty, o.escort, what)) return null;
+    const by = o.by || null;
+    if (!KINDS.includes(kind) || blocked(state, kind, tx, ty, o.escort, what, by)) return null;
     const e = CONFIG.expeditions;
-    const from = origin(state, kind, tx, ty, o.escort);
-    state.light -= cost(state, kind, tx, ty, from, what).light;
+    const from = by || origin(state, kind, tx, ty, o.escort);
+    const price = cost(state, kind, tx, ty, from, what).light;
+    if (by) by.funds -= price;
+    else state.light -= price;
     const members = {
       colons: { lueur: e.colonists }, scholars: { erudit: e.scholars }, sappers: { batisseur: CONFIG.engines.sappers },
     }[kind] || { eclaireur: e.scouts };

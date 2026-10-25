@@ -87,13 +87,19 @@
     dispersed: (e) => `Ta lumière se disperse… et renaît ${e.village ? 'au village le plus proche' : 'à l’origine'}. `
       + `✦ ${util.formatNumber(e.lost)} perdue.`,
     steward: (e) => {
+      // Ses gestes d'ambition, toujours annoncés.
+      const who = `Le gouverneur ${of(e.village)}`;
+      if (e.kind === 'colons') return `${who} envoie des colons fonder un village.`;
+      if (e.kind === 'city') return `${who} en fait une cité.`;
+      if (e.kind === 'road') return `${who} lance une route vers le village le plus proche.`;
+      if (e.kind === 'campaign') return `${who} mène son armée contre une base d’ombre.`;
       if (seen.steward) return null;
       seen.steward = true;
-      const what = e.kind === 'being'
-        ? `éveillé : ${Vide.Colony.species(e.id).name.toLowerCase()}`
-        : `planifié : ${Vide.Structures.def(e.id).name.toLowerCase()}`;
-      return `L’intendant d’un village agit seul (${what}). Il dépense la part de lumière que tu lui confies.`;
+      return `${who} agit seul (${Vide.Steward.label(e)}). Il dépense la part de lumière que tu lui confies.`;
     },
+    campaignEnd: (e) => (e.won
+      ? `La campagne ${of(e.village)} a abattu sa base d’ombre.`
+      : `L’armée ${of(e.village)}, trop amenuisée, rentre de campagne.`),
     caravanOut: (e) => {
       if (seen.caravan) return null;
       seen.caravan = true;
