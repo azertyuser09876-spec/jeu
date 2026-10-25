@@ -255,6 +255,15 @@ un budget, choisit l'action qu'il veut le plus et peut s'offrir — ou économis
 
 ### [ ] 3.0 — Le champ de bataille
 Équilibrage complet (deux robots qui s'affrontent), performances (des milliers d'unités), finitions.
+1. Les ombres font front ensemble : une base assiégée appelle ses voisines, qui envoient des renforts contre
+   l'armée et le village qui l'assiègent ; mûres, en guerre rude, elles mènent leurs propres campagnes contre le
+   village le plus faible.
+2. Le duel des robots : le robot d'équilibrage mesure les deux camps sur deux heures (fronts, campagnes gagnées et
+   perdues, bases, villages) ; ni l'un ni l'autre ne doit l'emporter d'office.
+3. Des milliers d'unités : bancs d'essai de la simulation et du rendu (deux mille êtres, mille ombres) et ce qu'il
+   faut pour qu'ils tiennent.
+4. Finitions : le front visible dans le monde (une lisière qui palpite), les sons de la guerre, les textes relus,
+   le mobile.
 
 ## Pistes
 
