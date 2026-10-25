@@ -31,7 +31,9 @@
   // Un assaut pendant l'absence. Renvoie { village, repelled, echoes, broken: [types] } ou null.
   function assault(state, nest, rng, stats) {
     const A = CONFIG.absence;
-    const target = Vide.Villages.nearest(state, nest.x, nest.y);
+    // (Mûre, en guerre rude, elle mène campagne contre le village le plus faible, comme en jeu.)
+    const campaign = Vide.War.phase(state) === 'rude' && Vide.Nests.level(nest) >= CONFIG.nests.campaignLevel;
+    const target = campaign ? Vide.Nests.weakest(state, nest) : Vide.Villages.nearest(state, nest.x, nest.y);
     if (!target || Math.hypot(target.x - nest.x, target.y - nest.y) > CONFIG.nests.raidRange) return null;
     const cost = Vide.Nests.raidCost(state, nest);
     if (nest.funds < cost) return null;

@@ -218,6 +218,59 @@
     assert.ok(want('work', 'fleche') > want('raid'));
   });
 
+  test('une base assiégée appelle ses voisines : elles frappent, à leurs frais, le village qui l’assiège', () => {
+    const state = twoVillages();
+    state.player.x = -20000;
+    const besieged = Nests.add(state, 4000, 0, CONFIG.nests.levelEvery * 3);
+    const helper = Nests.add(state, 7000, 2000, CONFIG.nests.levelEvery * 3);
+    helper.funds = 1e6;
+    const v = state.villages[1];
+    v.beings.gardien = 6; // (une armée : sans elle, la campagne finirait aussitôt)
+    const game = Sim.create(state);
+    const reliefs = [];
+    const watch = (seconds) => {
+      for (let i = 0; i < Math.round(seconds / dt); i++) {
+        Sim.step(game, dt, Sim.emptyInput());
+        for (const e of game.events) if (e.type === 'raid' && e.kind === 'relief') reliefs.push(e);
+        game.events.length = 0;
+      }
+    };
+    watch(CONFIG.nests.reliefEvery);
+    assert.equal(reliefs.length, 0, 'pas de siège : pas de renforts');
+    v.campaign = besieged.id;
+    watch(CONFIG.nests.reliefEvery);
+    assert.ok(reliefs.length > 0, 'des renforts');
+    assert.equal(reliefs[0].village, v.type, 'contre le village assiégeant');
+    assert.ok(helper.funds < 1e6, 'payés');
+  });
+
+  test('en guerre rude, une base mûre mène campagne contre ton village le plus faible', () => {
+    const state = twoVillages();
+    state.player.x = -20000;
+    state.villages[0].beings.gardien = 20; // le plus proche est bien gardé…
+    const nest = Nests.add(state, -3000, 0, CONFIG.nests.levelEvery * CONFIG.nests.campaignLevel);
+    const game = Sim.create(state);
+    assert.ok(!Nests.actions(state, nest, game).some((a) => a.id === 'campagne'), 'pas sans guerre rude');
+    Vide.War.begin(state);
+    state.war.age = 1e9;
+    const campaign = Nests.actions(state, nest, game).find((a) => a.id === 'campagne');
+    assert.ok(campaign);
+    assert.equal(Nests.weakest(state, nest), state.villages[1], '…l’autre, non');
+    nest.funds = campaign.cost;
+    game.nests.raids.set(nest.id, 1e9); // (rien d'autre à vouloir : ses ouvrages, ses remparts, sa garnison sont là)
+    nest.creatures = Vide.Creatures.garrison(nest);
+    for (const w of nest.walls) w.work = Vide.Walls.workOf(w);
+    const before = game.shadows.list.length;
+    let done = null;
+    for (let k = 0; k < 5 && !done; k++) {
+      done = Nests.govern(state, nest, game);
+      if (done && done.id !== 'campagne') done = null;
+    }
+    assert.ok(done, 'il la lance');
+    assert.ok(game.shadows.list.length - before >= 3);
+    assert.ok(game.events.some((e) => e.type === 'raid' && e.kind === 'campaign' && e.village === state.villages[1].type));
+  });
+
   test('sa sous-faction le fait pencher : les Dévoreurs vers l’assaut, les Meutes vers leurs bêtes', () => {
     const state = twoVillages();
     state.player.x = -5000;

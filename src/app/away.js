@@ -177,7 +177,11 @@
       ? `La base s’effondre. ◆ ${util.formatNumber(e.echoes)}. Sa région est libérée : le vide y fait naître plus de lumière.`
       : `Une base d’ombre s’effondre. ◆ ${util.formatNumber(e.echoes)}.`)
       + (e.village ? ` Son terrain rejoint ${to(e.village)} : il blanchira.` : ''),
-    raid: (e) => `Un raid d’ombres part d’une base vers ${to(e.village)} (${e.count}).`,
+    raid: (e) => (e.kind === 'relief'
+      ? `Des ombres volent au secours de leur base assiégée : elles frappent ${to(e.village)}, dont l’armée est au loin (${e.count}).`
+      : e.kind === 'campaign'
+        ? `Une base d’ombre mène campagne contre ${to(e.village)}, ton village le plus faible (${e.count}) !`
+        : `Un raid d’ombres part d’une base vers ${to(e.village)} (${e.count}).`),
     outpost: (e) => (e.first
       ? 'Un avant-poste d’ombre se dresse sur le chemin de tes villages.'
       : 'Un nouvel avant-poste d’ombre se dresse.'),

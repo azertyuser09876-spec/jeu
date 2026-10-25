@@ -42,6 +42,8 @@
       raids: new Map(), defend: new Map(), lastWave: new Map(), rng: util.rng(game.state.seed ^ 0x6e657374),
       towerCd: new Map(),   // recharge de chaque flèche
       think: new Map(),     // horloge du gouverneur de chaque base
+      relief: new Map(),    // horloge des renforts de chaque base (pour une voisine assiégée)
+      campaigns: new Map(), // horloge des campagnes de chaque base
     };
   }
 
@@ -210,16 +212,18 @@
     return count;
   }
 
-  // Lance un raid depuis une base vers le village le plus proche (s'il est à portée). Renvoie le nombre d'ombres.
-  function raid(game, nest) {
+  // Lance un raid depuis une base vers le village le plus proche (s'il est à portée), ou vers `to` ; `scale` : son
+  // ampleur (×1 par défaut) ; `kind` : 'relief' (des renforts pour une base assiégée), 'campaign' (une campagne des
+  // ombres), sinon un raid ordinaire. Renvoie le nombre d'ombres.
+  function raid(game, nest, to, scale, kind) {
     const { state } = game;
     const n = CONFIG.nests;
-    const target = Villages.nearest(state, nest.x, nest.y);
+    const target = to || Villages.nearest(state, nest.x, nest.y);
     if (!target || Math.hypot(target.x - nest.x, target.y - nest.y) > n.raidRange) return 0;
     if (nest.parent && Vide.War.calm(state)) return prowl(game, nest, target);
     const rng = game.nests.rng;
     const kinds = Vide.SHADOW_KINDS.filter((k) => level(nest) >= k.fromTide / 2 + 1);
-    let budget = (n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid')) * Vide.War.raidScale(state);
+    let budget = (n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid')) * Vide.War.raidScale(state) * (scale || 1);
     let count = 0;
     while (budget >= 1 && game.shadows.list.length < CONFIG.shadows.max) {
       const affordable = kinds.filter((k) => k.cost <= budget);
@@ -232,8 +236,47 @@
     }
     // Une base mûre lâche aussi ses bêtes.
     count += Vide.Creatures.raid(game, nest, target);
-    Vide.Sim.emit(game, 'raid', { x: nest.x, y: nest.y, village: target.type, count });
+    Vide.Sim.emit(game, 'raid', { x: nest.x, y: nest.y, village: target.type, count, kind: kind || null });
     return count;
+  }
+
+  // --- Les ombres font front ensemble ---
+
+  // Le village le plus faible (la moindre défense : voir Absence.defense) à portée de raid d'une base, ou null.
+  function weakest(state, nest) {
+    let best = null, bestD = Infinity;
+    for (const v of state.villages) {
+      if (Math.hypot(v.x - nest.x, v.y - nest.y) > CONFIG.nests.raidRange) continue;
+      const d = Vide.Absence.defense(v);
+      if (d < bestD) {
+        bestD = d;
+        best = v;
+      }
+    }
+    return best;
+  }
+
+  // Une base assiégée par une campagne appelle ses voisines : chacune, à son rythme et à ses frais, frappe le
+  // village qui l'assiège (son armée est au loin).
+  function relief(game, dt) {
+    const { state } = game;
+    const n = CONFIG.nests;
+    const g = game.nests;
+    for (const besieged of state.nests) {
+      const foes = state.villages.filter((v) => v.campaign === besieged.id);
+      if (!foes.length) continue;
+      for (const helper of state.nests) {
+        if (helper === besieged || Math.hypot(helper.x - besieged.x, helper.y - besieged.y) > n.reliefRange) continue;
+        const clock = (g.relief.has(helper.id) ? g.relief.get(helper.id) : n.reliefEvery * 0.5) - dt;
+        g.relief.set(helper.id, clock);
+        if (clock > 0) continue;
+        g.relief.set(helper.id, n.reliefEvery / Vide.War.pace(state));
+        const cost = raidCost(state, helper) * n.reliefScale;
+        if (helper.funds < cost) continue;
+        const target = foes[0];
+        if (raid(game, helper, target, n.reliefScale, 'relief')) helper.funds -= cost;
+      }
+    }
   }
 
   function update(game, dt) {
@@ -284,6 +327,8 @@
       }
     }
 
+    relief(game, dt);
+
     // L'obscurité épuise la lumière, hors de tes territoires.
     const { player } = state;
     if (darkAt(state, player.x, player.y) && !Territory.isInside(state, player.x, player.y)) {
@@ -303,7 +348,7 @@
   // ambition (qui grandit avec son âge), sa sous-faction (`lean`, voir factions.js).
 
   // Les stats invisibles de ses gestes propres (celles des ouvrages et des bêtes sont dans leurs catalogues).
-  const WORTH = { rempart: { guard: 2 }, outpost: { reach: 1 }, raid: { raid: 1 } };
+  const WORTH = { rempart: { guard: 2 }, outpost: { reach: 1 }, raid: { raid: 1 }, campaign: { raid: 3.5 } };
 
   // Noirceur gagnée par seconde ; ce qu'elle en garde au plus.
   const income = (state, nest) => CONFIG.nests.income * level(nest) * Vide.War.pace(state);
@@ -390,6 +435,17 @@
           g.raids.set(nest.id, (n.raidEvery + (g.rng() - 0.5) * 2 * n.raidJitter) / Vide.War.pace(state));
           const count = raid(game, nest);
           return count ? { type: 'raid', count } : null;
+        });
+      }
+    }
+    // Mûre, en guerre rude, une campagne : une vague triple contre ton village le plus faible à sa portée.
+    if (game && Vide.War.phase(state) === 'rude' && level(nest) >= n.campaignLevel && !(game.nests.campaigns.get(nest.id) > game.time)) {
+      const target = weakest(state, nest);
+      if (target) {
+        offer('raid', 'campagne', raidCost(state, nest) * n.campaignScale, WORTH.campaign, () => {
+          game.nests.campaigns.set(nest.id, game.time + n.campaignEvery / Vide.War.pace(state));
+          const count = raid(game, nest, target, n.campaignScale, 'campaign');
+          return count ? { type: 'campaign', count } : null;
         });
       }
     }
@@ -629,7 +685,7 @@
 
   Vide.Nests = {
     FAR_ZONES, level, maxHp, radius, create, darkAt, others, spread, shape, add, allowed, wallsAllowed, fortify, bonus,
-    spawnNear, discover, spawnOutpost, swarm, prowl, raid, update, income, hold, earn, threat, raidCost, WORTH, needs, actions, intent,
+    spawnNear, discover, spawnOutpost, swarm, prowl, raid, weakest, relief, update, income, hold, earn, threat, raidCost, WORTH, needs, actions, intent,
     govern, shoot, offline, neighbor, fall, target, workTarget, nearestWork, hitWork, nearest, hit,
   };
 })(globalThis.Vide);
