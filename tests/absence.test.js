@@ -41,13 +41,16 @@
     const r = Absence.war(weak.state, 1200);
     assert.ok(r.raids.broken > 0 && r.broken.length > 0);
     assert.ok(weak.v.buildings.some((b) => b.broken));
-    const strong = world({ gardien: 40 });
+    // (La noirceur répond à la lumière : il faut une vraie garnison pour la repousser.)
+    const strong = world({ gardien: 120 });
     openWar(strong.state);
     const echoes = strong.state.echoes;
     const s = Absence.war(strong.state, 1200);
     assert.ok(s.raids.repelled > 0 && s.raids.broken === 0);
     assert.ok(strong.state.echoes > echoes && s.echoes > 0);
-    assert.ok(Absence.defense(strong.v) > Absence.weight(strong.state, strong.nest));
+    assert.ok(Absence.defense(strong.v) > Absence.weight(strong.state, strong.nest, strong.v));
+    assert.ok(Absence.weight(strong.state, strong.nest, strong.v) > Absence.weight(strong.state, strong.nest, weak.v),
+      'plus l’armée est grande, plus l’assaut l’est');
   });
 
   test('une campagne continue pendant l’absence : une armée forte abat sa base, une faible rentre', () => {

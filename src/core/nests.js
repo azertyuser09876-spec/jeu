@@ -201,7 +201,7 @@
   function prowl(game, nest, target) {
     const rng = game.nests.rng;
     let count = 0;
-    for (let k = 0; k < CONFIG.war.prowlers && game.shadows.list.length < CONFIG.shadows.max; k++) {
+    for (let k = 0; k < CONFIG.war.prowlers && game.shadows.list.length < Vide.Shadows.cap(game.state); k++) {
       const s = Vide.Shadows.spawn(game, 'rodeuse', nest.x + (rng() - 0.5) * 80, nest.y + (rng() - 0.5) * 80, 'tide');
       s.home = target;
       s.calm = true;
@@ -223,9 +223,10 @@
     if (nest.parent && Vide.War.calm(state)) return prowl(game, nest, target);
     const rng = game.nests.rng;
     const kinds = Vide.SHADOW_KINDS.filter((k) => level(nest) >= k.fromTide / 2 + 1);
-    let budget = (n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid')) * Vide.War.raidScale(state) * (scale || 1);
+    let budget = (n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid')) * Vide.War.raidScale(state) * (scale || 1)
+      * Vide.War.answer(state, target);
     let count = 0;
-    while (budget >= 1 && game.shadows.list.length < CONFIG.shadows.max) {
+    while (budget >= 1 && game.shadows.list.length < Vide.Shadows.cap(state)) {
       const affordable = kinds.filter((k) => k.cost <= budget);
       const k = affordable[Math.floor(rng() * affordable.length)];
       budget -= k.cost;
@@ -600,7 +601,11 @@
     if (last === undefined || game.time - last >= n.defendEvery) {
       game.nests.defend.set(nest.id, game.time);
       const rng = game.nests.rng;
-      for (let k = 0; k < n.defenders + level(nest) + bonus(nest, 'defenders'); k++) {
+      // (Autant de plus que l'armée qui l'assiège est grande.)
+      let answer = 1;
+      for (const v of state.villages) if (v.campaign === nest.id) answer = Math.max(answer, Vide.War.answer(state, v));
+      const count = Math.round((n.defenders + level(nest) + bonus(nest, 'defenders')) * answer);
+      for (let k = 0; k < count; k++) {
         const a = rng() * Math.PI * 2;
         Vide.Shadows.spawn(game, k % 3 ? 'errante' : 'rodeuse', nest.x + Math.cos(a) * 40, nest.y + Math.sin(a) * 40, 'roam');
       }

@@ -172,6 +172,9 @@
       raidTo: 2,         // …et au plus rude
       prowlers: 3,       // rôdeuses envoyées par un avant-poste pendant la tension…
       prowlTime: 90,     // …qui tournent autour de ton village ce temps-là, puis s'en vont
+      answerArmy: 40,    // la noirceur répond à la lumière : tout ce qu'elle lance contre un village grandit d'autant
+                         // pour chaque tant de soldats qu'il a (×2 pour 40 soldats, ×3 pour 80…)
+      capGrowth: 1,      // au plus rude, il peut y avoir deux fois plus d'ombres à la fois
     },
 
     // Enceintes (voir walls.js).

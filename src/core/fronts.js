@@ -46,13 +46,14 @@
     return p;
   }
 
-  // Pression d'une base : son niveau, sa garnison, la guerre (rien pendant la tension, ni sans guerre).
-  function darkPressure(state, nest) {
+  // Pression d'une base : son niveau, sa garnison, la guerre (rien pendant la tension, ni sans guerre) — et sa réponse
+  // au village qu'elle affronte (voir War.answer).
+  function darkPressure(state, nest, v) {
     if (!state.war || Vide.War.calm(state)) return 0;
     const f = CONFIG.fronts;
     let beasts = 0;
     for (const n of Object.values(nest.creatures || {})) beasts += n;
-    return (f.darkBase + Vide.Nests.level(nest) * f.perLevel + beasts * f.perBeast) * Vide.War.raidScale(state);
+    return (f.darkBase + Vide.Nests.level(nest) * f.perLevel + beasts * f.perBeast) * Vide.War.raidScale(state) * Vide.War.answer(state, v);
   }
 
   // Chance qu'une cellule de cette maturité (0 à 100) cède à un assaut.
@@ -65,7 +66,7 @@
   function clash(state, v, nest, rng) {
     const list = contacts(v, nest);
     if (!list.length) return null;
-    const pl = lightPressure(state, v, nest), pd = darkPressure(state, nest);
+    const pl = lightPressure(state, v, nest), pd = darkPressure(state, nest, v);
     if (pl + pd <= 0) return null;
     const dark = rng() < pd / (pl + pd);
     const [loser, winner] = dark ? [v, nest] : [nest, v];

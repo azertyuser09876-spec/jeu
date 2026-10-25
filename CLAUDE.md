@@ -74,7 +74,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   s'empiéter), plan radial, ouvrages (`ouvrages.js`, `Vide.darkWork`), remparts d'ombre (`walls.js`, sans porte pour
   la lumière, traversés par les ombres), raids. Siège : ouvrages (`Nests.workTarget`, `hitWork`) puis cœur
   (`Nests.target`, `Nests.hit`) ; une base abattue rend son terrain au village qui la touche (`Nests.fall`).
-  Avant-postes (`nest.parent`) et **guerre** (`war.js`, state.war : tension, âpre, rude ; `War.pace`, `raidScale`).
+  Avant-postes (`nest.parent`) et **guerre** (`war.js`, state.war : tension, âpre, rude ; `War.pace`, `raidScale` ;
+  `War.answer(state, v)` : la noirceur répond à l'armée d'un village — raids, renforts, poussée des fronts,
+  défenseurs d'une base assiégée, assauts pendant l'absence ; `Shadows.cap` : ombres à la fois, selon la guerre).
 - **Colosses** (`colossus.js`) : `state.studied` (sceaux dévoilés par les érudits ; un sceau voilé ne se brise
   pas), phases (`fury`, `PHASE`), marche sur un village (mode 'march', pendant le jeu seulement : `game.marchClock`),
   `Colossus.engaged` pour tout ce qui peut s'en prendre à lui. Engins de siège : `engines.js` (state.engines, bâtis

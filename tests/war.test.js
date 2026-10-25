@@ -104,6 +104,37 @@
     assert.equal(War.pace(state), 1 + CONFIG.war.pace);
   });
 
+  test('la noirceur répond à la lumière : plus l’armée d’un village est grande, plus ce qui vient contre lui l’est', () => {
+    const raided = (beings) => {
+      const state = State.create(21);
+      const v = village(state, { radius: 350, beings });
+      const base = Nests.add(state, 2000, 0, CONFIG.nests.levelEvery * 3);
+      state.player.x = -6000;
+      War.begin(state);
+      state.war.age = CONFIG.war.ramp * 2;
+      const game = Sim.create(state);
+      Nests.raid(game, base, v);
+      return { state, v, base, game, count: game.shadows.list.length };
+    };
+    const calm = raided({ lueur: 4 });
+    const armed = raided({ lueur: 4, gardien: 40 });
+    assert.equal(War.answer(calm.state, calm.v), 1);
+    assert.equal(War.answer(armed.state, armed.v), 2);
+    assert.ok(armed.count > calm.count * 1.6, `raid ${armed.count} contre ${calm.count}`);
+    assert.ok(Vide.Fronts.darkPressure(armed.state, armed.base, armed.v) > Vide.Fronts.darkPressure(calm.state, calm.base, calm.v));
+    // Une base assiégée fait jaillir des défenseurs à la mesure de l’armée qui l’assiège.
+    const defenders = (w) => {
+      w.game.shadows.list.length = 0;
+      w.v.campaign = w.base.id;
+      Nests.hit(w.game, w.base, 1);
+      return w.game.shadows.list.length;
+    };
+    assert.ok(defenders(armed) > defenders(calm) * 1.6);
+    // Et il peut y avoir plus d’ombres à la fois quand la guerre est rude.
+    assert.equal(Vide.Shadows.cap(State.create(1)), CONFIG.shadows.max);
+    assert.equal(Vide.Shadows.cap(armed.state), Math.round(CONFIG.shadows.max * (1 + CONFIG.war.capGrowth)));
+  });
+
   test('pendant l’absence, tout est possible : des avant-postes naissent, la guerre s’ouvre et mûrit', () => {
     const { state } = world();
     const report = Offline.apply(state, 3 * 3600);

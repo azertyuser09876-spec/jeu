@@ -45,5 +45,12 @@
     return state.war ? CONFIG.war.raidFrom + (CONFIG.war.raidTo - CONFIG.war.raidFrom) * intensity(state) : 1;
   }
 
-  Vide.War = { begin, advance, intensity, calm, phase, pace, raidScale };
+  // La réponse des ombres à un village : plus son armée est grande, plus ce qu'elles lancent contre lui est grand
+  // (raids, renforts, campagnes, poussée sur les fronts, défenseurs d'une base qu'il assiège). La lumière qui croît
+  // sans fin trouve toujours la noirceur à sa mesure.
+  function answer(state, v) {
+    return v ? 1 + Vide.Colony.usedIn(v, 'armyCap') / CONFIG.war.answerArmy : 1;
+  }
+
+  Vide.War = { begin, advance, intensity, calm, phase, pace, raidScale, answer };
 })(globalThis.Vide);

@@ -112,7 +112,7 @@
     const kinds = Vide.SHADOW_KINDS.filter((k) => state.tides >= k.fromTide);
     let budget = tideBudget(state, village);
     let count = 0;
-    while (budget >= 1 && game.shadows.list.length < c.max) {
+    while (budget >= 1 && game.shadows.list.length < cap(game.state)) {
       const affordable = kinds.filter((k) => k.cost <= budget);
       const k = affordable[Math.floor(r() * affordable.length)];
       budget -= k.cost;
@@ -357,5 +357,10 @@
     return best;
   }
 
-  Vide.Shadows = { kind, create, spawn, pickKind, tideBudget, tideTargets, startTide, update, damage, nearest };
+  // Ombres à la fois, au plus : davantage à mesure que la guerre s'âpre.
+  function cap(state) {
+    return Math.round(CONFIG.shadows.max * (1 + (Vide.War ? Vide.War.intensity(state) : 0) * CONFIG.war.capGrowth));
+  }
+
+  Vide.Shadows = { kind, create, spawn, pickKind, tideBudget, tideTargets, startTide, update, damage, nearest, cap };
 })(globalThis.Vide);

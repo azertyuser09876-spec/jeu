@@ -39,8 +39,8 @@ let lifeMillion = null;
 const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, heartAttacked: 0, march: 0 };
 // Le monde qui se remplit, des deux côtés (gestes des gouverneurs, des bases).
 const world = {
-  colons: 0, settled: 0, joined: 0, lost: 0, route: 0, specialite: 0, campagne: 0, won: 0,
-  raid: 0, outpost: 0, work: 0, rempart: 0, beast: 0,
+  colons: 0, settled: 0, joined: 0, lost: 0, route: 0, specialite: 0, campagne: 0, won: 0, retreat: 0,
+  raid: 0, outpost: 0, work: 0, rempart: 0, beast: 0, relief: 0, darkCampaign: 0, fallen: 0, lostBuildings: 0,
 };
 
 // Coût total d'un article, toutes ressources confondues (approximation suffisante pour choisir).
@@ -130,6 +130,11 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
     if (e.type in events) events[e.type]++;
     if (e.type === 'steward' && e.id in world) world[e.id]++;
     if (e.type === 'campaignEnd' && e.won) world.won++;
+    if (e.type === 'campaignEnd' && !e.won && !e.recalled) world.retreat++;
+    if (e.type === 'raid' && e.kind === 'relief') world.relief++;
+    if (e.type === 'raid' && e.kind === 'campaign') world.darkCampaign++;
+    if (e.type === 'nestDestroyed') world.fallen++;
+    if (e.type === 'structureLost') world.lostBuildings++;
     if (e.type === 'settled') world.settled++;
     if (e.type === 'colonsJoined') world.joined++;
     if (e.type === 'expeditionLost' && e.kind === 'colons') world.lost++;
@@ -194,4 +199,15 @@ console.log(`monde : villages ${state.villages.length} (colons des gouverneurs $
   + `campagnes ${world.campagne} dont gagnées ${world.won}) · bases ${state.nests.filter((n) => !n.parent).length}+${state.nests.filter((n) => n.parent).length} `
   + `(assauts ${world.raid}, avant-postes ${world.outpost}, ouvrages ${world.work}, remparts ${world.rempart}, bêtes ${world.beast}) `
   + `· fronts : cellules prises par la lumière ${game.fronts.taken.light}, par les ombres ${game.fronts.taken.shadow}`);
+// Le rapport de forces : les territoires de chaque camp, ce que chacun a gagné.
+{
+  let light = 0, dark = 0;
+  for (const v of state.villages) light += v.cells.length / 3;
+  for (const n of state.nests) dark += n.cells.length / 3;
+  const t = game.fronts.taken;
+  console.log(`rapport de forces : territoires ${Math.round(light)} parcelles de lumière, ${Math.round(dark)} de noirceur · `
+    + `campagnes de la lumière ${world.campagne} (gagnées ${world.won}, retraites ${world.retreat}) · bases abattues ${world.fallen} · `
+    + `campagnes des ombres ${world.darkCampaign}, renforts ${world.relief}, bâtiments perdus ${world.lostBuildings} · `
+    + `fronts ${t.light} contre ${t.shadow}`);
+}
 console.log('premiers achats : ' + Object.entries(firsts).map(([k, t]) => `${k} ${Math.round(t)} s`).join(', '));

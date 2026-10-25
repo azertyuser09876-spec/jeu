@@ -22,10 +22,11 @@
       + (S.working(v, 'tour') + 2 * S.working(v, 'citadelle')) * A.perTower + walls * A.perWall;
   }
 
-  // Le poids d'un assaut de cette base (comme en jeu : voir Nests.raid).
-  function weight(state, nest) {
+  // Le poids d'un assaut de cette base contre ce village (comme en jeu : voir Nests.raid).
+  function weight(state, nest, target) {
     const n = CONFIG.nests;
-    return (n.raidBase + n.raidPerLevel * Vide.Nests.level(nest) + Vide.Nests.bonus(nest, 'raid')) * Vide.War.raidScale(state);
+    return (n.raidBase + n.raidPerLevel * Vide.Nests.level(nest) + Vide.Nests.bonus(nest, 'raid')) * Vide.War.raidScale(state)
+      * Vide.War.answer(state, target);
   }
 
   // Un assaut pendant l'absence. Renvoie { village, repelled, echoes, broken: [types] } ou null.
@@ -38,7 +39,7 @@
     const cost = Vide.Nests.raidCost(state, nest);
     if (nest.funds < cost) return null;
     nest.funds -= cost;
-    const S = weight(state, nest), D = defense(target);
+    const S = weight(state, nest, target), D = defense(target);
     if (D >= S) {
       const echoes = S * A.echoPerWeight * stats.echoGain;
       state.echoes += echoes;
