@@ -149,6 +149,20 @@
       creepEvery: 10,      // en guerre ouverte, la noirceur d'une base rampe d'une cellule vers ton village toutes les 10 s
     },
 
+    // La guerre pendant l'absence (voir absence.js).
+    absence: {
+      turn: 20,            // un tour toutes les 20 s d'absence
+      frontSteps: 1500,    // tours de front, au plus, sur toute une absence
+      perSoldier: 1,       // défense d'un village contre un assaut : par soldat…
+      perTower: 2.5,       // …par tour (une citadelle en vaut deux)…
+      perWall: 3,          // …par enceinte debout
+      echoPerWeight: 2,    // échos d'un assaut repoussé, par point de poids
+      breakEvery: 4,       // un bâtiment éteint par tant de poids qui passe…
+      maxBroken: 3,        // …au plus tant par assaut
+      siegeDps: 3,         // ce qu'un soldat en campagne fait à une base, par seconde
+      siegeLoss: 0.004,    // soldats perdus par seconde de siège et par niveau de la base
+    },
+
     // La guerre (voir war.js) : elle s'ouvre avec le premier avant-poste.
     war: {
       ramp: 3600,        // elle atteint sa plus grande âpreté en une heure

@@ -98,9 +98,27 @@
     return false;
   }
 
-  // Emplacements libres du plan.
+  // Emplacements libres du plan. (Les bâtiments sont rangés par cases de la taille d'un emplacement : seuls ceux des
+  // cases voisines peuvent le prendre.)
   function free(v) {
-    return slots(v).filter((s) => !taken(v, s.x, s.y));
+    const grid = new Map();
+    const at = (x, y) => `${Math.floor(x / SPACING)},${Math.floor(y / SPACING)}`;
+    for (const b of v.buildings) {
+      const k = at(b.x, b.y);
+      if (!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(b);
+    }
+    const busy = (x, y) => {
+      const ci = Math.floor(x / SPACING), cj = Math.floor(y / SPACING);
+      for (let di = -1; di <= 1; di++) {
+        for (let dj = -1; dj <= 1; dj++) {
+          for (const b of grid.get(`${ci + di},${cj + dj}`) || []) if (Math.hypot(b.x - x, b.y - y) < SPACING * 0.6) return true;
+        }
+      }
+      for (const d of v.districts || []) if (Math.hypot(d.x - x, d.y - y) < PLAZA) return true;
+      return false;
+    };
+    return slots(v).filter((s) => !busy(s.x, s.y));
   }
 
   // Quart du village (entre deux avenues) où tombe une direction : 0 à AVENUES - 1.
@@ -114,29 +132,43 @@
   // Prix d'un emplacement pour un bâtiment (plus bas = mieux) : l'écart à sa place idéale ; la défense attirée par
   // les avenues (les portes) et répartie de l'une à l'autre ; les quarts du village remplis à parts égales ; un
   // léger penchant à rejoindre sa famille (des quartiers).
-  function score(v, d, s, R) {
+  // `known` : ce qu'il faut savoir des bâtiments déjà là, calculé une fois par choix (voir around).
+  function score(v, d, s, R, known) {
     let cost = Math.abs(s.r / R - d.ring);
     const defense = d.family === 'defense';
     if (defense) cost += 0.3 * (offAvenue(v, s.a) * AVENUES) / Math.PI;
-    const q = quarter(v, s.a);
+    cost += 0.025 * known.counts[quarter(v, s.a)];
     let family = false;
-    for (const b of v.buildings) {
-      const other = defOf(b.type);
-      const near = Math.hypot(b.x - s.x, b.y - s.y);
-      if (quarter(v, Math.atan2(b.y - v.y, b.x - v.x)) === q) cost += 0.025;
-      if (defense && other.family === 'defense' && near < STREET * 2) cost += 0.12;
-      if (!family && other.family === d.family && near < SPACING * 1.7) family = true;
+    const reach = Math.max(STREET * 2, SPACING * 1.7);
+    for (const b of known.list) {
+      const dx = b.x - s.x, dy = b.y - s.y;
+      if (dx > reach || dx < -reach || dy > reach || dy < -reach) continue;
+      const near = Math.hypot(dx, dy);
+      if (defense && b.family === 'defense' && near < STREET * 2) cost += 0.12;
+      if (!family && b.family === d.family && near < SPACING * 1.7) family = true;
     }
     return family ? cost - 0.03 : cost;
+  }
+
+  // Les bâtiments déjà là : combien dans chaque quart, et où (avec leur famille).
+  function around(v) {
+    const counts = new Array(AVENUES).fill(0);
+    const list = [];
+    for (const b of v.buildings) {
+      counts[quarter(v, Math.atan2(b.y - v.y, b.x - v.x))]++;
+      list.push({ x: b.x, y: b.y, family: defOf(b.type).family });
+    }
+    return { counts, list };
   }
 
   // Le meilleur emplacement libre pour un bâtiment de type `d`, ou null s'il n'y en a plus.
   function choose(v, d) {
     const R = Math.max(Territory.radius(v), STREET);
+    const known = around(v);
     let best = null;
     let bestCost = Infinity;
     for (const s of free(v)) {
-      const cost = score(v, d, s, R);
+      const cost = score(v, d, s, R, known);
       if (cost < bestCost - 1e-9) {
         bestCost = cost;
         best = s;

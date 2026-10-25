@@ -239,12 +239,18 @@
 
   // --- Création ---
 
+  // Où se tient un colosse apaisé : près de tes villages (un colosse qui reste où il est, comme le Dormeur, ne les
+  // rejoint jamais).
+  const orbitOf = (state, d) => util.hash2(d.lair.angleSeed, 11, state.seed) * Math.PI * 2;
+  function home(state, d) {
+    return d.stays ? lair(state, d) : residentSpot(state, orbitOf(state, d), d);
+  }
+
   function spawnEntity(game, d) {
     const { state } = game;
     const tamed = status(state, d.id) === 'tamed';
-    const orbit = util.hash2(d.lair.angleSeed, 11, state.seed) * Math.PI * 2;
-    // (Un colosse qui reste où il est, comme le Dormeur, ne rejoint jamais tes villages.)
-    const at = tamed && !d.stays ? residentSpot(state, orbit, d) : lair(state, d);
+    const orbit = orbitOf(state, d);
+    const at = tamed ? home(state, d) : lair(state, d);
     const body = BODIES[d.body];
     const c = {
       id: d.id,
@@ -995,7 +1001,7 @@
   }
 
   Vide.Colossus = {
-    BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot,
+    BODIES, ATTACKS, PHASE, FOOT, def, status, revealed, study, veiled, phase, reach, extent, attacksOf, lair, residentSpot, home,
     toWorld, tailPoints, pointOf, activeSeal, sealPos, knee, create, sync, update, hit, sealHit, pulseHit, target, hostile, engaged,
     startMarch, provoke, walkTo, stop, turnTowards, endAttack, beast, tame,
     modify, modifyLocal, inCone, inGap, slowAt, startAttack,

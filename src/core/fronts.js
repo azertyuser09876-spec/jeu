@@ -91,26 +91,56 @@
     return { side: dark ? 'shadow' : 'light', i: best.i, j: best.j, x: (best.i + 0.5) * c, y: (best.j + 0.5) * c, fallen };
   }
 
+  // Pour chaque base : la pointe de sa langue de noirceur (ses dernières cellules gagnées, [{ i, j }]), et l'attente
+  // d'une base encerclée (aucune cellule libre autour d'elle) avant de chercher de nouveau.
+  const tips = new WeakMap();
+  const stuck = new WeakMap();
+
   // La noirceur d'une base rampe d'une cellule vers le village le plus proche (à portée de raid), si elle ne le
   // touche pas encore. Renvoie la cellule gagnée { i, j }, ou null.
   function creep(state, nest) {
+    const wait = stuck.get(nest) || 0;
+    if (wait > 0) {
+      stuck.set(nest, wait - 1);
+      return null;
+    }
     const target = Vide.Villages.nearest(state, nest.x, nest.y);
     if (!target || Math.hypot(target.x - nest.x, target.y - nest.y) > CONFIG.nests.raidRange) return null;
     if (contacts(target, nest).length) return null;
     const owners = [...state.villages, ...state.nests];
     const c = Territory.CELL;
-    let best = null, bestD = Infinity;
-    for (let k = 0; k < nest.cells.length; k += 3) {
-      for (const [di, dj] of N) {
-        const i = nest.cells[k] + di, j = nest.cells[k + 1] + dj;
-        const d = Math.hypot((i + 0.5) * c - target.x, (j + 0.5) * c - target.y);
-        if (d < bestD && !Territory.owned(owners, i, j)) {
-          bestD = d;
-          best = { i, j };
+    const d2 = (i, j) => ((i + 0.5) * c - target.x) ** 2 + ((j + 0.5) * c - target.y) ** 2;
+    // La cellule libre, voisine de ces cellules de la base, la plus proche du village.
+    const pick = (from) => {
+      let best = null, bestD = Infinity;
+      for (const p of from) {
+        if (!Territory.has(nest, p.i, p.j)) continue;
+        for (const [di, dj] of N) {
+          const i = p.i + di, j = p.j + dj;
+          const d = d2(i, j);
+          if (d < bestD && !Territory.owned(owners, i, j)) {
+            bestD = d;
+            best = { i, j };
+          }
         }
       }
+      return best;
+    };
+    // D'abord autour de sa pointe ; sinon, autour des cellules de la base les plus proches du village ; sinon, tout
+    // autour d'elle.
+    const near = (count) => {
+      const list = [];
+      for (let k = 0; k < nest.cells.length; k += 3) list.push({ i: nest.cells[k], j: nest.cells[k + 1], d: d2(nest.cells[k], nest.cells[k + 1]) });
+      list.sort((a, b) => a.d - b.d);
+      return count ? list.slice(0, count) : list;
+    };
+    let best = pick(tips.get(nest) || []) || pick(near(8)) || pick(near(0));
+    if (!best) {
+      stuck.set(nest, 25);
+      return null;
     }
-    if (best) Territory.claim(nest, best.i, best.j);
+    Territory.claim(nest, best.i, best.j);
+    tips.set(nest, [best, ...(tips.get(nest) || [])].slice(0, 6));
     return best;
   }
 

@@ -133,14 +133,58 @@
     const noise = t.noise * shapeOf(v).noise * (v.extra && v.extra.length ? 0.5 : 1);
     let score = noise * (0.8 * smoothNoise(i, j, seedOf(v, 0)) + 0.2 * util.hash2(i, j, seedOf(v, 1)));
     const x = center(i), y = center(j);
-    for (const b of v.buildings) score += t.pull * Math.exp(-Math.hypot(b.x - x, b.y - y) / t.pullRange);
+    // (Au-delà de huit portées, un bâtiment n'attire plus : moins de 0,03 % de son attrait.)
+    const far = 8 * t.pullRange;
+    for (const b of v.buildings) {
+      const dx = b.x - x, dy = b.y - y;
+      if (dx > far || dx < -far || dy > far || dy < -far) continue;
+      score += t.pull * Math.exp(-Math.hypot(dx, dy) / t.pullRange);
+    }
     return score;
   }
 
   function addFrontier(v, idx, i, j) {
     const k = key(i, j);
     if (idx.map.has(k) || idx.frontier.has(k)) return;
-    idx.frontier.set(k, { i, j, appeal: appeal(v, i, j), reach: reachOf(v, shapeOf(v), i, j) });
+    const c = { i, j, appeal: appeal(v, i, j), reach: reachOf(v, shapeOf(v), i, j), seq: idx.seq = (idx.seq || 0) + 1 };
+    idx.frontier.set(k, c);
+    if (idx.onFrontier) idx.onFrontier(c);
+  }
+
+  // Un tas (le plus grand en tête, selon `before`), pour les longues croissances.
+  function heap(before) {
+    const a = [];
+    const up = (n) => {
+      while (n > 0) {
+        const p = (n - 1) >> 1;
+        if (!before(a[n], a[p])) break;
+        [a[n], a[p]] = [a[p], a[n]];
+        n = p;
+      }
+    };
+    const down = (n) => {
+      for (;;) {
+        const l = 2 * n + 1, r = l + 1;
+        let m = n;
+        if (l < a.length && before(a[l], a[m])) m = l;
+        if (r < a.length && before(a[r], a[m])) m = r;
+        if (m === n) return;
+        [a[n], a[m]] = [a[m], a[n]];
+        n = m;
+      }
+    };
+    return {
+      get size() { return a.length; },
+      push(x) { a.push(x); up(a.length - 1); },
+      pop() {
+        const top = a[0], last = a.pop();
+        if (a.length) {
+          a[0] = last;
+          down(0);
+        }
+        return top;
+      },
+    };
   }
 
   function addCell(v, idx, i, j) {
@@ -203,9 +247,27 @@
       }
       return false;
     };
+    // La cellule du bord la plus attirante : proche du cœur (relativement à la taille), près des bâtiments. (Le rayon
+    // ne dépend que de la surface : chaque cellule du bord garde son score pendant toute la croissance.)
+    const R = Math.max(CELL, radius(v));
+    if (target - v.cells.length / 3 >= 32) {
+      // Beaucoup à ajouter (une longue absence) : un tas plutôt qu'un parcours du bord pour chaque cellule — les
+      // mêmes choix (à égalité, la première arrivée au bord, comme le parcours).
+      const h = heap((a, b) => a.s > b.s || (a.s === b.s && a.c.seq < b.c.seq));
+      const push = (c) => h.push({ s: c.appeal - c.reach / R, c });
+      for (const c of idx.frontier.values()) push(c);
+      idx.onFrontier = push;
+      while (v.cells.length / 3 < target && h.size) {
+        const { c } = h.pop();
+        if (idx.frontier.get(key(c.i, c.j)) !== c) continue; // (déjà ajoutée)
+        if (others && others.length && isBlocked(c)) continue;
+        addCell(v, idx, c.i, c.j);
+        added++;
+      }
+      idx.onFrontier = null;
+      return added;
+    }
     while (v.cells.length / 3 < target) {
-      // La cellule du bord la plus attirante : proche du cœur (relativement à la taille), près des bâtiments.
-      const R = Math.max(CELL, radius(v));
       let best = null;
       let bestScore = -Infinity;
       for (const c of idx.frontier.values()) {
@@ -271,13 +333,43 @@
     return false;
   }
 
+  // La géométrie du blanc, calculée une fois par appel de whiten (elle ne change pas d'un pas à l'autre tant que la
+  // forme ne change pas) : le plafond de chaque cellule ; celles qui blanchissent (`growing`) ; celles, pas encore
+  // blanches, assez proches du cœur pour commencer un jour (`waiting`), dont celles qui touchent déjà une cellule
+  // assez blanche (`ready` : les seules à regarder).
+  function geometry(v) {
+    const reach = radius(v) * CONFIG.territory.whiteReach;
+    const hi = cellOf(v.x), hj = cellOf(v.y);
+    const n = v.cells.length / 3;
+    const ceil = new Uint8Array(n);
+    const g = { ceil, heart: -1, growing: [], waiting: new Set(), ready: new Set() };
+    for (let c = 0; c < n; c++) {
+      const k = 3 * c;
+      const i = v.cells[k], j = v.cells[k + 1], w = v.cells[k + 2];
+      const isHeart = i === hi && j === hj;
+      const d = isHeart ? 0 : Math.hypot(center(i) - v.x, center(j) - v.y);
+      ceil[c] = isHeart ? 100 : ceilingAt(d / Math.max(reach, CELL));
+      if (isHeart) g.heart = k;
+      if (w >= ceil[c]) continue;
+      if (w > 0) {
+        g.growing.push(k);
+        continue;
+      }
+      // (La limite du blanc ondule ; au-delà, une cellule ne commence jamais.)
+      if (!isHeart && (d > reach * 1.2 || d > reach * (0.8 + 0.4 * smoothNoise(i, j, seedOf(v, 2))))) continue;
+      g.waiting.add(k);
+      if (isHeart || touchesWhite(v, i, j)) g.ready.add(k);
+    }
+    return g;
+  }
+
   // Un pas de blanchiment de `step` % : les cellules qui blanchissent déjà continuent (chacune au rythme de sa
   // nuance) ; une cellule intérieure, assez proche du cœur et voisine d'une cellule déjà blanche (ou le cœur
   // lui-même), commence.
-  function whitenStep(v, step, idx) {
-    const reach = radius(v) * CONFIG.territory.whiteReach;
-    const hi = cellOf(v.x), hj = cellOf(v.y);
+  function whitenStep(v, step, idx, geo) {
+    const g = geo || geometry(v);
     const cells = v.cells;
+    const map = index(v).map;
     // Ce que gagne, à ce pas, une cellule de chaque nuance (le reste fractionnaire est reporté).
     const carry = idx.carry || (idx.carry = [0, 0, 0, 0, 0]);
     const gain = carry.map((c, n) => {
@@ -286,41 +378,49 @@
       carry[n] = total - whole;
       return whole;
     });
-    const growing = [];
-    const ceilings = [];
-    for (let k = 0; k < cells.length; k += 3) {
-      const w = cells[k + 2];
-      if (w >= 100 || !gain[nuance(w)]) continue;
-      const i = cells[k], j = cells[k + 1];
-      const heart = i === hi && j === hj;
-      const d = heart ? 0 : Math.hypot(center(i) - v.x, center(j) - v.y);
-      const ceiling = heart ? 100 : ceilingAt(d / Math.max(reach, CELL));
-      if (w >= ceiling) continue;
-      if (w === 0) {
-        if (!heart) {
-          // Tests du moins coûteux au plus coûteux : distance, voisines, puis la limite du blanc, qui ondule.
-          if (d > reach * 1.2 || !touchesWhite(v, i, j) || !interior(v, i, j)) continue;
-          if (d > reach * (0.8 + 0.4 * smoothNoise(i, j, seedOf(v, 2)))) continue;
-        } else if (!interior(v, i, j)) {
-          continue;
+    const moving = g.growing.filter((k) => gain[nuance(cells[k + 2])]);
+    const starting = [];
+    if (gain[0]) {
+      for (const k of g.ready) {
+        if (interior(v, cells[k], cells[k + 1])) starting.push(k);
+        else {
+          // (Pas intérieure : elle ne commencera jamais, la forme ne changeant pas pendant ce blanchiment.)
+          g.ready.delete(k);
+          g.waiting.delete(k);
         }
       }
-      growing.push(k);
-      ceilings.push(ceiling);
     }
-    growing.forEach((k, n) => {
-      cells[k + 2] = Math.min(ceilings[n], cells[k + 2] + gain[nuance(cells[k + 2])]);
-    });
+    const crossed = [];
+    for (const k of [...moving, ...starting]) {
+      const before = cells[k + 2];
+      cells[k + 2] = Math.min(g.ceil[k / 3], before + gain[nuance(before)]);
+      if (before < SPREAD && cells[k + 2] >= SPREAD) crossed.push(k);
+    }
+    for (const k of starting) {
+      g.ready.delete(k);
+      g.waiting.delete(k);
+      g.growing.push(k);
+    }
+    // Une cellule devenue assez blanche rend prêtes ses voisines qui attendent.
+    for (const k of crossed) {
+      for (const [di, dj] of NEIGHBORS) {
+        const o = map.get(key(cells[k] + di, cells[k + 1] + dj));
+        if (o !== undefined && g.waiting.has(o)) g.ready.add(o);
+      }
+    }
+    if (moving.length || starting.length) g.growing = g.growing.filter((k) => cells[k + 2] < g.ceil[k / 3]);
   }
 
   // Fait avancer le blanc d'un village de `seconds` secondes (par pas de 1 %, ou de 10 % pour une longue absence).
   function whiten(v, stats, seconds) {
     const idx = index(v);
     idx.clock += (seconds * 100 * (stats.whitening || 1)) / CONFIG.territory.whiteTime;
+    let geo = null;
     while (idx.clock >= 1) {
       const step = Math.min(10, Math.floor(idx.clock));
       idx.clock -= step;
-      whitenStep(v, step, idx);
+      geo = geo || geometry(v);
+      whitenStep(v, step, idx, geo);
     }
   }
 

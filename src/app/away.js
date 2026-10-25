@@ -17,6 +17,31 @@
 
   const away = { open: false };
 
+  const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+
+  // La guerre pendant l'absence (voir absence.js) : ce qui s'est gagné et perdu.
+  function battle(b) {
+    if (!b) return [];
+    const lines = [];
+    if (b.taken.light || b.taken.shadow) {
+      lines.push(`La guerre a continué. Sur les fronts, la lumière a repris ${plural(b.taken.light, 'parcelle', 'parcelles')}, `
+        + `les ombres en ont pris ${b.taken.shadow}.`);
+    }
+    if (b.lost.length) {
+      lines.push(`Perdu aux ombres : ${b.lost.map((t) => Vide.Structures.def(t).name.toLowerCase()).join(', ')}.`);
+    }
+    if (b.raids.repelled) lines.push(`${plural(b.raids.repelled, 'assaut repoussé', 'assauts repoussés')}.`);
+    if (b.raids.broken) {
+      lines.push(`${plural(b.raids.broken, 'assaut a', 'assauts ont')} éteint ${plural(b.broken.length, 'bâtiment', 'bâtiments')} : `
+        + 'tes bâtisseurs les relèveront.');
+    }
+    for (const t of b.fallen) lines.push(`La campagne ${of(t)} a abattu sa base d’ombre.`);
+    for (const t of b.retreats) lines.push(`L’armée ${of(t)}, trop amenuisée, est rentrée de campagne.`);
+    for (const id of b.corrupted) lines.push(`Les ombres ont pris ${named(id)} : reprends-le, sceau après sceau.`);
+    if (b.echoes > 0) lines.push(`La guerre t’a laissé ◆ ${util.formatNumber(b.echoes)}.`);
+    return lines;
+  }
+
   function show(report) {
     const lines = [];
     if (report.radiusAfter > report.radiusBefore) {
@@ -37,6 +62,7 @@
     }
     if (report.war) lines.push('Un avant-poste d’ombre s’est dressé : la guerre a commencé.');
     else if (report.outposts) lines.push(`${report.outposts} avant-poste${report.outposts > 1 ? 's' : ''} d’ombre de plus.`);
+    lines.push(...battle(report.battle));
     if (report.walls) lines.push(`${report.walls} enceinte${report.walls > 1 ? 's' : ''} achevée${report.walls > 1 ? 's' : ''}.`);
     if (report.roads) lines.push(`${report.roads} route${report.roads > 1 ? 's' : ''} achevée${report.roads > 1 ? 's' : ''}.`);
     if (report.built.length) {
@@ -48,7 +74,7 @@
       const plans = report.steward.length - beings;
       const deeds = [beings ? `éveillé ${beings} être${beings > 1 ? 's' : ''}` : '',
         plans ? `planifié ${plans} bâtiment${plans > 1 ? 's' : ''}` : ''].filter(Boolean);
-      lines.push(`Tes intendants ont mis de côté ✦ ${util.formatNumber(report.kept)}`
+      lines.push(`Tes gouverneurs ont mis de côté ✦ ${util.formatNumber(report.kept)}`
         + (deeds.length ? ` et ont ${deeds.join(' et ')}.` : '.'));
     }
     if (report.capped) {

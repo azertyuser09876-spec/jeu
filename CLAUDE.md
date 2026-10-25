@@ -84,6 +84,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   `draw-beasts.js` (`Vide.Draw.beasts`, `Vide.Draw.beastAttacks`).
 - **Fronts** (`fronts.js`) : contact village/base, cellules disputées (`Territory.lose`/`claim`), la noirceur rampe en
   guerre ouverte. **Colosses disputés** (`corruption.js`, state.corruption, statut 'corrupted').
+- **Absence en guerre** (`absence.js`, appelé par `Offline.apply`) : fronts, assauts (poids contre défense),
+  campagnes (siège abstrait), colosses rongés ; résumé `report.battle` (écran du retour). Une longue absence doit
+  rester rapide : bancs d'essai sur des sauvegardes du robot (`--save`), viser quelques secondes pour 12 h.
 - **Vue stratégique** (`map.js`) : la carte, ouverte par M ou en reculant au-delà du zoom minimal ; elle ne met pas
   le monde en pause (redessinée 4 fois par seconde) ; fronts, armées, campagnes, ordres (`#map-orders`).
 - **Tableaux** (cinématiques, côté app) : `cinema.js` (lecteur, déclenché par les événements, met le jeu en

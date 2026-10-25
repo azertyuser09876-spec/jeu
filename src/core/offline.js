@@ -28,10 +28,12 @@
     };
     if (applied <= 0) return report;
 
-    // Les nids vieillissent (mais ne lancent pas de raid : pas d'ombres pendant l'absence).
+    // Les bases mûrissent, bâtissent, essaiment ; la guerre mûrit, ou s'ouvre…
     const shadows = Vide.Nests.offline(state, applied);
     report.outposts = shadows.outposts;
     report.war = shadows.war;
+    // …et, ouverte, elle continue : fronts, assauts, campagnes, colosses rongés (voir absence.js).
+    report.battle = Vide.Absence.war(state, applied);
 
     // Le fanal a récolté pendant ce temps.
     if (state.beacon) {
@@ -71,7 +73,10 @@
 
   // Inutile de déranger le joueur pour une absence courte ou sans effet.
   function worthShowing(report) {
-    return report.seconds >= 60 && (report.light > 0 || report.built.length > 0);
+    const b = report.battle;
+    const war = b && (b.taken.light + b.taken.shadow + b.raids.repelled + b.raids.broken + b.fallen.length
+      + b.retreats.length + b.corrupted.length > 0);
+    return report.seconds >= 60 && (report.light > 0 || report.built.length > 0 || Boolean(war));
   }
 
   Vide.Offline = { apply, worthShowing };
