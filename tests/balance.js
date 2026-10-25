@@ -35,6 +35,8 @@ let lifeStart = 0;
 let lifeMillion = null;
 // Événements de combat comptés pendant la partie.
 const events = { tide: 0, dispersed: 0, beingDown: 0, broken: 0, heartAttacked: 0, march: 0 };
+// Le monde qui se remplit, des deux côtés (gestes des gouverneurs, des bases).
+const world = { colons: 0, route: 0, specialite: 0, campagne: 0, won: 0, raid: 0, outpost: 0, work: 0, rempart: 0, beast: 0 };
 
 // Coût total d'un article, toutes ressources confondues (approximation suffisante pour choisir).
 const price = (item) => Object.values(item.cost(state)).reduce((a, b) => a + b, 0);
@@ -119,7 +121,13 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   }
   input.pulse = true;
   Sim.step(game, dt, input);
-  for (const e of game.events) if (e.type in events) events[e.type]++;
+  for (const e of game.events) {
+    if (e.type in events) events[e.type]++;
+    if (e.type === 'steward' && e.id in world) world[e.id]++;
+    if (e.type === 'campaignEnd' && e.won) world.won++;
+    if (e.type === 'raid' || e.type === 'outpost') world[e.type]++;
+    if (e.type === 'nestBuilt') world[e.kind === 'rempart' ? 'rempart' : Vide.darkWork(e.kind) ? 'work' : 'beast']++;
+  }
   game.events.length = 0;
   if (lifeMillion === null && state.totalLight - state.runStart >= 1e6) lifeMillion = game.time - lifeStart;
   if (state.renaissances > lives.length) {
@@ -170,4 +178,7 @@ for (let s = 1; s <= minutes * stepsPerMinute; s++) {
   }
 }
 if (reborn) for (const l of lives) console.log(l);
+console.log(`monde : villages ${state.villages.length} (colons des gouverneurs ${world.colons}, routes ${world.route}, cités ${world.specialite}, `
+  + `campagnes ${world.campagne} dont gagnées ${world.won}) · bases ${state.nests.filter((n) => !n.parent).length}+${state.nests.filter((n) => n.parent).length} `
+  + `(assauts ${world.raid}, avant-postes ${world.outpost}, ouvrages ${world.work}, remparts ${world.rempart}, bêtes ${world.beast})`);
 console.log('premiers achats : ' + Object.entries(firsts).map(([k, t]) => `${k} ${Math.round(t)} s`).join(', '));

@@ -154,6 +154,72 @@
     assert.ok(young.buildings.length > 0);
   });
 
+  // --- Son gouverneur ---
+
+  test('le gouverneur d’une base : sa noirceur rentre plus vite à mesure qu’elle mûrit ; il bâtit à ses frais', () => {
+    const state = State.create(8);
+    village(state, { radius: 300 });
+    state.player.x = -5000;
+    const nest = Nests.add(state, 2600, 0, CONFIG.nests.levelEvery); // niveau 2 : une fosse possible
+    assert.equal(nest.buildings.length, 1, 'bâtie à sa naissance');
+    nest.buildings.length = 0;
+    nest.funds = 0;
+    assert.near(Nests.income(state, nest), 2 * CONFIG.nests.income, 1e-9);
+    // Sans noirceur, il économise pour sa fosse.
+    assert.equal(Nests.govern(state, nest, null), null);
+    assert.deepEqual(Nests.intent(nest), { kind: 'work', id: 'fosse' });
+    Nests.earn(state, nest, 1e6);
+    assert.equal(nest.funds, Nests.hold(nest), 'il n’amasse pas sans fin');
+    const funds = nest.funds;
+    const done = Nests.govern(state, nest, null);
+    assert.equal(done.kind, 'work');
+    assert.equal(nest.buildings[0].type, 'fosse');
+    assert.near(nest.funds, funds - CONFIG.nests.price.fosse, 1e-9);
+  });
+
+  test('il lance ses assauts quand leur heure sonne, s’il peut les payer ; menacé, il préfère se défendre', () => {
+    const state = twoVillages();
+    state.player.x = -5000;
+    const nest = Nests.add(state, 4000, 0, CONFIG.nests.levelEvery * 4);
+    const game = Sim.create(state);
+    game.nests.raids.set(nest.id, 0);
+    nest.funds = 0;
+    const raids = () => game.events.filter((e) => e.type === 'raid').length;
+    assert.equal(Nests.govern(state, nest, game), null, 'pas les moyens');
+    assert.equal(raids(), 0);
+    nest.funds = Nests.raidCost(state, nest);
+    const done = Nests.govern(state, nest, game);
+    assert.equal(done.kind, 'raid');
+    assert.equal(raids(), 1);
+    assert.ok(nest.funds < 1 && game.nests.raids.get(nest.id) > 0, 'payé ; l’horloge repart');
+    // Assiégée, ses flèches lui importent plus que ses assauts.
+    game.nests.raids.set(nest.id, 0);
+    nest.buildings = nest.buildings.filter((b) => b.type !== 'fleche');
+    const want = (kind, id) => Nests.actions(state, nest, game).find((a) => a.kind === kind && (!id || a.id === id)).want;
+    assert.ok(want('raid') > want('work', 'fleche'));
+    nest.hp = Nests.maxHp(nest) / 3;
+    assert.ok(Nests.threat(state, nest) > 0.8);
+    assert.ok(want('work', 'fleche') > want('raid'));
+  });
+
+  test('sa sous-faction le fait pencher : les Dévoreurs vers l’assaut, les Meutes vers leurs bêtes', () => {
+    const state = twoVillages();
+    state.player.x = -5000;
+    const nest = Nests.add(state, 4000, 0, CONFIG.nests.levelEvery * 6);
+    const game = Sim.create(state);
+    game.nests.raids.set(nest.id, 0);
+    nest.creatures = {};
+    const want = (faction, kind) => {
+      nest.faction = faction;
+      return Nests.actions(state, nest, game).find((a) => a.kind === kind).want;
+    };
+    assert.ok(want('devoreurs', 'raid') > want('meutes', 'raid'));
+    assert.ok(want('meutes', 'beast') > want('devoreurs', 'beast'));
+    // Sa noirceur se sauvegarde.
+    nest.funds = 123.5;
+    assert.equal(Save.deserialize(Save.serialize(state, 1)).state.nests[0].funds, 123.5);
+  });
+
   test('ses flèches tirent sur la lumière à leur portée', () => {
     const state = State.create(8);
     village(state, { radius: 300 });
@@ -222,7 +288,7 @@
     const back = Save.deserialize(Save.serialize(state, 1)).state.nests.find((n) => n.id === mature.id);
     assert.deepEqual([back.cells, back.buildings, back.walls, back.area], [mature.cells, mature.buildings, mature.walls, mature.area]);
     state.nests.pop();
-    // Une ancienne base (format 21) retrouve son territoire au chargement, et bâtit sans tarder.
+    // Une ancienne base (format 21) retrouve son territoire au chargement ; son gouverneur part sans noirceur.
     const before = JSON.parse(Save.serialize(state, 1));
     before.format = 21;
     for (const n of before.state.nests) {
@@ -233,7 +299,7 @@
     }
     const migrated = Save.deserialize(JSON.stringify(before)).state.nests[0];
     assert.ok(migrated.cells.length > 0 && migrated.dark);
-    assert.equal(migrated.build, 0);
+    assert.ok(migrated.funds === 0 && !('build' in migrated));
     const bad = Save.sanitize({
       nests: [{ id: 1, x: 0, y: 0, hp: 1e9, age: -5, buildings: [{ type: 'fosse', x: 1, y: 2, hp: 1e9 }, { type: '?', x: 0, y: 0 }, 4], walls: [{ n: 2, work: 1e9 }, 'x'], cells: 'non', area: 1e12 },
         { id: 1, x: 5, y: 5 }, { id: 2, x: NaN, y: 0 }, 'x'],
@@ -242,6 +308,7 @@
     assert.equal(bad.nests.length, 1);
     assert.equal(bad.nests[0].hp, CONFIG.nests.hp);
     assert.equal(bad.nests[0].age, 0);
+    assert.equal(bad.nests[0].funds, 0);
     assert.deepEqual(bad.nests[0].buildings, [{ type: 'fosse', x: 1, y: 2, hp: Vide.darkWork('fosse').hp }]);
     assert.equal(bad.nests[0].walls.length, 1);
     assert.ok(bad.nests[0].area <= Math.PI * 4 * Nests.radius(bad.nests[0]) ** 2);

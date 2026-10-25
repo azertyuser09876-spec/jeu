@@ -18,7 +18,7 @@
     {
       id: 'eleveurs',
       name: 'Éleveurs',
-      desc: 'Sous-faction de tes villages (un choix pour toute la vie). Ils apprivoisent : une créature à bout de forces — faune du vide ou bête des ombres — rejoint leur '
+      desc: 'Sous-faction d’un village (à changer quand tu veux). Ils apprivoisent : une créature à bout de forces — faune du vide ou bête des ombres — rejoint leur '
         + 'village au lieu de mourir. Leurs villages logent deux êtres de plus.',
       convert: ['wild', 'shadow'],
       verb: 'apprivoisée',
@@ -29,7 +29,7 @@
     {
       id: 'illumines',
       name: 'Illuminés',
-      desc: 'Sous-faction de tes villages (un choix pour toute la vie). Ils purifient : une bête des ombres à bout de forces devient lumière, et les rejoint. Leur blanc '
+      desc: 'Sous-faction d’un village (à changer quand tu veux). Ils purifient : une bête des ombres à bout de forces devient lumière, et les rejoint. Leur blanc '
         + 'avance plus vite.',
       convert: ['shadow'],
       verb: 'purifiée',
@@ -40,7 +40,7 @@
     {
       id: 'lames',
       name: 'Lames',
-      desc: 'Sous-faction de tes villages (un choix pour toute la vie). Elles tranchent : rien ne se convertit, tout se gagne. Bien plus fortes contre les créatures, qui '
+      desc: 'Sous-faction d’un village (à changer quand tu veux). Elles tranchent : rien ne se convertit, tout se gagne. Bien plus fortes contre les créatures, qui '
         + 'leur laissent deux fois plus d’échos.',
       convert: [],
       verb: 'abattue',
@@ -61,6 +61,7 @@
       verb: 'dévorée',
       tint: [200, 70, 120],
       feed: 0.25,
+      lean: { raid: 0.15 },       // leur gouverneur : envies de plus (voir Nests.actions)
     },
     {
       id: 'corrupteurs',
@@ -69,6 +70,7 @@
       convert: ['light'],
       verb: 'corrompue',
       tint: [120, 200, 140],
+      lean: { work: 0.1, wall: 0.1 },
     },
     {
       id: 'meutes',
@@ -78,6 +80,7 @@
       verb: 'prise par la meute',
       tint: [110, 130, 240],
       packs: 1.5,
+      lean: { beast: 0.2 },
     },
   ];
 

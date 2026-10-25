@@ -4,11 +4,13 @@
 // ouvrages.js) et, mûres, des remparts d'ombre. Elles naissent après tes premiers villages (à distance de ton
 // village le plus proche), ou t'attendent déjà dans les régions dangereuses lointaines. Elles lancent des raids
 // sur tes villages ; ton armée peut les assiéger (ouvrages, remparts, puis le cœur). Mûres, elles essaiment des
-// avant-postes vers tes villages : le premier ouvre la guerre (voir war.js).
+// avant-postes vers tes villages : le premier ouvre la guerre (voir war.js). Chaque base a son gouverneur (le même
+// cerveau que tes villages, voir governors.js) : il dépense sa noirceur en ouvrages, remparts, bêtes, avant-postes
+// et assauts.
 // État persistant : state.nests = [{ id, x, y, hp, age, region, area, cells, buildings: [{ type, x, y, hp }],
-// walls, build, parent, swarm }] (build : secondes avant le prochain ouvrage ; parent : la base d'où vient un
-// avant-poste, null pour une base ; swarm : secondes avant son prochain avant-poste) ; state.cleared : régions
-// libérées pour de bon ;
+// walls, funds, parent, swarm, faction, creatures }] (funds : la noirceur de son gouverneur ; parent : la base
+// d'où vient un avant-poste, null pour une base ; swarm : secondes avant qu'elle puisse essaimer) ;
+// state.cleared : régions libérées pour de bon ;
 // state.nestTimer : secondes avant la prochaine base près de tes villages (null tant qu'il n'y en a pas lieu).
 (function (Vide) {
   'use strict';
@@ -39,6 +41,7 @@
     game.nests = {
       raids: new Map(), defend: new Map(), lastWave: new Map(), rng: util.rng(game.state.seed ^ 0x6e657374),
       towerCd: new Map(),   // recharge de chaque flèche
+      think: new Map(),     // horloge du gouverneur de chaque base
     };
   }
 
@@ -73,7 +76,7 @@
     const nest = shape({
       id: state.nests.reduce((m, n) => Math.max(m, n.id), 0) + 1,
       x, y, hp: 0, age: age || 0, region: regionKey || null,
-      area: 0, cells: [], buildings: [], walls: [], build: CONFIG.nests.buildEvery,
+      area: 0, cells: [], buildings: [], walls: [], funds: 0,
       parent: null, swarm: CONFIG.nests.outpostEvery, faction: null, creatures: {},
     });
     nest.faction = Vide.Factions.inherit(state, null, Vide.DARK_FACTIONS, nest.id);
@@ -102,7 +105,8 @@
     return CONFIG.nests.wallLevels.filter((x) => l >= x).length;
   }
 
-  // La base bâtit ce qui lui manque (un ouvrage, ou un rempart). Renvoie ce qu'elle a commencé, ou null.
+  // Une base née mûre a déjà bâti ce que son âge permet (sans compter) : un ouvrage, ou un rempart, ou une bête de
+  // sa garnison à chaque appel. Renvoie ce qu'elle a commencé, ou null.
   function fortify(state, nest) {
     for (const d of Vide.DARK_WORKS) {
       if (countOf(nest, d.id) >= allowed(nest, d)) continue;
@@ -179,16 +183,15 @@
 
   const outposts = (state, base) => state.nests.filter((o) => o.parent === base.id).length;
 
-  // L'horloge d'essaimage d'une base. Renvoie l'avant-poste né, ou null.
+  // Seules les bases nées près de tes villages essaiment (celles des régions lointaines restent chez elles), une
+  // fois mûres.
+  const swarms = (base) => !base.parent && !base.region && level(base) >= CONFIG.nests.outpostLevel;
+
+  // L'horloge d'essaimage d'une base. Renvoie vrai quand elle peut essaimer (son gouverneur décide s'il le fait).
   function swarm(state, base, seconds) {
-    const n = CONFIG.nests;
-    // Seules les bases nées près de tes villages essaiment (celles des régions lointaines restent chez elles).
-    if (base.parent || base.region || level(base) < n.outpostLevel) return null;
-    base.swarm -= seconds * Vide.War.pace(state);
-    if (base.swarm > 0) return null;
-    base.swarm = n.outpostEvery;
-    if (outposts(state, base) >= n.outpostsPer || state.nests.length >= n.max * 3) return null;
-    return spawnOutpost(state, base);
+    if (!swarms(base)) return false;
+    base.swarm = Math.max(0, base.swarm - seconds * Vide.War.pace(state));
+    return base.swarm === 0;
   }
 
   // Pendant la tension, un avant-poste n'envoie que des rôdeuses : elles tournent autour de ton village, sans
@@ -258,34 +261,26 @@
     }
 
     Vide.War.advance(state, dt);
-    const pace = Vide.War.pace(state);
     for (const nest of state.nests.slice()) {
       nest.age += dt;
       nest.hp = Math.min(maxHp(nest), nest.hp + n.regen * dt);
       spread(state, nest, dt);
-      // Elle essaime : le premier avant-poste ouvre la guerre.
-      const outpost = swarm(state, nest, dt);
-      if (outpost) {
-        Vide.Sim.emit(game, 'outpost', { x: outpost.x, y: outpost.y, first: !state.war });
-        if (Vide.War.begin(state)) Vide.Sim.emit(game, 'war', { x: outpost.x, y: outpost.y });
-      }
-      // Elle bâtit, et monte ses remparts d'elle-même.
-      nest.build -= dt * pace;
-      if (nest.build <= 0) {
-        nest.build = n.buildEvery;
-        const done = fortify(state, nest);
-        if (done) Vide.Sim.emit(game, 'nestBuilt', { x: nest.x, y: nest.y, kind: done.type || 'rempart' });
-      }
+      earn(state, nest, dt);
+      swarm(state, nest, dt);
+      // Ses remparts montent d'eux-mêmes.
       const wall = Vide.Walls.site(nest);
       if (wall) Vide.Walls.addWork(wall, n.wallWork * dt);
       shoot(game, nest, dt);
-      // Raids.
-      const clock = (g.raids.has(nest.id) ? g.raids.get(nest.id) : n.raidEvery * (0.5 + g.rng() * 0.5)) - dt;
-      if (clock <= 0) {
-        raid(game, nest);
-        g.raids.set(nest.id, (n.raidEvery + (g.rng() - 0.5) * 2 * n.raidJitter) / pace);
-      } else {
-        g.raids.set(nest.id, clock);
+      // L'horloge de ses assauts (son gouverneur les lance quand elle sonne, s'il en a les moyens).
+      g.raids.set(nest.id, (g.raids.has(nest.id) ? g.raids.get(nest.id) : n.raidEvery * (0.5 + g.rng() * 0.5)) - dt);
+      // Son gouverneur réfléchit toutes les deux secondes (chaque base à son moment : le calcul se répartit).
+      const think = (g.think.has(nest.id) ? g.think.get(nest.id) : n.think * g.rng()) - dt;
+      g.think.set(nest.id, think > 0 ? think : n.think);
+      if (think > 0) continue;
+      for (let k = 0; k < 3; k++) {
+        const done = govern(state, nest, game);
+        if (!done) break;
+        tell(game, nest, done);
       }
     }
 
@@ -298,6 +293,119 @@
         v.lastHurt = game.time;
         if (v.hp <= 0) Vide.Combat.disperse(game);
       }
+    }
+  }
+
+  // --- Son gouverneur ---
+  // Le même cerveau que celui de tes villages (governors.js). Son budget : la noirceur, qui rentre d'autant plus vite
+  // que la base est mûre (et que la guerre est âpre). Il la dépense en ouvrages, remparts, bêtes de sa garnison,
+  // avant-postes et assauts, selon la menace, sa sous-faction (`lean`, voir factions.js) et son ambition, qui
+  // grandit avec l'âge de la base.
+
+  // Noirceur gagnée par seconde ; ce qu'elle en garde au plus.
+  const income = (state, nest) => CONFIG.nests.income * level(nest) * Vide.War.pace(state);
+  const hold = (nest) => CONFIG.nests.income * level(nest) * CONFIG.nests.fundsHold;
+
+  function earn(state, nest, seconds) {
+    nest.funds = Math.min(hold(nest), nest.funds + income(state, nest) * seconds);
+  }
+
+  // La menace sur une base (0 à 1) : son cœur ou ses ouvrages blessés, une campagne lancée contre elle.
+  function threat(state, nest) {
+    let t = 0;
+    const max = maxHp(nest);
+    if (nest.hp < max - 1) t = 0.6 + 0.4 * (1 - nest.hp / max);
+    if (nest.buildings.some((b) => b.hp < Vide.darkWork(b.type).hp)) t = Math.max(t, 0.6);
+    if (state.villages.some((v) => v.campaign === nest.id)) t = Math.max(t, 0.8);
+    return Math.min(1, t);
+  }
+
+  // Le prix d'un assaut : le poids de ses ombres (avant ce que la guerre y ajoute, voir War.raidScale).
+  function raidCost(state, nest) {
+    const n = CONFIG.nests;
+    if (nest.parent && Vide.War.calm(state)) return n.price.prowl;
+    return (n.raidBase + n.raidPerLevel * level(nest) + bonus(nest, 'raid')) * n.price.raid;
+  }
+
+  // Ce que son gouverneur pourrait faire : [{ kind, id, cost, want, act }] (act renvoie ce qui est fait, ou null).
+  // Sans `game` (pendant l'absence), pas d'assaut.
+  function actions(state, nest, game) {
+    const n = CONFIG.nests;
+    const P = n.price;
+    const t = threat(state, nest);
+    const ambition = Vide.Governors.ambition(nest.age);
+    const lean = (Vide.Factions.def(nest.faction) || {}).lean || {};
+    const list = [];
+    const offer = (kind, id, cost, want, act) => list.push({ kind, id, cost, want: want + (lean[kind] || 0), act });
+    // Ouvrages : des fosses (des assauts plus gros), des flèches (plus voulues quand on l'attaque).
+    for (const d of Vide.DARK_WORKS) {
+      if (countOf(nest, d.id) >= allowed(nest, d)) continue;
+      const at = Vide.Plan.choose(nest, d);
+      if (!at) continue;
+      offer('work', d.id, P[d.id], d.tower ? 0.5 + 0.4 * t : 0.6, () => {
+        const work = { type: d.id, x: at.x, y: at.y, hp: d.hp };
+        nest.buildings.push(work);
+        return work;
+      });
+    }
+    if (nest.walls.length < wallsAllowed(nest) && !Vide.Walls.site(nest)) {
+      offer('wall', 'rempart', P.rempart, 0.55 + 0.4 * t, () => Vide.Walls.plan(nest));
+    }
+    // Une bête de plus dans sa garnison.
+    const want = Vide.Creatures.garrison(nest);
+    const beast = Object.keys(want).find((id) => ((nest.creatures || {})[id] || 0) < want[id]);
+    if (beast) offer('beast', beast, P[beast], 0.45 + 0.3 * t, () => (Vide.Creatures.reinforce(nest) ? { type: beast } : null));
+    // Un avant-poste vers tes villages (le premier ouvre la guerre).
+    if (swarms(nest) && nest.swarm === 0 && outposts(state, nest) < n.outpostsPer && state.nests.length < n.max * 3) {
+      offer('outpost', 'avant-poste', P.outpost, 0.4 + 0.5 * ambition, () => {
+        const outpost = spawnOutpost(state, nest);
+        nest.swarm = outpost ? n.outpostEvery : n.outpostEvery / 4; // pas de place : elle réessaiera plus tard
+        return outpost;
+      });
+    }
+    // Un assaut, quand son horloge sonne et qu'un de tes villages est à portée (moins voulu quand on l'attaque).
+    if (game && game.nests.raids.get(nest.id) <= 0) {
+      const target = Villages.nearest(state, nest.x, nest.y);
+      if (target && Math.hypot(target.x - nest.x, target.y - nest.y) <= n.raidRange) {
+        offer('raid', 'assaut', raidCost(state, nest), 0.7 + 0.2 * ambition - 0.4 * t, () => {
+          const g = game.nests;
+          g.raids.set(nest.id, (n.raidEvery + (g.rng() - 0.5) * 2 * n.raidJitter) / Vide.War.pace(state));
+          const count = raid(game, nest);
+          return count ? { type: 'raid', count } : null;
+        });
+      }
+    }
+    return list;
+  }
+
+  // Ce qu'il vise (ou vient de faire) : { kind, id }, ou null.
+  const intents = new WeakMap();
+  const intent = (nest) => intents.get(nest) || null;
+
+  // Son gouverneur choisit, et agit s'il en a les moyens. Renvoie ce qu'il a fait ({ kind, id, done }), ou null.
+  function govern(state, nest, game) {
+    const choice = Vide.Governors.decide(actions(state, nest, game), nest.funds);
+    if (!choice) {
+      intents.delete(nest);
+      return null;
+    }
+    const a = choice.saving || choice.action;
+    intents.set(nest, { kind: a.kind, id: a.id });
+    if (!choice.done) return null;
+    const done = choice.action.act();
+    if (!done) return null;
+    nest.funds -= choice.action.cost;
+    return { kind: choice.action.kind, id: choice.action.id, done };
+  }
+
+  // Ce qu'il a fait, dit à la simulation (un assaut s'annonce de lui-même).
+  function tell(game, nest, d) {
+    const { state } = game;
+    if (d.kind === 'outpost') {
+      Vide.Sim.emit(game, 'outpost', { x: d.done.x, y: d.done.y, first: !state.war });
+      if (Vide.War.begin(state)) Vide.Sim.emit(game, 'war', { x: d.done.x, y: d.done.y });
+    } else if (d.kind !== 'raid') {
+      Vide.Sim.emit(game, 'nestBuilt', { x: nest.x, y: nest.y, kind: d.kind === 'wall' ? 'rempart' : d.done.type });
     }
   }
 
@@ -465,8 +573,8 @@
     return { village: heir, cells };
   }
 
-  // Pendant l'absence : elles vieillissent, grandissent, noircissent, bâtissent, essaiment (sans raid) ; la guerre
-  // mûrit, ou s'ouvre. Le temps passe par tranches (un avant-poste né en route vit le reste de l'absence).
+  // Pendant l'absence : elles vieillissent, grandissent, noircissent ; leurs gouverneurs bâtissent et essaiment
+  // (sans assaut) ; la guerre mûrit, ou s'ouvre. Le temps passe par tranches (un avant-poste né en route vit le reste de l'absence).
   // Renvoie { outposts, war } : avant-postes nés, guerre ouverte pendant l'absence.
   function offline(state, seconds) {
     const n = CONFIG.nests;
@@ -476,22 +584,18 @@
     for (let left = seconds; left > 1e-9; left -= STEP) {
       const dt = Math.min(STEP, left);
       Vide.War.advance(state, dt);
-      const pace = Vide.War.pace(state);
       for (const nest of state.nests.slice()) {
         nest.age += dt;
         lived.set(nest, lived.get(nest) + dt);
         spread(state, nest, 0);
-        if (swarm(state, nest, dt)) {
+        earn(state, nest, dt);
+        swarm(state, nest, dt);
+        for (let k = 0; k < 20; k++) {
+          const done = govern(state, nest, null);
+          if (!done) break;
+          if (done.kind !== 'outpost') continue;
           report.outposts++;
           if (Vide.War.begin(state)) report.war = true;
-        }
-        nest.build -= dt * pace;
-        while (nest.build <= 0) {
-          nest.build += n.buildEvery;
-          if (!fortify(state, nest)) {
-            nest.build = n.buildEvery;
-            break;
-          }
         }
         const wall = Vide.Walls.site(nest);
         if (wall) Vide.Walls.addWork(wall, n.wallWork * dt);
@@ -505,6 +609,7 @@
 
   Vide.Nests = {
     FAR_ZONES, level, maxHp, radius, create, darkAt, others, spread, shape, add, allowed, wallsAllowed, fortify, bonus,
-    spawnNear, discover, spawnOutpost, swarm, prowl, raid, update, shoot, offline, neighbor, fall, target, workTarget, nearestWork, hitWork, nearest, hit,
+    spawnNear, discover, spawnOutpost, swarm, prowl, raid, update, income, hold, earn, threat, raidCost, actions, intent,
+    govern, shoot, offline, neighbor, fall, target, workTarget, nearestWork, hitWork, nearest, hit,
   };
 })(globalThis.Vide);

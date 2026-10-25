@@ -50,7 +50,11 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - **Créatures intermédiaires** (`creatures.js`, `Vide.CREATURES`, game.creatures ; village.creatures et nest.creatures
   = nombres persistants) : camps 'light', 'shadow', 'wild' (faune) ; `Creatures.hit(game, c, amount, by)` avec
   `by = { side, faction, owner, creature }` (conversion ou mort). Dessin : `draw-creatures.js`.
-- **Intendant** (`steward.js`) : part de la lumière d'un village mise en réserve et dépensée seule (jamais d'échos).
+- **Gouverneurs** (`governors.js` : le cerveau commun, `Governors.decide(actions, fonds)` — la plus voulue, ou il
+  économise pour elle ; `ambition(secondes)`). Celui d'un village (`steward.js`, id 'intendant') : part de la lumière
+  du village mise en réserve (`v.funds`, jamais d'échos), envies selon le type, la menace et l'ambition (routes, cités,
+  colons, campagne `v.campaign`). Celui d'une base (`Nests.actions`/`govern`, `nest.funds` en noirceur, penchant
+  `lean` de sa sous-faction) : ouvrages, remparts, bêtes, avant-postes, assauts. Une action = { kind, id, cost, want, act }.
 - **Bâtiments** : `family` (ordre en boutique), `only` (type de village), `scope: 'global'` (effet sur tous les
   villages, via `Structures.modifyGlobal`), `ward` (ralentit les ombres).
 - **Routes, échanges, cités** : `roads.js` (state.roads ; tracé `Roads.route(state, a, b)` par les portes, courbe,

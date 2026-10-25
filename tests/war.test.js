@@ -17,12 +17,13 @@
     return { state, v, base };
   }
 
-  test('une base mûre essaime un avant-poste vers ton village ; le premier ouvre la guerre', () => {
+  test('une base mûre essaime un avant-poste vers ton village (son gouverneur le paie) ; le premier ouvre la guerre', () => {
     const { state, v, base } = world();
     base.swarm = 1;
+    base.funds = CONFIG.nests.price.outpost;
     const game = Sim.create(state);
     assert.equal(state.war, null);
-    run(game, 1.5);
+    run(game, CONFIG.nests.think + 0.5);
     assert.equal(state.nests.length, 2);
     const outpost = state.nests[1];
     assert.equal(outpost.parent, base.id);
@@ -35,16 +36,19 @@
     assert.equal(War.phase(state), 'tension');
     assert.ok(game.events.some((e) => e.type === 'outpost' && e.first));
     assert.ok(game.events.some((e) => e.type === 'war'));
+    assert.ok(base.funds < 10 && base.swarm > CONFIG.nests.outpostEvery - 1, 'payé ; la prochaine fois dans dix minutes');
     // Un avant-poste n'essaime pas ; une jeune base non plus ; au plus deux avant-postes par base.
-    assert.equal(Nests.swarm(state, outpost, 1e9), null);
-    assert.equal(Nests.swarm(state, Nests.add(state, -5000, 0, 0), 1e9), null);
-    assert.ok(Nests.swarm(state, base, 1e9));
-    assert.equal(Nests.swarm(state, base, 1e9), null);
+    const swarms = (nest) => Nests.swarm(state, nest, 1e9) && Nests.actions(state, nest).some((a) => a.kind === 'outpost');
+    assert.equal(swarms(outpost), false);
+    assert.equal(swarms(Nests.add(state, -5000, 0, 0)), false);
+    assert.ok(swarms(base));
+    assert.ok(Nests.spawnOutpost(state, base));
+    assert.equal(swarms(base), false, 'déjà deux');
     // Une base lointaine reste chez elle.
     const far = Nests.add(state, CONFIG.nests.outpostRange + 3000, 9000, CONFIG.nests.levelEvery * 4);
     assert.equal(Nests.spawnOutpost(state, far), null);
     const lair = Nests.add(state, 0, -4000, CONFIG.nests.levelEvery * 4, '0,-3');
-    assert.equal(Nests.swarm(state, lair, 1e9), null, 'une base d’une région lointaine');
+    assert.equal(swarms(lair), false, 'une base d’une région lointaine');
   });
 
   test('pendant la tension, un avant-poste n’envoie que des rôdeuses, qui tournent sans attaquer puis s’en vont', () => {
@@ -65,9 +69,11 @@
       s.y = v.y;
     }
     let hits = 0;
+    // (Seules ces rôdeuses : aucun nouvel assaut pendant qu'on les observe.)
+    for (const n of state.nests) game.nests.raids.set(n.id, 1e9);
     for (let i = 0; i < Math.round(CONFIG.war.prowlTime / dt) + 60; i++) {
       game.vitality.invulnerable = 1;
-      // (Seules les rôdeuses : ni raid de la base mère, ni marée.)
+      // (Ni marée.)
       const list = game.shadows.list;
       for (let k = list.length - 1; k >= 0; k--) if (!list[k].calm) list.splice(k, 1);
       Sim.step(game, dt, Sim.emptyInput());

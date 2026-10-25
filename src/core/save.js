@@ -5,7 +5,7 @@
 
   // Version du FORMAT de sauvegarde (pas du jeu). À incrémenter quand la forme de l'état change,
   // en ajoutant la migration correspondante ci-dessous.
-  const FORMAT = 26;
+  const FORMAT = 27;
 
   // MIGRATIONS[n] transforme des données au format n en données au format n + 1.
   const MIGRATIONS = {
@@ -122,6 +122,9 @@
     24: (data) => data,
     // 2.5 : la campagne d'un village, menée par son gouverneur (aucune encore).
     25: (data) => data,
+    // 2.5 : chaque base a un gouverneur, avec un budget de noirceur (nest.funds, 0 par défaut) ; l’horloge de
+    // construction des bases (nest.build) disparaît.
+    26: (data) => data,
   };
 
   function serialize(state, now) {
@@ -252,7 +255,7 @@
       const nest = Vide.Nests.shape({
         id: n.id, x: n.x, y: n.y, hp: 0, age: positive(n.age, 0), region: typeof n.region === 'string' ? n.region : null,
         area: 0, cells: [], buildings: [], walls: [],
-        build: Number.isFinite(n.build) ? Math.max(0, Math.min(n.build, Vide.CONFIG.nests.buildEvery)) : Vide.CONFIG.nests.buildEvery,
+        funds: Number.isFinite(n.funds) ? Math.max(0, Math.min(n.funds, 1e9)) : 0,
         parent: Number.isInteger(n.parent) && n.parent > 0 && n.parent !== n.id ? n.parent : null,
         swarm: Number.isFinite(n.swarm) ? Math.max(0, Math.min(n.swarm, Vide.CONFIG.nests.outpostEvery)) : Vide.CONFIG.nests.outpostEvery,
         faction: Vide.Factions.isDark(n.faction) ? n.faction : Vide.Factions.inherit(state, null, Vide.DARK_FACTIONS, n.id),
