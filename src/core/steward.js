@@ -13,10 +13,11 @@
   const THINK = 2; // secondes entre deux décisions
 
   // Les stats invisibles de ses gestes propres (celles des bâtiments, des types et des êtres sont dans leurs
-  // catalogues). Une route rapporte aux deux villages qu'elle relie.
+  // catalogues). Une route rapporte aux deux villages qu'elle relie. Une enceinte protège, mais ses lueurs n'en
+  // passent que par les portes : leurs trajets s'allongent (une part de production en moins).
   const WORTH = {
     route: { yield: 0.03 },
-    enceinte: { guard: 3 },
+    enceinte: { guard: 3, yield: -0.05 },
     colons: { reach: 1 },
     campagne: { guard: 2 },
   };
@@ -115,7 +116,9 @@
     const ring = builders > 0 && need.danger >= CONFIG.governors.wallFrom && !Walls.site(v) ? Walls.nextRing(v) : null;
     if (ring) {
       const cost = Walls.cost(ring);
-      list.push({ kind: 'wall', id: 'enceinte', cost, want: Governors.want(Governors.gain(WORTH.enceinte, need), cost.light), act: () => Walls.plan(v) });
+      // Chaque anneau protège moins que le précédent ; chacun allonge autant les trajets.
+      const worth = { ...WORTH.enceinte, guard: WORTH.enceinte.guard * Math.pow(CONFIG.governors.ringFade, v.walls.length) };
+      list.push({ kind: 'wall', id: 'enceinte', cost, want: Governors.want(Governors.gain(worth, need), cost.light), act: () => Walls.plan(v) });
     }
     ambitions(state, v, list, builders, need);
     // Un bâtisseur d'abord : sans lui, rien ne se bâtit.

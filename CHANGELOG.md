@@ -26,6 +26,11 @@ bien choisir. Le monde, vide au début, se remplit des deux côtés.
 - **Une cité vaut enfin ses villages** (les colonies des gouverneurs, nées près de leur village, finissent par le
   toucher) : ses anciens cœurs restent des dépôts pour les lueurs, et elle a droit à autant de chaque bâtiment que
   tous ses villages réunis — sa population se figeait, et la progression calait après la fusion.
+- **Un territoire immense ne fait plus perdre de lumière** : le jardin naît à portée des foyers (cœur, anciens
+  cœurs, relais) au lieu de s'éparpiller au loin, et une lueur qui ne voit rien autour d'elle part chercher plus
+  loin. Au robot, la production d'une grande cité s'effondrait vers 70 min (de 9 à moins de 2 M/s).
+- Le gouverneur sait qu'une enceinte allonge les trajets de ses propres lueurs (elles ne passent que par les
+  portes) : chaque anneau de plus protège moins, et il s'arrête à un ou deux.
 - Corrigé en route : des colons payés pour rien (la réserve était débitée avant le départ) ; la boutique s'ouvrait
   parfois sur le compositeur de fondation au lieu de la lumière ; un effet un peu long poussait le prix hors de sa
   carte ; les infobulles des sous-factions disaient encore « un choix pour toute la vie ».

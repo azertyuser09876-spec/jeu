@@ -85,6 +85,9 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
 - **Tableaux** (cinématiques, côté app) : `cinema.js` (lecteur, déclenché par les événements, met le jeu en
   pause), `scenes.js` (tableaux : plans { d, draw(g) }, peintre de colosses en constellations). Vus :
   `state.cinematics`. Un tableau par colosse se fabrique à la demande ('rencontre:' + id).
+- **Jardin** (`garden.js`) : la lumière naît à moins de `CONFIG.garden.reach` d'un foyer (`Garden.hearths` : cœur,
+  anciens cœurs d'une cité, relais) ; une lueur qui ne voit rien à `beingSense` cherche dans tout son territoire
+  (au plus toutes les 2 s). Un territoire qui grandit ne doit jamais faire perdre de lumière.
 - **Performances** : `grid.js` (grille spatiale) pour tout voisinage d'êtres ; ne pas réintroduire de boucle sur
   tous les êtres à chaque pas et pour chaque être (banc d'essai : 400 êtres sous 12 ms par pas, test colony).
 - **Modules du cœur** : `sim.js` orchestre ; `field.js` (particules), `territory.js`, `villages.js`, `garden.js`, `colony.js`

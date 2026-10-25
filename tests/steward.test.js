@@ -180,6 +180,29 @@
     assert.equal(v.walls.length, 1);
   });
 
+  test('une enceinte allonge les trajets de ses lueurs : il n’en monte pas une de trop', () => {
+    const state = State.create(4);
+    const v = village(state, { radius: 300, beings: { batisseur: 1, lueur: 6 } });
+    v.rate = 1000;
+    Vide.War.begin(state);
+    const ring = () => Steward.wishes(state, v).find((w) => w.id === 'enceinte' && w.want > 0);
+    let last = Infinity;
+    // Le village grandit ; à chaque fois qu'un anneau de plus tiendrait, le veut-il encore ?
+    for (let k = 0; k < 8; k++) {
+      const w = ring();
+      if (!w) break;
+      assert.ok(w.want < last, 'chaque anneau de plus lui fait moins envie');
+      last = w.want;
+      const built = Vide.Walls.plan(v);
+      built.work = Vide.Walls.workOf(built);
+      v.area *= 4;
+      v.cells = [];
+      Vide.Territory.grow(v);
+    }
+    assert.ok(v.walls.length >= 1 && v.walls.length <= 2, `${v.walls.length} anneaux`);
+    assert.ok(Vide.Walls.nextRing(v) !== null, 'il en resterait la place');
+  });
+
   test('il dit ce qu’il vise : il économise pour le plus voulu', () => {
     const state = State.create(4);
     const v = village(state, { radius: 300 });

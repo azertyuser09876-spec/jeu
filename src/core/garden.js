@@ -1,5 +1,6 @@
-// Le jardin : la lumière qui naît d'elle-même dans le territoire de chaque village. Les lueurs du village
-// la récoltent ; le joueur peut aussi la ramasser en passant.
+// Le jardin : la lumière qui naît d'elle-même dans le territoire de chaque village, à portée de ses foyers (son
+// cœur, les anciens cœurs d'une cité, ses relais) : un territoire immense ne l'éparpille pas hors d'atteinte. Les
+// lueurs du village la récoltent ; le joueur peut aussi la ramasser en passant.
 (function (Vide) {
   'use strict';
   const { CONFIG, util, Field, Territory } = Vide;
@@ -16,15 +17,26 @@
     return Math.min(stats.gardenMax || g.max, Math.round(g.density * village.area * stats.gardenDensity));
   }
 
-  // Une particule naît en un point du territoire, jamais collée au cœur. La lumière dorée est plus fréquente
-  // là où le territoire a blanchi.
-  function spawn(garden, village, visible, rareMult) {
+  // Les foyers d'un village, où ses lueurs rapportent la lumière : son cœur, ses anciens cœurs, ses relais achevés.
+  function hearths(village) {
+    const list = [{ x: village.x, y: village.y }, ...(village.districts || [])];
+    for (const b of village.buildings) if (Vide.Structures.def(b.type).deposit && Vide.Structures.isWorking(b)) list.push(b);
+    return list;
+  }
+
+  const near = (list, x, y, r) => list.some((h) => (h.x - x) ** 2 + (h.y - y) ** 2 <= r * r);
+
+  // Une particule naît en un point du territoire à portée d'un foyer (`homes`), jamais collée au cœur. La lumière
+  // dorée est plus fréquente là où le territoire a blanchi. Null si elle n'a pas trouvé sa place (elle réessaiera).
+  function spawn(garden, village, visible, rareMult, homes) {
     const g = CONFIG.garden;
     const r = garden.rng;
     if (Territory.radius(village) <= g.foyerGap) return null;
-    for (let tries = 0; tries < 10; tries++) {
+    const list = homes || hearths(village);
+    for (let tries = 0; tries < 30; tries++) {
       const at = Territory.randomPoint(village, r);
       if (Math.hypot(at.x - village.x, at.y - village.y) < g.foyerGap) continue;
+      if (!near(list, at.x, at.y, g.reach)) continue;
       const chance = g.rareChance * (rareMult || 1) * (1 + (CONFIG.territory.whiteRare - 1) * at.white);
       const rare = r() < Math.min(0.5, chance); // jamais plus d'une particule dorée sur deux
       const p = Field.place(garden, at.x, at.y, rare, visible);
@@ -50,8 +62,9 @@
     for (const v of game.state.villages) {
       const stats = Vide.Villages.statsOf(game, v);
       const target = targetCount(v, stats);
+      const homes = hearths(v);
       let have = n.get(v.id) || 0;
-      for (let guard = 0; have < target && guard < target * 4; guard++) if (spawn(garden, v, true, stats.gardenRare)) have++;
+      for (let guard = 0; have < target && guard < target * 4; guard++) if (spawn(garden, v, true, stats.gardenRare, homes)) have++;
     }
   }
 
@@ -69,9 +82,10 @@
         continue;
       }
       let budget = Math.min((garden.budgets.get(v.id) || 0) + (target / CONFIG.garden.refillTime) * dt, 5);
+      const homes = budget >= 1 ? hearths(v) : null;
       while (budget >= 1 && have < target) {
         budget--;
-        if (spawn(garden, v, false, stats.gardenRare)) have++;
+        if (spawn(garden, v, false, stats.gardenRare, homes)) have++;
       }
       garden.budgets.set(v.id, budget);
     }
@@ -103,5 +117,5 @@
     return true;
   }
 
-  Vide.Garden = { create, targetCount, spawn, fill, update, nearestFree, take };
+  Vide.Garden = { create, targetCount, hearths, spawn, fill, update, nearestFree, take };
 })(globalThis.Vide);

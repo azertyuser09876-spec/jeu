@@ -106,6 +106,7 @@
       lueurYield: 2,       // …et d'une lueur, au moins
       lotTime: 60,         // quand la place manque, un emplacement à bâtir vaut tant de secondes de production
       fade: 0.8,           // chaque exemplaire de plus d'un bâtiment rapporte d'autant moins
+      ringFade: 0.35,      // chaque anneau d'enceinte de plus protège d'autant moins
       colonyYield: 0.3,    // une colonie rapporte d'abord cette part de ce que rapporte un village, en moyenne
       campaignRisk: 0.3,   // une campagne met en jeu cette part de ce que vaut l'armée
       ambitionTime: 2400,  // son ambition grandit sur ce temps (de jeu pour un village, d'âge pour une base)
@@ -322,7 +323,8 @@
       density: 0.00015,  // particules par unité² de territoire
       max: 300,
       refillTime: 8,
-      foyerGap: 45,      // pas de particule collée au cœur du village
+      foyerGap: 45,      // pas de particule collée au cœur du village…
+      reach: 650,        // …mais toujours à cette distance d'un foyer (cœur, ancien cœur, relais)
       rareChance: 0.03,
     },
 

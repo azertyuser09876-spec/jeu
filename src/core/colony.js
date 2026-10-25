@@ -101,6 +101,7 @@
       carry: 0,           // nombre de particules portées
       carryValue: 0,      // valeur portée
       search: r() * 0.3,  // délai avant la prochaine recherche de cible
+      far: 0,             // délai avant de chercher plus loin, dans tout le territoire
       wander: null,       // point de flânerie
       wanderTime: 0,
       dance: null,        // danse en cours avec un autre être
@@ -298,8 +299,15 @@
 
       if (!b.target) {
         b.search -= dt;
+        b.far -= dt;
         if (b.search <= 0) {
-          const p = Garden.nearestFree(game.garden, b.x, b.y, stats.beingSense, b.village.id);
+          let p = Garden.nearestFree(game.garden, b.x, b.y, stats.beingSense, b.village.id);
+          // Rien autour : elle part chercher plus loin, dans tout son territoire (pas à chaque instant). Sans quoi,
+          // dans un territoire immense, les lueurs du centre erreraient sans fin pendant que le jardin renaît au loin.
+          if (!p && b.far <= 0) {
+            p = Garden.nearestFree(game.garden, b.x, b.y, Infinity, b.village.id);
+            b.far = 2;
+          }
           if (p) {
             p.claimedBy = b.id;
             b.target = p;

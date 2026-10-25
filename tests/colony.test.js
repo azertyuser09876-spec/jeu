@@ -35,6 +35,35 @@
     }
   });
 
+  test('dans un territoire immense, le jardin naît à portée des foyers (cœur, anciens cœurs, relais)', () => {
+    const game = colonyGame(2500);
+    const v = game.state.villages[0];
+    const homes = Garden.hearths(v);
+    assert.equal(homes.length, 1, 'le cœur seul');
+    for (const p of game.garden.particles) {
+      assert.ok(Math.hypot(p.x - v.x, p.y - v.y) <= CONFIG.garden.reach + Territory.CELL, 'à portée du cœur');
+    }
+    // Un ancien cœur (une cité) est un foyer de plus.
+    v.districts.push({ x: 1800, y: 0, type: 'atelier' });
+    assert.equal(Garden.hearths(v).length, 2);
+  });
+
+  test('une lueur qui ne voit rien autour d’elle part chercher plus loin, dans tout son territoire', () => {
+    const game = colonyGame(1500, 1);
+    const v = game.state.villages[0];
+    game.garden.particles.length = 0;
+    const far = Garden.spawn(game.garden, v, true, 1, [{ x: 1200, y: 0 }]);
+    assert.ok(far && Math.hypot(far.x, far.y) > Vide.Stats.compute(game.state).beingSense + 50, 'loin de la lueur');
+    const max = CONFIG.garden.max;
+    CONFIG.garden.max = 1; // (plus rien ne naît : il y a déjà cette lumière)
+    try {
+      run(game, 3);
+      assert.equal(game.colony.beings[0].target, far, 'elle l’a repérée');
+    } finally {
+      CONFIG.garden.max = max;
+    }
+  });
+
   test('une lueur s’achète une fois un village fondé, toujours au même prix', () => {
     const state = State.create(1);
     state.light = state.totalLight = 1e6;
