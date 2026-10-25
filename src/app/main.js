@@ -53,7 +53,8 @@
   let welcomePending = welcome && Vide.Offline.worthShowing(welcome) ? welcome : null;
   let intro = Vide.Intro.create('launch');
 
-  const paused = () => menu.open || Vide.Away.open || map.open || Vide.Intro.blocking(intro) || Vide.Cinema.active(cinema);
+  // (La carte — la vue stratégique — ne met pas le monde en pause : la guerre continue sous tes yeux.)
+  const paused = () => menu.open || Vide.Away.open || Vide.Intro.blocking(intro) || Vide.Cinema.active(cinema);
 
   // Touches d'action (en plus du déplacement). Renvoie vrai si la touche a été utilisée.
   input.onAction = (code, key) => {
@@ -96,7 +97,7 @@
       return true;
     }
     if (key === '-' || code === 'NumpadSubtract') {
-      Vide.Render.zoomBy(renderer, 1 / 1.15);
+      if (Vide.Render.zoomBy(renderer, 1 / 1.15) < 1 && state.villages.length) Vide.Map.toggle(map, true);
       return true;
     }
     if (isMapKey && state.zones.visited.length > 1) {
@@ -144,6 +145,7 @@
   let last = performance.now();
   let accumulator = 0;
   let sinceSave = 0;
+  let strategicPull = 0; // ce qu'on a voulu reculer au-delà du recul le plus large (voir plus bas)
   let sinceMenuRefresh = 0;
 
   function frame(now) {
@@ -171,8 +173,14 @@
     } else {
       accumulator += dt;
       let steps = 0;
-      Vide.Render.zoomBy(renderer, input.zoom);
+      // Reculer encore au-delà du recul le plus large : le monde passe en vue stratégique.
+      const beyond = Vide.Render.zoomBy(renderer, input.zoom);
       input.zoom = 1;
+      strategicPull = beyond < 1 ? strategicPull - Math.log(beyond) : Math.max(0, strategicPull - dt);
+      if (strategicPull > 0.3 && state.villages.length) {
+        strategicPull = 0;
+        Vide.Map.toggle(map, true);
+      }
       while (accumulator >= CONFIG.step && steps < CONFIG.maxStepsPerFrame) {
         Vide.Input.update(input, game, renderer);
         Vide.Sim.step(game, CONFIG.step, input);
@@ -199,7 +207,7 @@
     Vide.Cinema.draw(cinema, state);
     Vide.Away.updateToast(now);
     Vide.UI.update(ui);
-    Vide.Map.update(map);
+    Vide.Map.update(map, dt);
     requestAnimationFrame(frame);
   }
 

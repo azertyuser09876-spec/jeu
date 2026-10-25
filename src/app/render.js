@@ -61,10 +61,14 @@
   const ZOOM_MIN = 0.55;
   const ZOOM_MAX = 1.8;
 
+  // Renvoie ce qui dépasse le recul le plus large (1 : rien ; moins de 1 : on voulait reculer encore — la vue
+  // stratégique s'ouvre alors, voir main.js).
   function zoomBy(r, factor) {
-    if (factor === 1) return;
-    r.zoom = Vide.util.clamp(r.zoom * factor, ZOOM_MIN, ZOOM_MAX);
+    if (factor === 1) return 1;
+    const wanted = r.zoom * factor;
+    r.zoom = Vide.util.clamp(wanted, ZOOM_MIN, ZOOM_MAX);
     Vide.Settings.set('zoom', r.zoom);
+    return wanted < ZOOM_MIN ? wanted / ZOOM_MIN : 1;
   }
 
   // Recul automatique quand un colosse sauvage approche : on doit voir la créature (presque) entière, et soi
@@ -428,7 +432,7 @@
 
   Vide.Render = {
     create, resize, screenToWorld, worldToScreen, snapCamera, draw, drawGlow, setGlowScale, viewBounds, edgePointer, zoomBy,
-    REDUCE_DEFAULT,
+    REDUCE_DEFAULT, ZOOM_MIN,
   };
   // Fonctions de dessin spécialisées (territoire, êtres…), définies dans src/app/draw-*.js.
   Vide.Draw = Vide.Draw || {};

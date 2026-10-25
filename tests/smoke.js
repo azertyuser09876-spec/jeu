@@ -334,7 +334,47 @@ const { chromium } = require('playwright');
   await page.keyboard.press('Escape');
   await page.evaluate(() => { const p = Vide.game.state.player; p.x = 0; p.y = 0; });
 
-  // Zoom : la molette éloigne la caméra, + la rapproche ; le choix survit au rechargement.
+  // La vue stratégique : reculer au-delà du recul le plus large ouvre la carte, vivante ; une base touchée permet
+  // d'y mener campagne ; zoomer ramène au monde.
+  const nestId = await page.evaluate(() => {
+    const s = Vide.game.state;
+    const v = s.villages[0];
+    v.beings.gardien = 3;
+    Vide.renderer.zoom = Vide.Render.ZOOM_MIN;
+    return Vide.Nests.add(s, v.x + 3000, v.y, 0).id;
+  });
+  await page.mouse.move(640, 400);
+  await page.mouse.wheel(0, 300);
+  await page.waitForTimeout(250);
+  const opened = await page.isVisible('#map');
+  const mapTime = await page.evaluate(() => Vide.game.time);
+  await page.waitForTimeout(400);
+  const live = await page.evaluate((t) => Vide.game.time > t, mapTime);
+  check(opened && live, 'reculer au-delà du plus large ouvre la vue stratégique, où le monde continue');
+  const nestAt = await page.evaluate((id) => {
+    const n = Vide.game.state.nests.find((x) => x.id === id);
+    const m = Vide.map;
+    const rect = m.canvas.getBoundingClientRect();
+    return { x: rect.left + m.view.ox + n.x * m.view.scale, y: rect.top + m.view.oy + n.y * m.view.scale };
+  }, nestId);
+  await page.mouse.click(nestAt.x, nestAt.y);
+  await page.waitForTimeout(150);
+  await page.click('#map-orders button');
+  const campaign = await page.evaluate((id) => Vide.game.state.villages[0].campaign === id, nestId);
+  if (shotDir) await page.screenshot({ path: path.join(shotDir, 'strategique.png') });
+  check(campaign, 'sur la vue stratégique, une base touchée permet d’y mener campagne');
+  await page.mouse.move(nestAt.x, nestAt.y);
+  await page.mouse.wheel(0, -200);
+  await page.waitForTimeout(150);
+  check(!(await page.isVisible('#map')), 'zoomer ramène au monde');
+  await page.evaluate(() => {
+    const s = Vide.game.state;
+    s.villages[0].campaign = null;
+    s.nests.length = 0;
+    Vide.renderer.zoom = 1;
+  });
+
+  // Zoom : la molette éloigne la caméra, + la rapproche ; le choix survit au rechargement.  // Zoom : la molette éloigne la caméra, + la rapproche ; le choix survit au rechargement.
   await page.mouse.move(640, 400);
   await page.mouse.wheel(0, 400);
   await page.waitForTimeout(100);

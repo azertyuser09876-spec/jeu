@@ -1,4 +1,7 @@
-// Carte des régions explorées (touche M ou bouton) : zones visitées, territoire, bâtiments, ta lumière.
+// La vue stratégique (touche M, bouton, ou reculer au-delà du recul le plus large) : la carte des régions explorées,
+// vivante — le monde continue — avec la guerre en abstrait : les fronts, les armées (tes soldats, les ombres, les
+// bêtes), les effectifs de chaque village, les campagnes, le niveau des bases. On y donne des ordres : envoyer une
+// expédition (toucher un point), lancer ou rappeler une campagne (toucher une base). Zoomer y revient.
 (function (Vide) {
   'use strict';
   const { Zones, Territory } = Vide;
@@ -19,6 +22,32 @@
     map.root.addEventListener('click', (e) => {
       if (e.target === map.root) toggle(map, false);
     });
+    // Zoomer (molette vers l'avant, ou écarter deux doigts) ramène au monde.
+    map.root.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) toggle(map, false);
+    }, { passive: false });
+    const touches = new Map();
+    let spread0 = 0;
+    const spread = () => {
+      const [a, b] = [...touches.values()];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+    map.canvas.addEventListener('pointerdown', (e) => {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) spread0 = spread();
+    });
+    map.canvas.addEventListener('pointermove', (e) => {
+      if (!touches.has(e.pointerId)) return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2 && spread0 > 0 && spread() > spread0 * 1.3) {
+        touches.clear();
+        toggle(map, false);
+      }
+    });
+    const lift = (e) => touches.delete(e.pointerId);
+    map.canvas.addEventListener('pointerup', lift);
+    map.canvas.addEventListener('pointercancel', lift);
     return map;
   }
 
@@ -27,6 +56,7 @@
     map.root.hidden = !map.open;
     if (!map.open) map.target = null;
     $('map-actions').hidden = !map.target;
+    map.clock = 0;
     if (map.open) draw(map);
   }
 
@@ -73,8 +103,11 @@
       const rect = map.canvas.getBoundingClientRect();
       const { ox, oy, scale } = map.view;
       map.target = { x: (e.clientX - rect.left - ox) / scale, y: (e.clientY - rect.top - oy) / scale };
-      // Toucher près d'un colosse aux sceaux voilés propose d'y envoyer des érudits.
+      // Toucher près d'un colosse aux sceaux voilés propose d'y envoyer des érudits ; une base, d'y mener campagne.
       map.target.colossus = Vide.Expeditions.studyable(map.game.state, map.target.x, map.target.y, Math.max(1500, 24 / scale));
+      const nest = Vide.Nests.nearest(map.game.state, map.target.x, map.target.y);
+      const reach = nest ? Math.max(Territory.radius(nest), 16 / scale) : 0;
+      map.target.nest = nest && Math.hypot(nest.x - map.target.x, nest.y - map.target.y) <= reach ? nest.id : null;
       $('map-actions').hidden = false;
       refreshActions(map);
       draw(map);
@@ -125,6 +158,52 @@
       sapperWhy ? `sapeurs : ${sapperWhy}` : '',
       colonWhy ? `colons : ${colonWhy}` : `colons : ✦ ${colonCost}, trois lueurs du village`,
     ].filter(Boolean).join(' · ');
+    orders(map);
+  }
+
+  // --- Ordres : une campagne contre la base touchée ---
+
+  function orders(map) {
+    const row = $('map-orders');
+    const { state } = map.game;
+    const nest = map.target && map.target.nest !== null ? state.nests.find((n) => n.id === map.target.nest) : null;
+    row.hidden = !nest;
+    if (!nest) return;
+    const kind = nest.parent ? 'avant-poste' : 'base d’ombre';
+    $('exp-target').textContent = `${kind} · niveau ${Vide.Nests.level(nest)}`;
+    // (Rien n'a changé : on garde les boutons, pour qu'un clic ne tombe pas entre deux.)
+    const sig = nest.id + ':' + state.villages.map((v) => `${v.id}.${Vide.Colony.usedIn(v, 'armyCap')}.${v.campaign}`).join(',');
+    if (row.dataset.sig === sig) return;
+    row.dataset.sig = sig;
+    row.textContent = '';
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = 'campagne :';
+    row.appendChild(label);
+    let any = false;
+    for (const v of state.villages) {
+      const army = Vide.Colony.usedIn(v, 'armyCap');
+      const here = v.campaign === nest.id;
+      if (!army && !here) continue;
+      any = true;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const name = Vide.Villages.type(v.type).name.toLowerCase();
+      btn.textContent = here ? `rappeler ${name}` : `${name} ⚔ ${army}`;
+      btn.addEventListener('click', () => {
+        v.campaign = here ? null : nest.id;
+        Vide.Sim.emit(map.game, here ? 'campaignEnd' : 'campaignOrder', { village: v.type, recalled: here });
+        orders(map);
+        draw(map);
+      });
+      row.appendChild(btn);
+    }
+    if (!any) {
+      const none = document.createElement('span');
+      none.className = 'label';
+      none.textContent = 'aucun village n’a d’armée';
+      row.appendChild(none);
+    }
   }
 
   function launch(map, kind, type, engine) {
@@ -396,6 +475,8 @@
       ctx.stroke();
     }
 
+    war(ctx, X, Y, scale, map.game);
+
     // Le point choisi pour une expédition.
     if (map.target) {
       const tx = X(map.target.x), ty = Y(map.target.y);
@@ -436,9 +517,93 @@
     }
   }
 
-  function update(map) {
+  // --- La guerre, en abstrait ---
+
+  function war(ctx, X, Y, scale, game) {
+    const { state } = game;
+    const C = Territory.CELL;
+    // Les fronts : chaque cellule au contact d'un village et d'une base, un trait sur leur bord commun.
+    let fronts = 0;
+    ctx.strokeStyle = 'rgba(230, 200, 255, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const v of state.villages) {
+      for (const nest of state.nests) {
+        const list = Vide.Fronts.contacts(v, nest);
+        if (list.length) fronts++;
+        for (const c of list) {
+          const mx = (Math.max(c.vi, c.ni) + (c.vi === c.ni ? 0.5 : 0)) * C;
+          const my = (Math.max(c.vj, c.nj) + (c.vj === c.nj ? 0.5 : 0)) * C;
+          const half = C / 2;
+          if (c.vi === c.ni) {
+            ctx.moveTo(X(mx - half), Y(my));
+            ctx.lineTo(X(mx + half), Y(my));
+          } else {
+            ctx.moveTo(X(mx), Y(my - half));
+            ctx.lineTo(X(mx), Y(my + half));
+          }
+        }
+      }
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    // Les campagnes : une flèche du village vers la base qu'il assiège.
+    ctx.strokeStyle = 'rgba(255, 245, 225, 0.7)';
+    ctx.setLineDash([6, 5]);
+    ctx.lineDashOffset = -(game.time * 12) % 11;
+    for (const v of state.villages) {
+      const nest = v.campaign && state.nests.find((n) => n.id === v.campaign);
+      if (!nest) continue;
+      ctx.beginPath();
+      ctx.moveTo(X(v.x), Y(v.y));
+      ctx.lineTo(X(nest.x), Y(nest.y));
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+    // Les armées en mouvement : tes soldats (blanc), les ombres (violet), les bêtes (selon leur camp).
+    const dot = (x, y, color, r) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(X(x) - r / 2, Y(y) - r / 2, r, r);
+    };
+    for (const b of game.colony.beings) {
+      if (Vide.Colony.species(b.species).cap === 'armyCap' && Vide.Colony.isActive(b)) dot(b.x, b.y, 'rgba(255, 255, 255, 0.9)', 2);
+    }
+    for (const s of game.shadows.list) dot(s.x, s.y, 'rgba(190, 140, 255, 0.85)', 2);
+    for (const c of game.creatures.list) {
+      dot(c.x, c.y, c.side === 'light' ? 'rgba(220, 255, 200, 0.95)' : c.side === 'shadow' ? 'rgba(200, 120, 255, 0.95)' : 'rgba(200, 220, 255, 0.6)', 3);
+    }
+    // Effectifs et niveaux.
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    for (const v of state.villages) {
+      const army = Vide.Colony.usedIn(v, 'armyCap');
+      if (!army) continue;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillText(`⚔ ${army}`, X(v.x), Y(v.y) - 8);
+    }
+    for (const nest of state.nests) {
+      ctx.fillStyle = 'rgba(200, 160, 255, 0.85)';
+      ctx.fillText(String(Vide.Nests.level(nest)), X(nest.x), Y(nest.y) - 7);
+    }
+    // L'état de la guerre.
+    ctx.textAlign = 'left';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillStyle = state.war ? 'rgba(210, 180, 255, 0.9)' : 'rgba(255, 255, 255, 0.45)';
+    const phase = state.war ? `guerre · ${Vide.War.phase(state)}` : 'paix';
+    ctx.fillText(fronts ? `${phase} · ${fronts} front${fronts > 1 ? 's' : ''}` : phase, 10, 18);
+  }
+
+  // Chaque image : le bouton ; la carte ouverte se redessine quatre fois par seconde (le monde continue).
+  function update(map, dt) {
     const visible = map.game.state.zones.visited.length > 1 || map.game.state.villages.length > 0;
     if (map.button.classList.contains('hidden') === visible) map.button.classList.toggle('hidden', !visible);
+    if (!map.open) return;
+    map.clock = (map.clock || 0) - (dt || 0);
+    if (map.clock > 0) return;
+    map.clock = 0.25;
+    draw(map);
+    if (map.target) refreshActions(map);
   }
 
   Vide.Map = { create, toggle, draw, update };

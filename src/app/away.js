@@ -97,9 +97,10 @@
       seen.steward = true;
       return `${who} agit seul (${Vide.Steward.label(e)}). Il dépense la part de lumière que tu lui confies.`;
     },
-    campaignEnd: (e) => (e.won
-      ? `La campagne ${of(e.village)} a abattu sa base d’ombre.`
-      : `L’armée ${of(e.village)}, trop amenuisée, rentre de campagne.`),
+    campaignEnd: (e) => (e.recalled ? `L’armée ${of(e.village)} rentre : tu as rappelé sa campagne.`
+      : e.won ? `La campagne ${of(e.village)} a abattu sa base d’ombre.`
+        : `L’armée ${of(e.village)}, trop amenuisée, rentre de campagne.`),
+    campaignOrder: (e) => `L’armée ${of(e.village)} part en campagne.`,
     caravanOut: (e) => {
       if (seen.caravan) return null;
       seen.caravan = true;
