@@ -119,18 +119,48 @@
     assert.equal(Vide.Governors.ambition(1e9), 1);
   });
 
-  test('le gouverneur bâtit selon le type de son village, et chaque exemplaire de plus lui fait moins envie', () => {
+  test('stats invisibles : chaque bâtiment, chaque type de village en porte (jamais affichées)', () => {
+    for (const d of Vide.BUILDINGS) assert.ok(d.worth && Object.keys(d.worth).length, d.id);
+    for (const t of Vide.VILLAGE_TYPES) assert.ok(t.worth && Object.keys(t.worth).length, t.id);
+    const keys = ['yield', 'growth', 'room', 'army', 'guard', 'care', 'away', 'build', 'white'];
+    for (const d of [...Vide.BUILDINGS, ...Vide.VILLAGE_TYPES]) for (const k in d.worth) assert.ok(keys.includes(k), `${d.id} : ${k}`);
+  });
+
+  test('il bâtit ce qui rend le plus selon l’état de son village ; chaque exemplaire de plus lui fait moins envie', () => {
     const state = State.create(4);
     const v = village(state, { radius: 600, type: 'jardins', beings: { batisseur: 1, lueur: 6 } });
     v.funds = 1e9;
+    const want = (id) => (Steward.wishes(state, v).find((w) => w.id === id) || {}).want || 0;
+    // La serre des jardins (+30 % de lumière) rend plus que l'archive (des heures d'absence).
+    assert.ok(want('serre') > want('archive'));
+    const before = want('prisme');
+    assert.ok(before > 0);
+    v.buildings.push({ type: 'prisme', x: v.x + 100, y: v.y, work: Structures.def('prisme').work });
+    const second = want('prisme');
+    assert.ok(second < before, 'un deuxième prisme rapporte moins');
+    // Un village qui produit davantage rend le même bâtiment plus désirable.
+    v.rate = 1000;
+    assert.ok(want('prisme') > second);
     const bought = Steward.catchUp(state, v, 40).filter((w) => w.kind === 'building').map((w) => w.id);
     assert.ok(bought.includes('serre'), 'la serre des jardins');
     assert.ok(bought.indexOf('serre') < bought.indexOf('archive') || !bought.includes('archive'));
-    for (const w of Steward.wishes(state, v)) {
-      if (w.kind !== 'building' || w.id === 'nid') continue;
-      const n = Structures.countIn(v, w.id, true);
-      assert.near(w.want, Steward.WANT[w.id] * Math.pow(0.75, n), 1e-9);
-    }
+  });
+
+  test('quand la place manque, il garde ses derniers emplacements pour ce qui rapporte le plus', () => {
+    const state = State.create(4);
+    const v = village(state, { radius: 400, type: 'jardins', beings: { batisseur: 1 } });
+    v.rate = 5000;
+    const cap = Villages.local(state, v).beingCap;
+    v.beings.lueur = cap;
+    const want = (id) => (Steward.wishes(state, v).find((w) => w.id === id) || {}).want || 0;
+    // De la place : un logis (la population est pleine, une lueur rapporte gros) passe avant tout.
+    assert.ok(want('nid') > want('serre'));
+    // Plus qu'un emplacement : la serre (+30 % de tout le village) passe avant un logis (quatre lueurs).
+    while (Structures.lots(v) - v.buildings.length > 1) v.buildings.push({ type: 'nid', x: v.x, y: v.y, work: 1e9 });
+    v.beings.lueur = Villages.local(state, v).beingCap;
+    assert.ok(want('serre') > want('nid'));
+    // (Le prix caché d'un emplacement.)
+    assert.ok(Steward.needs(state, v, Villages.local(state, v)).lot > 0);
   });
 
   test('quand la menace monte (guerre, base proche), il lève une milice en lumière et monte une enceinte', () => {

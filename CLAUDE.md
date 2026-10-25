@@ -55,6 +55,10 @@ Vision et versions prévues : `ROADMAP.md`. Historique : `CHANGELOG.md`.
   du village mise en réserve (`v.funds`, jamais d'échos), envies selon le type, la menace et l'ambition (routes, cités,
   colons, campagne `v.campaign`). Celui d'une base (`Nests.actions`/`govern`, `nest.funds` en noirceur, penchant
   `lean` de sa sous-faction) : ouvrages, remparts, bêtes, avant-postes, assauts. Une action = { kind, id, cost, want, act }.
+  **Stats invisibles** : tout ce qu'un gouverneur peut acheter porte `worth` (bâtiments, types de village, gardien,
+  ouvrages, bêtes ; `WORTH` de steward.js et nests.js pour les gestes) ; `needs` dit ce que vaut chaque stat pour ce
+  village ou cette base ; envie = `Governors.want(Governors.gain(worth, needs), prix)`. Un nouveau bâtiment doit avoir
+  son `worth` (test).
 - **Bâtiments** : `family` (ordre en boutique), `only` (type de village), `scope: 'global'` (effet sur tous les
   villages, via `Structures.modifyGlobal`), `ward` (ralentit les ombres).
 - **Routes, échanges, cités** : `roads.js` (state.roads ; tracé `Roads.route(state, a, b)` par les portes, courbe,

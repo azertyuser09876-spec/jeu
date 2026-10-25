@@ -100,6 +100,14 @@
     governors: {
       pocket: 0.15,        // en économisant, il ne s'accorde que des dépenses de moins de ce part du prix visé…
       pocketWant: 0.5,     // …et presque aussi voulues (au moins cette part de l'envie)
+      // Ses stats invisibles (voir governors.js) :
+      horizon: 600,        // il veut ce qui rend le plus de son prix en 10 min
+      floorRate: 5,        // production supposée (✦/s) d'un village qui commence…
+      lueurYield: 2,       // …et d'une lueur, au moins
+      lotTime: 60,         // quand la place manque, un emplacement à bâtir vaut tant de secondes de production
+      fade: 0.8,           // chaque exemplaire de plus d'un bâtiment rapporte d'autant moins
+      colonyYield: 0.3,    // une colonie rapporte d'abord cette part de ce que rapporte un village, en moyenne
+      campaignRisk: 0.3,   // une campagne met en jeu cette part de ce que vaut l'armée
       ambitionTime: 2400,  // son ambition grandit sur ce temps (de jeu pour un village, d'âge pour une base)
       warThreat: 0.4,      // menace ressentie dès que la guerre est ouverte…
       baseThreat: 0.5,     // …une base d'ombre à moins de baseNear du bord du village…

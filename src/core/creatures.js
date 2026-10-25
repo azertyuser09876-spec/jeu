@@ -15,11 +15,12 @@
   //   hp, speed, damage, cooldown, radius ; echoes : échos laissés à la lumière qui l'abat
   //   baseCost, baseEchoes : si présents, elle s'achète (un gardien par village, deux chez les Éleveurs)
   //   wild      si présent, la faune du vide : { zones, weight, shy (elle fuit la lumière à cette distance), max }
+  //   worth     stats invisibles : ce qu'en attend le gouverneur d'une base qui l'ajoute à sa garnison (governors.js)
   Vide.CREATURES = [
     { id: 'loup', name: 'Loup', body: 'quadruped', length: 44, hp: 320, speed: 95, damage: 12, cooldown: 0.9,
-      radius: 16, echoes: 8 },
+      radius: 16, echoes: 8, worth: { guard: 0.5, raid: 0.3 } },
     { id: 'scolopendre', name: 'Scolopendre', fem: true, body: 'segments', segments: 16, length: 22, hp: 1100, speed: 52,
-      damage: 26, cooldown: 1.6, radius: 24, echoes: 25 },
+      damage: 26, cooldown: 1.6, radius: 24, echoes: 25, worth: { guard: 1.2, raid: 0.4 } },
     { id: 'cerf', name: 'Cerf', body: 'quadruped', antlers: true, length: 56, hp: 700, speed: 82, damage: 20,
       cooldown: 1.2, radius: 22, echoes: 15, baseCost: 20000, baseEchoes: 20 },
     // La faune du vide : neutre, elle ne fait de mal à personne ; les Éleveurs et les Meutes l'apprivoisent.

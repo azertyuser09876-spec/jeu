@@ -1,21 +1,29 @@
 // Le gouverneur d'un village (l'« intendant » des premières versions) : chaque village peut garder une part de la
 // lumière qu'il produit (village.steward : 0 à 50 %), mise en réserve (village.funds). Son gouverneur la dépense
-// seul, avec le cerveau commun des gouverneurs (governors.js) : il veut d'abord ce qui fait vivre le village (lueurs,
-// bâtisseur, logis), puis bâtit selon le plan et le type du village, lève une milice et monte des enceintes quand
-// la menace monte. Il ne paie qu'en lumière (les échos restent au joueur : sa milice coûte plus cher en lumière).
+// seul, avec le cerveau commun des gouverneurs (governors.js) : un bâtisseur d'abord, puis ce qui rend le plus de
+// son prix d'après les stats invisibles de chaque chose (`worth`) et les besoins de son village (sa production
+// mesurée, ce que rapporte une lueur, la menace, la place qui reste) — lueurs, logis, bâtiments, milice, enceintes ;
+// ambitieux, routes, cités, colonies, campagnes. Il ne paie qu'en lumière (les échos restent au joueur : sa milice
+// coûte plus cher en lumière).
 (function (Vide) {
   'use strict';
-  const { CONFIG, Catalog, Colony, Structures, Territory, Villages, Walls, util } = Vide;
+  const { CONFIG, Catalog, Colony, Governors, Structures, Territory, Villages, Walls, util } = Vide;
 
   const SHARES = [0, 0.1, 0.25, 0.5];
   const THINK = 2; // secondes entre deux décisions
 
-  // Envie de base de chaque bâtiment (un bâtiment propre au type du village est toujours très voulu) ; elle baisse à
-  // chaque exemplaire déjà là.
-  const WANT = {
-    prisme: 0.7, fontaine: 0.6, phare: 0.5, source: 0.45, archive: 0.35, rempart: 0.25, tour: 0.4, caserne: 0.3,
-    serre: 0.8, citadelle: 0.6, fonderie: 0.75, lunette: 0.7, autel: 0.75,
+  // Les stats invisibles de ses gestes propres (celles des bâtiments, des types et des êtres sont dans leurs
+  // catalogues). Une route rapporte aux deux villages qu'elle relie.
+  const WORTH = {
+    route: { yield: 0.03 },
+    enceinte: { guard: 3 },
+    colons: { reach: 1 },
+    campagne: { guard: 2 },
   };
+
+  // Ce que vaut une stat invisible, en part de la production du village par seconde (yield vaut la production
+  // elle-même ; room et reach se comptent à part). La défense, les soins et les soldats : selon la menace.
+  const VALUE = { growth: 0.5, army: 0.02, guard: 0.25, care: 0.1, away: 0.03, build: 0.1, white: 0.05 };
 
   // La menace qui pèse sur un village (0 à 1) : la guerre, une base d'ombre proche, les marées.
   function threat(state, v) {
@@ -31,71 +39,111 @@
 
   const lightOnly = (cost) => Object.keys(cost).every((k) => k === 'light');
 
+  // Les besoins de son village : ce que vaut, par seconde, un point de chaque stat invisible (voir governors.js),
+  // estimé sur son état réel. `lot` : le prix caché d'un emplacement à bâtir, quand la place vient à manquer.
+  function needs(state, v, l) {
+    const g = CONFIG.governors;
+    const rate = Math.max(v.rate || 0, g.floorRate);
+    const lueurs = v.beings.lueur || 0;
+    const perLueur = Math.max(lueurs ? rate / lueurs : 0, g.lueurYield);
+    const danger = threat(state, v);
+    const full = Colony.populationIn(v) >= l.beingCap - 1;
+    const free = Structures.lots(v) - v.buildings.length;
+    let total = 0;
+    for (const o of state.villages) total += Math.max(o.rate || 0, g.floorRate);
+    return {
+      rate, perLueur, danger, total,
+      lot: util.clamp(1 - free / 4, 0, 1) * rate * g.lotTime,
+      yield: rate,
+      growth: rate * VALUE.growth * (free <= 1 ? 2 : 1), // (plus de territoire : plus de place)
+      room: perLueur * (full ? 1 : 0.2),
+      army: Colony.usedIn(v, 'armyCap') >= l.armyCap ? rate * VALUE.army * danger : 0,
+      guard: rate * VALUE.guard * danger,
+      care: rate * VALUE.care * danger,
+      away: rate * VALUE.away,
+      build: rate * VALUE.build * (Structures.sites(v).length ? 1 : 0.3),
+      white: rate * VALUE.white,
+      reach: (total / Math.max(1, state.villages.length)) * g.colonyYield,
+    };
+  }
+
   // Ce que le gouverneur pourrait faire pour son village : [{ kind, id, cost, want, act() }].
   function wishes(state, v) {
     const l = Villages.local(state, v);
+    const need = needs(state, v, l);
     const pop = Colony.populationIn(v);
     const builders = v.beings.batisseur || 0;
     const sites = Structures.sites(v);
     const pending = (id) => sites.some((b) => b.type === id);
     const R = Territory.radius(v);
-    const danger = threat(state, v);
     const list = [];
     const being = (id, want, price) => {
       const cost = price || Colony.cost(state, Colony.species(id));
       list.push({ kind: 'being', id, cost, want, act: () => { v.beings[id] = (v.beings[id] || 0) + 1; } });
     };
-    const building = (id, want) => {
-      const d = Structures.def(id);
-      if (Structures.crowded(v, d) || pending(id) || (d.only && d.only !== v.type && !(v.extra || []).includes(d.only))) return;
+    const lueurCost = Colony.cost(state, Colony.species('lueur')).light;
+    const building = (d) => {
+      if (Structures.crowded(v, d) || pending(d.id) || (d.only && d.only !== v.type && !(v.extra || []).includes(d.only))) return;
       if (d.requires && !d.requires(state)) return;
-      list.push({ kind: 'building', id, cost: Structures.cost(state, d), want, act: () => Structures.plan(state, v, id) });
+      const worth = d.worth || {};
+      // Chaque exemplaire de plus rapporte moins (sauf les places : quatre de plus restent quatre de plus).
+      const linear = 'room' in worth || 'army' in worth;
+      let g = Governors.gain(worth, need) * (linear ? 1 : Math.pow(CONFIG.governors.fade, Structures.countIn(v, d.id, true)));
+      if (d.scope === 'global') g *= need.total / need.rate; // (son effet vaut pour tous tes villages)
+      const cost = Structures.cost(state, d);
+      // Son vrai prix : la place qu'il prend, et les êtres qu'il faudra pour remplir un logis.
+      const price = (cost.light || 0) + need.lot + (worth.room || 0) * lueurCost;
+      list.push({ kind: 'building', id: d.id, cost, want: Governors.want(g, price), act: () => Structures.plan(state, v, d.id) });
     };
 
-    // Ce qui fait vivre le village.
-    if (builders < 1 && builders < l.builderCap) being('batisseur', 1.3);
-    if (pop < l.beingCap) being('lueur', 1);
-    if (builders > 0 && R >= Structures.MIN_TERRITORY) {
-      if (pop >= l.beingCap - 1) building('nid', 1.1);
-      // Le reste, selon le plan et le type ; la défense d'autant plus voulue que la menace monte.
-      for (const d of Vide.BUILDINGS) {
-        if (!(d.id in WANT)) continue;
-        const n = Structures.countIn(v, d.id, true);
-        const want = (WANT[d.id] + (d.family === 'defense' ? danger * 0.6 : 0)) * Math.pow(0.75, n);
-        building(d.id, want);
-      }
+    // Ce qui fait vivre le village : des lueurs, des logis, puis le reste selon le plan et le type.
+    if (pop < l.beingCap) being('lueur', Governors.want(need.perLueur, lueurCost));
+    if (builders > 0 && R >= Structures.MIN_TERRITORY) for (const d of Vide.BUILDINGS) building(d);
+    if (builders > 0 && builders < l.builderCap && sites.length >= 2) {
+      being('batisseur', Governors.want(need.build * 0.5, Colony.cost(state, Colony.species('batisseur')).light));
     }
-    if (builders > 0 && builders < l.builderCap && sites.length >= 2) being('batisseur', 0.8);
     // Une milice, quand la menace monte : des gardiens, payés en lumière (bien plus cher).
     const army = Colony.usedIn(v, 'armyCap');
-    if (danger >= CONFIG.governors.militiaFrom && army < l.armyCap && army < CONFIG.governors.militia * (1 + danger)) {
+    if (need.danger >= CONFIG.governors.militiaFrom && army < l.armyCap && army < CONFIG.governors.militia * (1 + need.danger)) {
       const sp = Colony.species('gardien');
-      being('gardien', 0.5 + danger * 0.6, { light: Math.ceil(sp.baseCost * CONFIG.governors.militiaPrice) });
+      const price = Math.ceil(sp.baseCost * CONFIG.governors.militiaPrice);
+      being('gardien', Governors.want(Governors.gain(sp.worth, need), price), { light: price });
     }
     // Une enceinte, avec la guerre.
-    const ring = builders > 0 && danger >= CONFIG.governors.wallFrom && !Walls.site(v) ? Walls.nextRing(v) : null;
-    if (ring) list.push({ kind: 'wall', id: 'enceinte', cost: Walls.cost(ring), want: 0.2 + danger * 0.7, act: () => Walls.plan(v) });
-    ambitions(state, v, list, builders);
+    const ring = builders > 0 && need.danger >= CONFIG.governors.wallFrom && !Walls.site(v) ? Walls.nextRing(v) : null;
+    if (ring) {
+      const cost = Walls.cost(ring);
+      list.push({ kind: 'wall', id: 'enceinte', cost, want: Governors.want(Governors.gain(WORTH.enceinte, need), cost.light), act: () => Walls.plan(v) });
+    }
+    ambitions(state, v, list, builders, need);
+    // Un bâtisseur d'abord : sans lui, rien ne se bâtit.
+    if (builders < 1 && builders < l.builderCap) being('batisseur', 1.2 * Math.max(1, ...list.map((w) => w.want)));
     return list.filter((w) => lightOnly(w.cost));
   }
 
   // Ambitieux, il agrandit le monde : une route vers le village le plus proche, une cité, des colons pour fonder,
   // une campagne contre une base proche. (Rien de tout cela tant que son ambition est faible.)
-  function ambitions(state, v, list, builders) {
+  function ambitions(state, v, list, builders, need) {
     const g = CONFIG.governors;
-    const a = Vide.Governors.ambition(state.stats.playTime);
+    const a = Governors.ambition(state.stats.playTime);
     if (a < g.ambitionFrom) return;
     // Une route (une seule en chantier à la fois).
     const to = Vide.Roads.candidate(state, v);
     const building = state.roads.some((r) => (r.a === v.id || r.b === v.id) && !Vide.Roads.isDone(state, r));
     if (to && !building && (builders > 0 || to.beings.batisseur > 0)) {
-      list.push({ kind: 'road', id: 'route', cost: Vide.Roads.cost(state, v, to), want: 0.25 + 0.35 * a, act: () => Vide.Roads.plan(state, v, to) });
+      const cost = Vide.Roads.cost(state, v, to);
+      const both = need.rate + Math.max(to.rate || 0, g.floorRate);
+      list.push({ kind: 'road', id: 'route', cost, want: a * Governors.want(WORTH.route.yield * both, cost.light), act: () => Vide.Roads.plan(state, v, to) });
     }
     // Une cité : la spécialité qui va avec sa sous-faction, sinon une autre.
     if (Vide.Cities.canSpecialize(v)) {
       const has = Vide.Cities.types(v);
       const t = [g.specialty[v.faction], ...Vide.VILLAGE_TYPES.map((x) => x.id)].find((id) => id && !has.includes(id));
-      if (t) list.push({ kind: 'city', id: 'specialite', cost: Vide.Cities.specializeCost(v), want: 0.2 + 0.3 * a, act: () => v.extra.push(t) });
+      if (t) {
+        const cost = Vide.Cities.specializeCost(v);
+        const want = Governors.want(Governors.gain(Villages.type(t).worth, need), cost.light);
+        list.push({ kind: 'city', id: 'specialite', cost, want, act: () => v.extra.push(t) });
+      }
     }
     // Des colons, pour fonder le type de village qui manque le plus au monde (de sa sous-faction, le plus souvent) ;
     // escortés de gardiens (qui resteront là-bas) s'il peut en garder un chez lui.
@@ -103,8 +151,9 @@
       const spot = colonySpot(state, v);
       const escort = (v.beings.gardien || 0) > CONFIG.expeditions.escort;
       if (spot) {
+        const cost = Vide.Expeditions.cost(state, 'colons', spot.x, spot.y, v);
         list.push({
-          kind: 'colons', id: 'colons', cost: Vide.Expeditions.cost(state, 'colons', spot.x, spot.y, v), want: 0.15 + 0.45 * a,
+          kind: 'colons', id: 'colons', cost, want: a * Governors.want(Governors.gain(WORTH.colons, need), cost.light),
           act: () => Vide.Expeditions.launch(state, 'colons', spot.x, spot.y, { type: colonyType(state, v), by: v, escort }),
         });
       }
@@ -112,7 +161,11 @@
     // Une campagne : l'armée du village part contre la base la plus proche (sans rien coûter).
     if (!v.campaign && a >= g.campaignFrom && Colony.usedIn(v, 'armyCap') >= g.campaignArmy) {
       const nest = Vide.Nests.nearest(state, v.x, v.y, g.campaignRange);
-      if (nest) list.push({ kind: 'campaign', id: 'campagne', cost: { light: 0 }, want: 0.4 + 0.4 * a, act: () => { v.campaign = nest.id; } });
+      // (Elle ne coûte rien, mais met en jeu une part de ce que vaut l'armée.)
+      let worth = 0;
+      for (const sp of Vide.SPECIES) if (sp.cap === 'armyCap') worth += (v.beings[sp.id] || 0) * sp.baseCost;
+      const want = a * Governors.want(Governors.gain(WORTH.campagne, need), worth * g.campaignRisk);
+      if (nest) list.push({ kind: 'campaign', id: 'campagne', cost: { light: 0 }, want, act: () => { v.campaign = nest.id; } });
     }
   }
 
@@ -249,5 +302,5 @@
     },
   });
 
-  Vide.Steward = { SHARES, WANT, threat, wishes, ambitions, colonySpot, colonyType, act, intent, label, campaigns, update, catchUp, share };
+  Vide.Steward = { SHARES, WORTH, VALUE, threat, needs, wishes, ambitions, colonySpot, colonyType, act, intent, label, campaigns, update, catchUp, share };
 })(globalThis.Vide);

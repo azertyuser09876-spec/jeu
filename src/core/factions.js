@@ -61,7 +61,7 @@
       verb: 'dévorée',
       tint: [200, 70, 120],
       feed: 0.25,
-      lean: { raid: 0.15 },       // leur gouverneur : envies de plus (voir Nests.actions)
+      lean: { raid: 0.15 },       // leur gouverneur : envie ×(1 + lean) pour ces gestes (voir Nests.actions)
     },
     {
       id: 'corrupteurs',

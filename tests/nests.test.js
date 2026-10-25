@@ -177,6 +177,22 @@
     assert.near(nest.funds, funds - CONFIG.nests.price.fosse, 1e-9);
   });
 
+  test('stats invisibles : ouvrages, bêtes de garnison et gestes d’une base en portent ; mûre et ambitieuse, elle veut s’étendre', () => {
+    for (const d of Vide.DARK_WORKS) assert.ok(d.worth && Object.keys(d.worth).length, d.id);
+    for (const id of ['loup', 'scolopendre']) assert.ok(Vide.Creatures.kind(id).worth, id);
+    assert.ok(Nests.WORTH.rempart && Nests.WORTH.outpost && Nests.WORTH.raid);
+    const state = twoVillages();
+    const young = Nests.add(state, 4000, 0, 0);
+    const old = Nests.add(state, -4000, 0, CONFIG.governors.ambitionTime);
+    assert.equal(Nests.needs(state, young).reach, 0, 'jeune : pas d’ambition');
+    assert.ok(Nests.needs(state, old).reach > 0);
+    // Menacée, sa défense vaut plus, ses assauts moins.
+    const calm = Nests.needs(state, old);
+    old.hp = Nests.maxHp(old) / 2;
+    const hurt = Nests.needs(state, old);
+    assert.ok(hurt.guard > calm.guard && hurt.raid < calm.raid);
+  });
+
   test('il lance ses assauts quand leur heure sonne, s’il peut les payer ; menacé, il préfère se défendre', () => {
     const state = twoVillages();
     state.player.x = -5000;

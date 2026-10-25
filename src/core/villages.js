@@ -31,6 +31,7 @@
       name: 'Jardins',
       desc: 'Fonder ici des jardins : la lumière y naît plus dense, et les lueurs portent davantage.',
       effectText: 'jardin ×1,4',
+      worth: { yield: 0.25 }, // stats invisibles (voir governors.js) : pour une cité qui prend ce type
       tint: [150, 255, 205],
       shape: { metric: 'round', lobes: 5, depth: 0.22, sharp: 1, noise: 0.8 },
       modify: (l) => { l.gardenDensity *= 1.4; l.beingCapacity += 1; },
@@ -41,6 +42,7 @@
       desc: 'Fonder ici un bastion : remparts solides, territoire qui brûle les ombres deux fois plus, armée plus '
         + 'nombreuse et plus forte.',
       effectText: 'armée +4 · ×1,25',
+      worth: { army: 4, guard: 0.5 },
       tint: [255, 222, 150],
       shape: { metric: 'octagon', lobes: 0, depth: 0, sharp: 1, noise: 0.35 },
       modify: (l) => { l.structureArmor *= 1.6; l.burn *= 2; l.armyDamage *= 1.25; l.armyCap += 4; },
@@ -50,6 +52,7 @@
       name: 'Atelier',
       desc: 'Fonder ici un atelier : on y bâtit bien plus vite, et un bâtisseur de plus peut y vivre.',
       effectText: 'chantiers ×1,6',
+      worth: { build: 0.6 },
       tint: [255, 186, 130],
       shape: { metric: 'square', lobes: 0, depth: 0, sharp: 1, noise: 0.5 },
       modify: (l) => { l.buildRate *= 1.6; l.builderCap += 1; },
@@ -60,6 +63,7 @@
       desc: 'Fonder ici un observatoire, tourné vers le loin : son territoire grandit plus vite, '
         + 'et ta pulsation s’y recharge encore plus vite.',
       effectText: 'croissance ×1,35',
+      worth: { growth: 0.35 },
       tint: [165, 195, 255],
       shape: { metric: 'round', lobes: 4, depth: 0.32, sharp: 4, noise: 0.7 },
       modify: (l) => { l.territoryGrowth *= 1.35; l.pulseBoost *= 1.5; },
@@ -70,6 +74,7 @@
       desc: 'Fonder ici un sanctuaire : ta lumière et les êtres s’y soignent deux fois plus vite, '
         + 'ses êtres sont plus résistants, et son cœur blanchit plus vite.',
       effectText: 'soins ×2',
+      worth: { care: 1, white: 0.3 },
       tint: [255, 205, 238],
       shape: { metric: 'round', lobes: 0, depth: 0, sharp: 1, noise: 0.35 },
       modify: (l) => { l.regen *= 2; l.beingHp *= 1.3; l.whitening *= 1.6; },

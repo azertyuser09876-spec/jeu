@@ -5,6 +5,7 @@
 //   ring      distance au cœur souhaitée, en part du rayon de la base ; family : 'defense' se range près des avenues
 //   raid      ombres de plus dans chaque raid ; defenders : défenseurs de plus quand on frappe le cœur
 //   tower     si présent : { range, damage, cooldown } — tire sur la lumière (toi, tes êtres, tes expéditions)
+//   worth     stats invisibles : ce qu'en attend le gouverneur de la base (voir governors.js ; jamais affiché)
 (function (Vide) {
   'use strict';
 
@@ -21,6 +22,7 @@
       family: 'fosse',
       raid: 1.5,
       defenders: 2,
+      worth: { raid: 1.5, guard: 0.3 },
     },
     {
       id: 'fleche',
@@ -33,6 +35,7 @@
       ring: 0.85,
       family: 'defense',
       tower: { range: 380, damage: 7, cooldown: 1.8 },
+      worth: { guard: 1 },
     },
   ];
 

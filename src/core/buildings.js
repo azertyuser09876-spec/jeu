@@ -15,6 +15,7 @@
 //   only       si présent : type de village où seul il peut se bâtir
 //   scope      'global' : son effet (modify) vaut pour tous les villages ; sinon pour le sien seulement
 //   ward       si présent : { radius, slow } — les ombres qui passent à portée sont ralenties
+//   worth      stats invisibles : ce que les gouverneurs en attendent (voir governors.js ; jamais affiché)
 (function (Vide) {
   'use strict';
 
@@ -33,6 +34,7 @@
       size: 16,
       hp: 150,
       effectText: '+4 places',
+      worth: { room: 4 },
       modify: (stats, n) => { stats.beingCap += 4 * n; },
     },
     {
@@ -47,6 +49,7 @@
       size: 15,
       hp: 120,
       effectText: 'relais · ×1,25',
+      worth: { yield: 0.15 },
       deposit: 1.25,
     },
     {
@@ -61,6 +64,7 @@
       size: 14,
       hp: 180,
       effectText: '+25 % de croissance',
+      worth: { growth: 0.25 },
       modify: (stats, n) => { stats.territoryGrowth *= 1 + 0.25 * n; },
     },
     {
@@ -76,6 +80,7 @@
       size: 13,
       hp: 260,
       effectText: 'tire sur les ombres',
+      worth: { guard: 1 },
       tower: { range: 240, damage: 6, cooldown: 0.8 },
       requires: (state) => state.stats.shadows > 0,
     },
@@ -92,6 +97,7 @@
       size: 15,
       hp: 320,
       effectText: '+4 soldats',
+      worth: { army: 4 },
       modify: (stats, n) => { stats.armyCap += 4 * n; },
       requires: (state) => state.stats.shadows > 0,
     },
@@ -109,6 +115,7 @@
       size: 13,
       hp: 140,
       effectText: 'jardin +25 %',
+      worth: { yield: 0.12 },
       modify: (stats, n) => { stats.gardenDensity *= 1 + 0.25 * n; },
       requires: (state) => Vide.Villages.count(state, 'lueur') >= 4,
     },
@@ -125,6 +132,7 @@
       size: 12,
       hp: 160,
       effectText: 'soins +50 %',
+      worth: { care: 0.5 },
       modify: (stats, n) => { stats.regen *= 1 + 0.5 * n; stats.rekindle *= 1 + 0.5 * n; },
       requires: (state) => state.stats.shadows > 0,
     },
@@ -142,6 +150,7 @@
       size: 13,
       hp: 120,
       effectText: '+1 h d’absence',
+      worth: { away: 1 },
       modify: (stats, n) => { stats.offlineCap += 3600 * n; },
       requires: (state) => state.totalLight >= 2e4,
     },
@@ -158,6 +167,7 @@
       size: 16,
       hp: 600,
       effectText: 'ralentit les ombres',
+      worth: { guard: 1 },
       ward: { radius: 160, slow: 0.5 },
       requires: (state) => state.stats.shadows > 0,
     },
@@ -176,6 +186,7 @@
       size: 15,
       hp: 160,
       effectText: 'jardin +50 % · or',
+      worth: { yield: 0.3 },
       modify: (stats, n) => { stats.gardenDensity *= 1 + 0.5 * n; stats.gardenRare *= 1 + 0.5 * n; },
     },
     {
@@ -192,6 +203,7 @@
       size: 18,
       hp: 900,
       effectText: 'tire loin et fort',
+      worth: { guard: 3 },
       tower: { range: 340, damage: 16, cooldown: 1.1 },
     },
     {
@@ -208,6 +220,7 @@
       size: 15,
       hp: 200,
       effectText: 'chantiers +25 % partout',
+      worth: { build: 0.25 },
       modify: (stats, n) => { stats.buildRate *= 1 + 0.25 * n; },
     },
     {
@@ -224,6 +237,7 @@
       size: 14,
       hp: 140,
       effectText: 'croissance +15 % partout',
+      worth: { growth: 0.15 },
       modify: (stats, n) => { stats.territoryGrowth *= 1 + 0.15 * n; },
     },
     {
@@ -239,6 +253,7 @@
       size: 14,
       hp: 180,
       effectText: 'blanc ×2',
+      worth: { white: 1 },
       modify: (stats, n) => { stats.whitening *= 1 + n; stats.burn *= 1 + 0.5 * n; },
     },
   ];

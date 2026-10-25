@@ -53,6 +53,7 @@
       army: true,
       cap: 'armyCap',
       baseCost: 3000,
+      worth: { guard: 0.3 }, // stats invisibles (voir governors.js) : pour la milice d'un gouverneur
       baseEchoes: 3,
       speed: 80,
       hp: 70,
