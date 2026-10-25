@@ -29,6 +29,23 @@
 
   // --- Ombres ---
 
+  // Une horde (des centaines d'ombres à l'écran) : tous les liserés d'un coup, puis tous les corps — sans volutes ni
+  // signes (un seul changement de composition par image, au lieu de deux par ombre).
+  const HORDE = 150;
+  function drawHorde(r, list) {
+    const { ctx } = r;
+    const sp = sprites;
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of list) Render.drawGlow(ctx, sp.rim, s.x, s.y, Shadows.kind(s.kind).radius * 2.8, 0.5 + s.hitFlash * 0.5);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.95;
+    for (const s of list) {
+      const R = Shadows.kind(s.kind).radius;
+      ctx.drawImage(sp.dark, s.x - R * 1.5, s.y - R * 1.5, R * 3, R * 3);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function drawShadow(r, s, t) {
     const { ctx } = r;
     const k = Shadows.kind(s.kind);
@@ -202,10 +219,9 @@
     const view = Render.viewBounds(r, 60);
     const t = r.time;
     drawHealing(r, game);
-    for (const s of game.shadows.list) {
-      if (s.x < view.left || s.x > view.right || s.y < view.top || s.y > view.bottom) continue;
-      drawShadow(r, s, t);
-    }
+    const seen = game.shadows.list.filter((s) => s.x >= view.left && s.x <= view.right && s.y >= view.top && s.y <= view.bottom);
+    if (seen.length > HORDE) drawHorde(r, seen);
+    else for (const s of seen) drawShadow(r, s, t);
     drawProjectiles(r, game);
     drawEffects(r, dt);
     drawVitality(r, game);

@@ -305,9 +305,33 @@
     }
   }
 
+  // Les ombres d'une zone défendue, rangées une fois par pas (des centaines de soldats y cherchent leur ennemi : sans
+  // cela, chacun parcourrait toutes les ombres).
+  function zoneShadows(game, a) {
+    const z = game.zoneShadows || (game.zoneShadows = { time: -1, lists: new Map() });
+    if (z.time !== game.time) {
+      z.time = game.time;
+      z.lists.clear();
+    }
+    const key = `${a.x},${a.y},${a.radius}`;
+    let list = z.lists.get(key);
+    if (!list) {
+      list = game.shadows.list.filter((s) => s.hp > 0 && Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
+      z.lists.set(key, list);
+    }
+    return list;
+  }
+
   // Ennemi à combattre : l'ombre la plus proche dans la zone défendue, sinon un colosse hostile.
   function enemyFor(game, b, a) {
-    const shadow = Shadows.nearest(game, b.x, b.y, Infinity, (s) => Math.hypot(s.x - a.x, s.y - a.y) <= a.radius);
+    let shadow = null, best = Infinity;
+    for (const s of zoneShadows(game, a)) {
+      const d2 = (s.x - b.x) ** 2 + (s.y - b.y) ** 2;
+      if (s.hp > 0 && d2 < best) {
+        best = d2;
+        shadow = s;
+      }
+    }
     // Les bêtes des ombres aussi, la plus proche des deux.
     const beast = Vide.Creatures.nearestEnemy(game, b.x, b.y, 'light', Infinity, (c) => Math.hypot(c.x - a.x, c.y - a.y) <= a.radius);
     if (shadow && beast) return Math.hypot(shadow.x - b.x, shadow.y - b.y) <= Math.hypot(beast.x - b.x, beast.y - b.y) ? shadow : beast;

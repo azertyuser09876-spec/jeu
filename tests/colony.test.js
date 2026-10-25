@@ -216,4 +216,28 @@
     assert.equal(game.colony.beings.length, 400);
     assert.ok(ms < 12, `${ms.toFixed(2)} ms par pas`);
   });
+
+  test('le champ de bataille : deux mille êtres et mille ombres tiennent dans le pas', () => {
+    const state = State.create(5);
+    for (let k = 0; k < 4; k++) {
+      village(state, { x: k * 3000, radius: 900, beings: { lueur: 300, batisseur: 4, gardien: 125, etincelle: 75 } });
+    }
+    state.player.x = 1500;
+    state.player.y = 800;
+    const game = Sim.create(state);
+    const rng = Vide.util.rng(3);
+    for (let k = 0; k < 1000; k++) {
+      const v = state.villages[k % 4];
+      const a = rng() * Math.PI * 2;
+      Vide.Shadows.spawn(game, 'errante', v.x + Math.cos(a) * 1200, v.y + Math.sin(a) * 1200, 'tide').home = v;
+    }
+    run(game, 1);
+    const t0 = Date.now();
+    run(game, 3);
+    const ms = (Date.now() - t0) / 180;
+    assert.ok(game.colony.beings.length >= 2000);
+    // (56 ms avant la 3.0 : les soldats parcouraient toutes les ombres, les ombres tous les êtres, et une ombre sans
+    // proie cherchait à chaque pas.)
+    assert.ok(ms < 30, `${ms.toFixed(2)} ms par pas`);
+  });
 })();

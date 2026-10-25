@@ -2,7 +2,7 @@
 // et errent dans le vide lointain. Rien de tout cela n'est sauvegardé (sauf le nombre de marées passées).
 (function (Vide) {
   'use strict';
-  const { CONFIG, util, Territory, Structures, Colony, Villages } = Vide;
+  const { CONFIG, util, Territory, Structures, Colony, Villages, Grid } = Vide;
 
   // Catalogue des ombres.
   //   prefers   cible préférée : 'any' (la plus proche), 'beings' (les êtres), 'structures' (bâtiments, cœurs)
@@ -24,9 +24,14 @@
       prefers: 'structures', echoes: 6, cost: 5, fromTide: 7 },
   ];
 
+  const kinds = new Map();
   function kind(id) {
-    const k = Vide.SHADOW_KINDS.find((s) => s.id === id);
-    if (!k) throw new Error(`Ombre inconnue : ${id}`);
+    let k = kinds.get(id);
+    if (!k) {
+      k = Vide.SHADOW_KINDS.find((s) => s.id === id);
+      if (!k) throw new Error(`Ombre inconnue : ${id}`);
+      kinds.set(id, k);
+    }
     return k;
   }
 
@@ -143,22 +148,28 @@
     if (s.calm) return null; // une rôdeuse ne s'en prend à rien
     const k = kind(s.kind);
     const sense2 = CONFIG.shadows.sense ** 2;
-    const candidates = [];
+    // (La meilleure proie : le plus petit score ; à égalité, la première vue.)
+    let best = null;
     const consider = (type, ref, x, y, weight, village) => {
       const d2 = (x - s.x) ** 2 + (y - s.y) ** 2;
-      if (d2 <= sense2) candidates.push({ type, ref, village, score: d2 * weight });
+      if (d2 > sense2) return;
+      const score = d2 * weight;
+      if (!best || score < best.score) best = { type, ref, village, score };
     };
     const pref = (group) => (k.prefers === 'any' || k.prefers === group ? 1 : 6);
 
     const { player } = game.state;
     if (!game.vitality.invulnerable) consider('player', player, player.x, player.y, pref('player'));
-    for (const b of game.colony.beings) {
-      if (!Colony.isActive(b)) continue;
+    // (Seuls les êtres à portée de sens comptent : la grille des êtres les donne sans tous les parcourir.)
+    Grid.near(game.colony.grid, s.x, s.y, CONFIG.shadows.sense, (b) => {
+      if (!Colony.isActive(b)) return;
       // Un porte-bouclier attire les coups : à portée de défi, on ne voit plus que lui.
       const taunt = Colony.species(b.species).taunt && (b.x - s.x) ** 2 + (b.y - s.y) ** 2 <= CONFIG.shadows.taunt ** 2;
       consider('being', b, b.x, b.y, taunt ? 1e-6 : pref('beings'));
-    }
+    });
     for (const v of game.state.villages) {
+      // (Les bâtiments d'un village trop loin sont hors de portée.)
+      if (Math.hypot(v.x - s.x, v.y - s.y) > Territory.radius(v) + CONFIG.shadows.sense) continue;
       for (const b of v.buildings) if (Structures.isWorking(b)) consider('building', b, b.x, b.y, pref('structures'), v);
       consider('heart', v, v.x, v.y, pref('structures'));
     }
@@ -167,8 +178,7 @@
     // Les convois sur les routes.
     for (const c of game.trade.caravans) consider('convoy', c, c.x, c.y, pref('structures'));
 
-    candidates.sort((a, b) => a.score - b.score);
-    return candidates[0] || null;
+    return best;
   }
 
   function reachOf(t) {
@@ -240,7 +250,9 @@
       s.cd = Math.max(0, s.cd - dt);
       s.hitFlash = Math.max(0, s.hitFlash - dt * 4);
       s.retarget -= dt;
-      if (s.retarget <= 0 || !targetValid(game, s.target)) {
+      // (Sans proie, elle regarde de nouveau toutes les demi-secondes, pas à chaque pas : avec des centaines
+      // d'ombres, chercher sans cesse coûterait trop.)
+      if (s.retarget <= 0 || (s.target && !targetValid(game, s.target))) {
         s.target = chooseTarget(game, s);
         s.retarget = 0.5;
       }
